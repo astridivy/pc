@@ -1,0 +1,5 @@
+#!/bin/bash
+
+emanelif=$(basename $1 | cut -d'.' -f1 | backward)
+
+xxd -p $1 | tac - -s '.' -r | xxd -r -p > $emanelif

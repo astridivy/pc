@@ -5,11 +5,13 @@ set guioptions-=m	"remove menu bar
 set guioptions-=T	"remove toolbar
 set guioptions+=r	"show right-hand scroll bar
 set guioptions-=e	"remove gui tab line
+set guioptions+=k	"do not resize window >:U
 "set guifont=ProggyCleanTT:h12
 "set guifont=Droid_Sans_Mono:h13
 "set guifont=Consolas:h13
 "set guifont=Lucida_Console:h12
 set guifont=peep:h16
+set guifontwide=Lucida_Console:h16
 set encoding=utf-8
 set cursorline "only looks good in gVIM
 set lines=50 columns=100

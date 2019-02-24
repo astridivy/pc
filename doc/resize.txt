@@ -1,0 +1,11 @@
+'Bash command to change size of bash window'
+   Some (but not many) terminals accept the ANSI escape sequence
+\033[8;h;wt
+   The resize command works to change the size of the window, but you may experience some strange things if you don't also tell the terminal to use the whole area. This is what I use, and it works well.
+
+#!/bin/bash
+resize -s 33 100
+stty rows 33
+stty cols 100
+
+Another option, if you need to change it after the window appeared wmctrl might help you.

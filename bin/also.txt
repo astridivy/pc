@@ -1,6 +1,5 @@
 apache-maven-3.5.3/
 cflint-1.4.0.jar
-curl.exe
 ffmpeg.exe
 ffplay.exe
 ffprobe.exe

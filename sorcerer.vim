@@ -141,7 +141,7 @@ hi TabLine                cterm=bold             ctermbg=102   ctermfg=16
 hi TabLineFill            cterm=NONE             ctermbg=102   ctermfg=16
 hi TabLineSel             cterm=bold             ctermbg=16    ctermfg=59
 hi Title                  cterm=bold             ctermbg=NONE  ctermfg=66
-hi Visual                 cterm=NONE             ctermbg=67    ctermfg=16
+hi Visual                 cterm=NONE             ctermbg=67    ctermfg=0
 hi WarningMsg             cterm=NONE             ctermbg=234   ctermfg=208
 hi WildMenu               cterm=NONE             ctermbg=116   ctermfg=16
 hi ExtraWhitespace        cterm=NONE             ctermbg=66    ctermfg=fg
@@ -205,4 +205,3 @@ hi iCursor                cterm=NONE             ctermbg=210   ctermfg=16
 hi lCursor                cterm=NONE             ctermbg=145   ctermfg=234
 hi nCursor                cterm=NONE             ctermbg=46    ctermfg=16
 hi vCursor                cterm=NONE             ctermbg=201   ctermfg=16
-" 1}}}

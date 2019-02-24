@@ -1,0 +1,22 @@
+#!/bin/bash
+# github
+#
+# I hate typing
+
+getopts "hs" METHOD
+case $METHOD in
+  h)
+    shift
+	URL="https://github.com/$1/$2.git"
+	;;
+  s)
+    shift
+	;;
+  *)
+    echo "usage: $0 [-h|s] user repo [dir]"
+	;;
+esac
+
+[[ $URL ]] || URL="git@github.com:$1/$2"
+
+git clone $URL $3
