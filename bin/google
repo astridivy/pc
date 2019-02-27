@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+# google
+# search for something using google (with lynx!)
+
+IFS='+'
+lynx --session ~/.lynxsession "https://www.google.com/search?q=$*"

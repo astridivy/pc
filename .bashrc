@@ -99,3 +99,8 @@ source ~/.bash-git-prompt/gitprompt.sh
 
 # super star
 shopt -s globstar
+
+# maybe i'll have better luck in here
+bind 'TAB: menu-complete'
+bind '"\e[Z": menu-complete-backward'
+bind '"\e@": complete'
