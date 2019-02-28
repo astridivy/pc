@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# poop
+#
+# cute
+# 2019-02-02
+
+COLORTERM=xterm-256color
+TERM=xterm-256color
+colortest

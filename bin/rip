@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# rip
+#
+# RIP in piece
+#
+# astridivy (REDACTED)
+# 2019-01-25
+
+dte=`date -I`
+base=$(basename $1)
+dest=$HOME/.nostalgia/${dte}_${base}
+cp "$1" "$dest"
+echo ".sh's to .sh's, .'s to .'s"
+echo "layed to rest at $dest"

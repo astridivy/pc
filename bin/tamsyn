@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# tamsyn
+#
+# make me pretty...
+#
+# cute
+# 2019-02-13
+
+FONT=Tamsyn
+SIZE=8x16
+WEIGHT=r
+
+[[ $1 == "8"  || $1 == "16" ]] && SIZE=8x16
+[[ $1 == "15"               ]] && SIZE=8x16
+[[ $1 == "7"  || $1 == "14" ]] && SIZE=7x14
+[[ $1 == "13"               ]] && SIZE=7x13
+[[ $1 == "6"  || $1 == "12" ]] && SIZE=6x12
+[[ $1 == "5"  || $1 == "9"  ]] && SIZE=5x9
+[[ $1 == "10" || $1 == "20" ]] && SIZE=10x20
+
+[[ $2 == "-b" ]] && WEIGHT=b
+
+setfont "${FONT}${SIZE}${WEIGHT}"

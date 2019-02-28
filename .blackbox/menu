@@ -1,0 +1,13 @@
+[begin] (Blackbox)
+  [exec] (Chromium) {chromium}
+  [exec] (xterm)    {xterm -ls}
+
+  [submenu] (Styles) {Choose a style...}
+    [stylesdir] (/usr/share/blackbox/styles)
+  [end]
+
+  [workspaces] (Workspace List)
+  [config] (Configuration)
+
+  [exit] (Exit)
+[end]

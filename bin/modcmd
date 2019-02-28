@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+# mkcmd
+
+CMDFILE=$HOME/bin/$1
+
+if [[ -e $CMDFILE ]]; then {
+    vim $CMDFILE;
+    if [[ ! -x $CMDFILE ]]; then
+      chmod +x $CMDFILE;
+    fi
+  }
+  else mkcmd $1
+fi

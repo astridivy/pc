@@ -33,7 +33,8 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'scrooloose/syntastic'
 Plugin 'Shougo/neocomplete.vim'
-Plugin 'kien/ctrlp.vim'
+"never really use this
+"Plugin 'kien/ctrlp.vim'
 Plugin 'flazz/vim-colorschemes'
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'easymotion/vim-easymotion'
@@ -47,13 +48,15 @@ Plugin 'tpope/vim-surround'
 Plugin 'tpope/vim-repeat'
 Plugin 'junegunn/vim-easy-align'
 Plugin 'scrooloose/nerdcommenter'
-Plugin 'scrooloose/nerdtree'
+"yeah nah
+"Plugin 'scrooloose/nerdtree'
 Plugin 'hdima/python-syntax'
 Plugin 'hynek/vim-python-pep8-indent'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
 Plugin 'justinmk/vim-gtfo'
-Plugin 'tikhomirov/vim-glsl'
+"not doing gl stuff rn
+"Plugin 'tikhomirov/vim-glsl'
 "Plugin 'PProvost/vim-ps1'
 Plugin 'alvan/vim-closetag'
 Plugin 'tpope/vim-obsession'
@@ -65,10 +68,10 @@ Plugin 'bkad/CamelCaseMotion'
 Plugin 'mhinz/vim-janah'
 Plugin 'GGalizzi/cake-vim'
 Plugin 'bcicen/vim-vice'
-Plugin 'mustache/vim-mustache-handlebars'
-"Cold fusion
-Plugin 'ernstvanderlinden/vim-coldfusion'
-Plugin 'cflint/cflint-syntastic'
+"Plugin 'mustache/vim-mustache-handlebars'
+"no. just no.
+"Plugin 'ernstvanderlinden/vim-coldfusion'
+"Plugin 'cflint/cflint-syntastic'
 
 call vundle#end()
 
@@ -90,9 +93,12 @@ set hlsearch			" search highlighting
 set whichwrap=b,s,h,l,<,>,[,]	" give keys wraparound
 set backspace=indent,eol,start	" thank you jesus, normal acting backspace
 set nowrap				" who needs it
-set tabstop=4			" width of tab character
-set shiftwidth=4		" indents have a width of 4
-set showtabline=1
+"WELCOME TO 2019: we 2 spaces now
+set shiftwidth=2		" indents have a width of 4
+set softtabstop=2
+set expandtab
+"set tabstop=4			" width of tab character
+set showtabline=2
 set t_RV= ttymouse=xterm2		" fixes weird 2c at startup HACK (shouldn't need it forever)
 "set mouse=n 			" only important in macvim?
 set ignorecase			" let search be case insensitive
@@ -105,30 +111,36 @@ set undofile
 set undodir=~/.vim/undo/
 set autoread
 set noerrorbells visualbell t_vb=
-autocmd GUIEnter * set visualbell t_vb=
+augroup VIMRC
+  autocmd!
+  autocmd BufWritePost $MYVIMRC source $MYVIMRC
+  autocmd GUIEnter * set visualbell t_vb=
 
-"Special for python <3
-autocmd FileType python :setlocal softtabstop=4 | :setlocal expandtab
-"Special for HTML <3
-autocmd FileType html :setlocal shiftwidth=2 | :setlocal tabstop=2
-autocmd FileType javascript :setlocal shiftwidth=2 | :setlocal tabstop=2 | :setlocal softtabstop=2 | :setlocal expandtab
-"autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
+  "Special for python <3
+  autocmd FileType python :setlocal softtabstop=4 | :setlocal expandtab
+  "Special for HTML <3
+  autocmd FileType html :setlocal shiftwidth=2 | :setlocal tabstop=2
+  autocmd FileType javascript :setlocal shiftwidth=2 | :setlocal tabstop=2 | :setlocal softtabstop=2 | :setlocal expandtab
+  "autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
 
-autocmd FileType haskell :setlocal softtabstop=4 | :setlocal expandtab
+  autocmd FileType haskell :setlocal softtabstop=4 | :setlocal expandtab
 
-"maps the autoinsert semicolon function, appending <CR>'s functionality
-"autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
+  "maps the autoinsert semicolon function, appending <CR>'s functionality
+  "autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
 
-" close preview window automatically when using annotated code completions
-"autocmd CursorMovedI * if pumvisible() == 0|pclose|endif " delete straight away
-autocmd InsertLeave * if pumvisible() == 0|pclose|endif " waits until exit
-"autocmd CompleteDone * pclose " probably more performant
+  " close preview window automatically when using annotated code completions
+  "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif " delete straight away
+  autocmd InsertLeave * if pumvisible() == 0|pclose|endif " waits until exit
+  "autocmd CompleteDone * pclose " probably more performant
+augroup end
 
 " ABBREVIATONS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "make help open in tabs instead of windows
-cnoreabbrev <expr> help getcmdtype() == ":" && getcmdline() == 'help' ? 'tab help' : 'h'
+"cnoreabbrev <expr> help getcmdtype() == ":" && getcmdline() == 'help' ? 'tab help' : 'h'
+
 "common typos
+cnoreabbrev fucntion function
 
 " FUNCTIONS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -398,12 +410,15 @@ endif
 let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 let g:neocomplete#enable_auto_select = 1
 " Enable omni completion.
-autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
-autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-"autocmd FileType javascript setlocal omnifunc=tern#Complete
-autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
-autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+augroup VIMRC_FT
+  autocmd!
+  autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
+  autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+  autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+  "autocmd FileType javascript setlocal omnifunc=tern#Complete
+  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
+  autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+augroup end
 " Enable heavy omni completion.
 if !exists('g:neocomplete#sources#omni#input_patterns')
   let g:neocomplete#sources#omni#input_patterns = {}
@@ -421,14 +436,16 @@ endif
 "endif
 "let g:neocomplete#sources#omni#functions.javascript = ['tern#Complete']
 
-autocmd CompleteDone * pclose
+augroup VINRC_COMPLETE
+  autocmd CompleteDone * pclose
+augroup end
 
 " TERN
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " AUTOPAIRS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:AutoPairs = {'(':')', '[':']', '{':'}',"'":"'",'"':'"', '#':'#', '`':'`'} "take out backticks
+let g:AutoPairs = {'(':')', '[':']', '{':'}',"'":"'",'"':'"','`':'`'} "take out backticks
 
 " SYNTASTIC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -484,6 +501,15 @@ endif
 
 "set a background color
 hi Normal                 cterm=NONE             ctermbg=234  ctermfg=145
+
+"if i wanted help, i'd press F1
+nnoremap [[A <Esc>
+lnoremap [[A <Esc>
+cnoremap [[A <Esc>
+inoremap [[A <Esc>
+vnoremap [[A <Esc>
+
+nnoremap x x
 
 "to do diffs do :vert diffsplit <filename>
 "close with diffoff!

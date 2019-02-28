@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# buffer
+#
+# hold my beer...
+#
+# astridivy (REDACTED)
+# 2019-01-19
+
+# actually, this can only ever take one option lol
+getoptz () {
+  getopts "oeih" $OPT
+  case $OPT in
+    h)
+      echo "Usage: buffer [OPTION] [COUNT|CMD]"
+      echo "Opens up previously buffered command output either by printing"
+      echo "to stdout (-o) or opening for editing (-e) (defaults to EDITOR,"
+      echo "vim, nano, ed). Alternatively, buffers the result of running the"
+      echo "rest of the arguments as a command. Keeps BUFF_HISTORY previous"
+      echo "buffers (defaults to 10)."
+      echo ""
+      echo " -o (default) output the contents of the buffer to stdout"
+      echo "    You can pass a number to specify that many steps back in history."
+      echo " -e opens a readonly view of the buffer in a text editor. You can, of"
+      echo "    course, save it to a different file if you want."
+      echo "    You can pass a number to specify that many steps back in history."
+      echo " -i Saves the output of the following command into a buffer, shifting"
+      echo "    previous entries in the buffer history back."
+      echo " -h prints this helpful message"
+      ;;
+    ?)
+      ;;
+   esac
+}
+
+getoptz
+shift ($OPTIND - 1)

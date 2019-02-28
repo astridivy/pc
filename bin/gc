@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+# gc
+
+git clone "https://github.com/$1/$2.git"

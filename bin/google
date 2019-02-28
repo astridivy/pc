@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+# google
+
+IFS='+'
+lynx --session ~/.lynxsession "https://www.google.com/search?q=$*"

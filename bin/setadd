@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# setadd
+#
+# no more PATH=$PATH:$PATH:$PATH
+#
+# astridivy (REDACTED)
+# 2019-01-22
+
+the_set="$1"
+element="$2"
+
+# bashism for a = a || b
+: ${the_set:=$element}
+
+[[ ! $element ]] || [[ $the_set == *$element* ]] || {
+  echo "$the_set"
+  return 0
+}
+
+the_set="$the_set
