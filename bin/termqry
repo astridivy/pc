@@ -1,0 +1,11 @@
+# termquery
+#
+# Enumerate supported colors
+#
+#   The following command will let you discover all the terminals you have terminfo support for, and the number of colors each terminal supports. The possible
+#   values are: 8, 15, 16, 52, 64, 88 and 256.
+#
+# shamelessly stolen from arch wiki
+# 2019-02-11
+
+for T in `find /usr/share/terminfo -type f -printf '%f '`;do echo "$T `tput -T $T colors`";done|sort -nk2

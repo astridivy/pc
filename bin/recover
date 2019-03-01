@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+# recover
+
+mv ~/.trash/$1 .

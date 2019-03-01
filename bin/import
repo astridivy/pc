@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# import
+#
+# astridivy (REDACTED)
+# 2019-01-17
+
+SRC="$HOME/.bashrc/$1"
+
+[[ -f $SRC ]] && source $SRC
