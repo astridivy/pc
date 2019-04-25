@@ -131,6 +131,7 @@ augroup VIMRC
   autocmd FileType haskell :setlocal softtabstop=4 | :setlocal expandtab
 
   "maps the autoinsert semicolon function, appending <CR>'s functionality
+  "lol I don't use semicolons any more
   "autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
 
   " close preview window automatically when using annotated code completions
@@ -554,6 +555,17 @@ function! Remember ()
 	mksession! $HOME/.vim/restore.session
 endfunction
 
+function! AutoCloseEmpty ()
+	let lastline = line("$")
+	if lastline == 1 && getline(lastline) == "" && expand("%") == ""
+		exec "bdelete!"
+	endif
+endfunction
+
+function! Remember ()
+	mksession! $HOME/.vim/restore.session
+endfunction
+
 " this is either really smart or REALLY dumb
 inoreabbrev fucntion function
 
@@ -575,7 +587,7 @@ augroup VIMRC_BUFF_STUFF
 
   " at least try to keep viminfos in sync between vim instances (:wv and :rv can be used)
   " to trigger it manually
-  autocmd BufWritePost * wv
+  autocmd BufWritePost * rv | wv
   autocmd BufEnter * rv
 augroup end
 
@@ -585,15 +597,12 @@ augroup end
 
 "autocmd FileType cf call FixTheSlowness()
 
-"if i wanted help, i'd press F1
+"if i wanted help, i'd type :help
 nnoremap [[A <Esc>
 lnoremap [[A <Esc>
 cnoremap [[A <Esc>
 inoremap [[A <Esc>
 vnoremap [[A <Esc>
-
-nnoremap x x
-
 
 "to do diffs do :vert diffsplit <filename>
 "close with diffoff!

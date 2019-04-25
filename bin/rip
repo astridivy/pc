@@ -10,6 +10,8 @@
 dte=`date -I`
 base=$(basename $1)
 dest=$HOME/.nostalgia/${dte}_${base}
-cp "$1" "$dest"
+recurse=""
+[[ -d "$1" ]] && recurse="-r"
+cp "$recurse" "$1" "$dest"
 echo ".sh's to .sh's, .'s to .'s"
 echo "layed to rest at $dest"
