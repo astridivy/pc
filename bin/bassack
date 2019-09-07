@@ -1,5 +1,10 @@
 #!/bin/bash
 
-emanelif=$(basename $1 | cut -d'.' -f1 | backward)
-
-xxd -p $1 | tac - -s '.' -r | xxd -r -p > $emanelif
+if [[ $1 && -f $1 ]]; then
+  emanelif=$(basename $1 | cut -d'.' -f1 | backward)
+  xxd -p $1 | tac - -s '.' -r | xxd -r -p > $emanelif
+else
+  cat <<EOF
+  Usage: bassack filename 
+EOF
+fi

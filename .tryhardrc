@@ -1,0 +1,1 @@
+_TRY_COMMON+=("$HOME/src" "$HOME/src/lib")

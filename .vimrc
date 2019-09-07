@@ -92,7 +92,7 @@ set nowrap        " who needs it
 set shiftwidth=2   " indents have a width of 4
 set softtabstop=2
 set expandtab      "look into when we do or don't want this
-set tabstop=4      " width of tab character. useful to set this to 4 so we don't go out of sync
+set tabstop=2      " width of tab character. useful to set this to 4 so we don't go out of sync
 set showtabline=2
 set t_RV= ttymouse=xterm2  " fixes weird 2c at startup HACK (shouldn't need it forever)
 "set mouse=n       " only important in macvim?

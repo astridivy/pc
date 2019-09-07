@@ -1,4 +1,0 @@
-_FASD_BACKENDS="native viminfo"
-_FASD_AWK="gawk"
-# things seem mostly good now actually
-#_FASD_SINK="$HOME/fasd.log"

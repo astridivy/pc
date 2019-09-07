@@ -1,0 +1,22 @@
+#!/bin/sh
+if [ "$TERM" = "linux" ]; then
+  /bin/echo -e "\
+\e]P85a284b\
+\e]P9e82e3b\
+\e]PA54d154\
+\e]PBf77d74\
+\e]PCc238d6\
+\e]PDef389e\
+\e]PE7ae1cd\
+\e]PFd889aa\
+\
+\e]P0220112\
+\e]P1f2275d\
+\e]P287db65\
+\e]P3ffc166\
+\e]P47466cc\
+\e]P5f667a6\
+\e]P67ae1b7\
+\e]P7ea9cc3\
+"
+fi
