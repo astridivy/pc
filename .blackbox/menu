@@ -1,6 +1,9 @@
 [begin] (Blackbox)
-  [exec] (Chromium) {chromium}
-  [exec] (xterm)    {xterm -ls}
+  [exec] (Chromium)   {chromium}
+  [exec] (xterm)      {xterm -ls}
+  [exec] (Minecraft)  {minecraft-launcher}
+  [exec] (Discord)    {discord}
+  [exec] (Files)      {thunar}
 
   [submenu] (Styles) {Choose a style...}
     [stylesdir] (/usr/share/blackbox/styles)

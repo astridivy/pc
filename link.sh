@@ -1,3 +1,4 @@
+#!/bin/bash
 if [[ ! $1 ]]; then
   echo Usage: ./link.sh [bin] [.vimrc] [.inputrc] ...
   echo

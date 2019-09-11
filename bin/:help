@@ -1,4 +1,0 @@
-#!/usr/bin/bash
-# :help
-
-info --vi-keys $1 || man $1 || google $1

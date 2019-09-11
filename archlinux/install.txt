@@ -1,0 +1,639 @@
+   #[1]ArchWiki (en) [2]ArchWiki Atom feed
+
+     * [3]Home
+     * [4]Packages
+     * [5]Forums
+     * [6]Wiki
+     * [7]Bugs
+     * [8]Security
+     * [9]AUR
+     * [10]Download
+
+Installation guide
+
+   From ArchWiki
+   [11]Jump to navigation [12]Jump to search
+
+   This document is a guide for installing [13]Arch Linux from the live system booted with the official installation image. Before installing, it would be advised
+   to view the [14]FAQ. For conventions used in this document, see [15]Help:Reading. In particular, code examples may contain placeholders (formatted in italics)
+   that must be replaced manually.
+
+   For more detailed instructions, see the respective [16]ArchWiki articles or the various programs' [17]man pages, both linked from this guide. For interactive
+   help, the [18]IRC channel and the [19]forums are also available.
+
+   Arch Linux should run on any [20]x86_64-compatible machine with a minimum of 512 MiB RAM. A basic installation with all packages from the [21]base group should
+   take less than 800 MiB of disk space. As the installation process needs to retrieve packages from a remote repository, this guide assumes a working internet
+   connection is available.
+
+   [22][ ]
+
+Contents
+
+     * [23]1 Pre-installation
+          + [24]1.1 Verify signature
+          + [25]1.2 Boot the live environment
+          + [26]1.3 Set the keyboard layout
+          + [27]1.4 Verify the boot mode
+          + [28]1.5 Connect to the internet
+          + [29]1.6 Update the system clock
+          + [30]1.7 Partition the disks
+               o [31]1.7.1 Example layouts
+          + [32]1.8 Format the partitions
+          + [33]1.9 Mount the file systems
+     * [34]2 Installation
+          + [35]2.1 Select the mirrors
+          + [36]2.2 Install the base packages
+     * [37]3 Configure the system
+          + [38]3.1 Fstab
+          + [39]3.2 Chroot
+          + [40]3.3 Time zone
+          + [41]3.4 Localization
+          + [42]3.5 Network configuration
+          + [43]3.6 Initramfs
+          + [44]3.7 Root password
+          + [45]3.8 Boot loader
+     * [46]4 Reboot
+     * [47]5 Post-installation
+
+Pre-installation
+
+   The installation media and their [48]GnuPG signatures can be acquired from the [49]Download page.
+
+Verify signature
+
+   It is recommended to verify the image signature before use, especially when downloading from an HTTP mirror, where downloads are generally prone to be
+   intercepted to [50]serve malicious images.
+
+   On a system with [51]GnuPG installed, do this by downloading the PGP signature (under Checksums) to the ISO directory, and [52]verifying it with:
+
+$ gpg --keyserver-options auto-key-retrieve --verify archlinux-version-x86_64.iso.sig
+
+   Alternatively, from an existing Arch Linux installation run:
+
+$ pacman-key -v archlinux-version-x86_64.iso.sig
+
+   Note:
+     * The signature itself could be manipulated if it is downloaded from a mirror site, instead of from [53]archlinux.org as above. In this case, ensure that the
+       public key, which is used to decode the signature, is signed by another, trustworthy key. The gpg command will output the fingerprint of the public key.
+     * Another method to verify the authenticity of the signature is to ensure that the public key's fingerprint is identical to the key fingerprint of the
+       [54]Arch Linux developer who signed the ISO-file. See [55]Wikipedia:Public-key cryptography for more information on the public-key process to authenticate
+       keys.
+
+Boot the live environment
+
+   The live environment can be booted from a [56]USB flash drive, an [57]optical disc or a network with [58]PXE. For alternative means of installation, see
+   [59]Category:Installation process.
+
+     * Pointing the current boot device to a drive containing the Arch installation media is typically achieved by pressing a key during the [60]POST phase, as
+       indicated on the splash screen. Refer to your motherboard's manual for details.
+     * When the Arch menu appears, select Boot Arch Linux and press Enter to enter the installation environment.
+     * See [61]README.bootparams for a list of [62]boot parameters, and [63]packages.x86_64 for a list of included packages.
+     * You will be logged in on the first [64]virtual console as the root user, and presented with a [65]Zsh shell prompt.
+
+   To switch to a different console--for example, to view this guide with [66]ELinks alongside the installation--use the Alt+arrow [67]shortcut. To [68]edit
+   configuration files, [69]nano, [70]vi and [71]vim are available.
+
+Set the keyboard layout
+
+   The default [72]console keymap is [73]US. Available layouts can be listed with:
+
+# ls /usr/share/kbd/keymaps/**/*.map.gz
+
+   To modify the layout, append a corresponding file name to [74]loadkeys(1), omitting path and file extension. For example, to set a [75]German keyboard layout:
+
+# loadkeys de-latin1
+
+   [76]Console fonts are located in /usr/share/kbd/consolefonts/ and can likewise be set with [77]setfont(8).
+
+Verify the boot mode
+
+   If UEFI mode is enabled on an [78]UEFI motherboard, [79]Archiso will [80]boot Arch Linux accordingly via [81]systemd-boot. To verify this, list the [82]efivars
+   directory:
+
+# ls /sys/firmware/efi/efivars
+
+   If the directory does not exist, the system may be booted in [83]BIOS or CSM mode. Refer to your motherboard's manual for details.
+
+Connect to the internet
+
+   To set up a network connection, go through the following steps:
+
+     * Ensure your [84]network interface is listed and enabled, for example with [85]ip-link(8):
+# ip link
+     * Connect to the network. Plug in the Ethernet cable or [86]connect to the wireless LAN.
+     * Configure your network connection:
+          + [87]Static IP address
+          + Dynamic IP address: use [88]DHCP.
+
+                Note: The installation image enables [89]dhcpcd (dhcpcd@interface.service) for [90]wired network devices on boot.
+
+     * The connection may be verified with [91]ping:
+# ping archlinux.org
+
+Update the system clock
+
+   Use [92]timedatectl(1) to ensure the system clock is accurate:
+
+# timedatectl set-ntp true
+
+   To check the service status, use timedatectl status.
+
+Partition the disks
+
+   When recognized by the live system, disks are assigned to a [93]block device such as /dev/sda or /dev/nvme0n1. To identify these devices, use [94]lsblk or
+   fdisk.
+
+# fdisk -l
+
+   Results ending in rom, loop or airoot may be ignored.
+
+   The following [95]partitions are required for a chosen device:
+
+     * One partition for the root directory /.
+     * If [96]UEFI is enabled, an [97]EFI system partition.
+
+   If you want to create any stacked block devices for [98]LVM, [99]system encryption or [100]RAID, do it now.
+
+Example layouts
+
+                                  BIOS with [101]MBR
+        Mount point      Partition    [102]Partition type        Suggested size
+   /mnt                  /dev/sdX1 Linux                     Remainder of the device
+   [SWAP]                /dev/sdX2 Linux swap                More than 512 MiB
+                                  UEFI with [103]GPT
+        Mount point      Partition    [104]Partition type        Suggested size
+   /mnt/boot or /mnt/efi /dev/sdX1 [105]EFI system partition 260-512 MiB
+   /mnt                  /dev/sdX2 Linux x86-64 root (/)     Remainder of the device
+   [SWAP]                /dev/sdX3 Linux swap                More than 512 MiB
+
+   See also [106]Partitioning#Example layouts.
+
+   Note:
+     * Use [107]fdisk or [108]parted to modify partition tables, for example fdisk /dev/sdX.
+     * [109]Swap space can be set on a [110]swap file for file systems supporting it.
+
+Format the partitions
+
+   Once the partitions have been created, each must be formatted with an appropriate [111]file system. For example, if the root partition is on /dev/sdX1 and will
+   contain the ext4 file system, run:
+
+# mkfs.ext4 /dev/sdX1
+
+   If you created a partition for swap, initialize it with mkswap:
+
+# mkswap /dev/sdX2
+# swapon /dev/sdX2
+
+   See [112]File systems#Create a file system for details.
+
+Mount the file systems
+
+   [113]Mount the file system on the root partition to /mnt, for example:
+
+# mount /dev/sdX1 /mnt
+
+   Create any remaining mount points (such as /mnt/efi) and mount their corresponding partitions.
+
+   [114]genfstab will later detect mounted file systems and swap space.
+
+Installation
+
+Select the mirrors
+
+   Packages to be installed must be downloaded from [115]mirror servers, which are defined in /etc/pacman.d/mirrorlist. On the live system, all mirrors are
+   enabled, and sorted by their synchronization status and speed at the time the installation image was created.
+
+   The higher a mirror is placed in the list, the more priority it is given when downloading a package. You may want to edit the file accordingly, and move the
+   geographically closest mirrors to the top of the list, although other criteria should be taken into account.
+
+   This file will later be copied to the new system by pacstrap, so it is worth getting right.
+
+Install the base packages
+
+   Use the [116]pacstrap script to install the [117]base package group:
+
+# pacstrap /mnt base
+
+   This group does not include all tools from the live installation, such as [118]btrfs-progs or specific wireless firmware; see [119]packages.x86_64 for
+   comparison.
+
+   To [120]install packages and other groups such as [121]base-devel, append the names to pacstrap (space separated) or to individual [122]pacman commands after
+   the [123]#Chroot step.
+
+Configure the system
+
+Fstab
+
+   Generate an [124]fstab file (use -U or -L to define by [125]UUID or labels, respectively):
+
+# genfstab -U /mnt >> /mnt/etc/fstab
+
+   Check the resulting file in /mnt/etc/fstab afterwards, and edit it in case of errors.
+
+Chroot
+
+   [126]Change root into the new system:
+
+# arch-chroot /mnt
+
+Time zone
+
+   Set the [127]time zone:
+
+# ln -sf /usr/share/zoneinfo/Region/City /etc/localtime
+
+   Run [128]hwclock(8) to generate /etc/adjtime:
+
+# hwclock --systohc
+
+   This command assumes the hardware clock is set to [129]UTC. See [130]System time#Time standard for details.
+
+Localization
+
+   Uncomment en_US.UTF-8 UTF-8 and other needed [131]locales in /etc/locale.gen, and generate them with:
+
+# locale-gen
+
+   Create the [132]locale.conf(5) file, and set the LANG [133]variable accordingly:
+
+/etc/locale.conf
+LANG=en_US.UTF-8
+
+   If you [134]set the keyboard layout, make the changes persistent in [135]vconsole.conf(5):
+
+/etc/vconsole.conf
+KEYMAP=de-latin1
+
+Network configuration
+
+   Create the [136]hostname file:
+
+/etc/hostname
+myhostname
+
+   Add matching entries to [137]hosts(5):
+
+/etc/hosts
+127.0.0.1       localhost
+::1             localhost
+127.0.1.1       myhostname.localdomain  myhostname
+
+   If the system has a permanent IP address, it should be used instead of 127.0.1.1.
+
+   Complete the [138]network configuration for the newly installed environment.
+
+Initramfs
+
+   Creating a new initramfs is usually not required, because [139]mkinitcpio was run on installation of the [140]linux package with pacstrap.
+
+   For [141]LVM, [142]system encryption or [143]RAID, modify [144]mkinitcpio.conf(5) and recreate the initramfs image:
+
+# mkinitcpio -p linux
+
+Root password
+
+   Set the root [145]password:
+
+# passwd
+
+Boot loader
+
+   Choose and install a Linux-capable [146]boot loader. If you have an Intel or AMD CPU, enable [147]microcode updates in addition.
+
+Reboot
+
+   Exit the chroot environment by typing exit or pressing Ctrl+d.
+
+   Optionally manually unmount all the partitions with umount -R /mnt: this allows noticing any "busy" partitions, and finding the cause with [148]fuser(1).
+
+   Finally, restart the machine by typing reboot: any partitions still mounted will be automatically unmounted by systemd. Remember to remove the installation
+   media and then login into the new system with the root account.
+
+Post-installation
+
+   See [149]General recommendations for system management directions and post-installation tutorials (like setting up a graphical user interface, sound or a
+   touchpad).
+
+   For a list of applications that may be of interest, see [150]List of applications.
+
+   Retrieved from "[151]https://wiki.archlinux.org/index.php?title=Installation_guide&oldid=581705"
+   [152]Category:
+     * [153]Installation process
+
+Navigation menu
+
+Personal tools
+
+     * [154]Create account
+     * [155]Log in
+
+Namespaces
+
+     * [156]Page
+     * [157]Discussion
+
+   [158][ ]
+
+Variants
+
+Views
+
+     * [159]Read
+     * [160]View source
+     * [161]View history
+
+   [162][ ]
+
+More
+
+Search
+
+   [163]____________________ [164]Search [165]Go
+
+Navigation
+
+     * [166]Main page
+     * [167]Table of contents
+     * [168]Getting involved
+     * [169]Wiki news
+     * [170]Random page
+
+Interaction
+
+     * [171]Help
+     * [172]Contributing
+     * [173]Recent changes
+     * [174]Recent talks
+     * [175]New pages
+     * [176]Statistics
+     * [177]Requests
+
+Tools
+
+     * [178]What links here
+     * [179]Related changes
+     * [180]Special pages
+     * [181]Printable version
+     * [182]Permanent link
+     * [183]Page information
+
+In other languages
+
+     * [184]a+l+e+r+b+y+tm
+     * [185]B"lgarski
+     * [186]Cestina
+     * [187]Dansk
+     * [188]Deutsch
+     * [189]Ellynika'
+     * [190]Español
+     * [191]Suomi
+     * [192]Français
+     * [193]Hrvatski
+     * [194]Magyar
+     * [195]Bahasa Indonesia
+     * [196]Italiano
+     * [197]¥¬
+     * [198]­´
+     * [199]Lietuviu
+     * [200]Nederlands
+     * [201]Polski
+     * [202]Português
+     * [203]Russkij
+     * [204]Slovencina
+     * [205]Srpski / srpski
+     * [206]Svenska
+     * [207]¢
+     * [208]Türkçe
+     * [209]­()
+     * [210]­()
+
+     * This page was last edited on 7 September 2019, at 09:38.
+     * Content is available under [211]GNU Free Documentation License 1.3 or later unless otherwise noted.
+
+     * [212]Privacy policy
+     * [213]About ArchWiki
+     * [214]Disclaimers
+
+     *
+
+References
+
+   Visible links:
+   1. https://wiki.archlinux.org/opensearch_desc.php
+   2. https://wiki.archlinux.org/index.php?title=Special:RecentChanges&feed=atom
+   3. https://www.archlinux.org/
+   4. https://www.archlinux.org/packages/
+   5. https://bbs.archlinux.org/
+   6. https://wiki.archlinux.org/
+   7. https://bugs.archlinux.org/
+   8. https://security.archlinux.org/
+   9. https://aur.archlinux.org/
+  10. https://www.archlinux.org/download/
+  11. https://wiki.archlinux.org/index.php/Installation_guide#mw-head
+  12. https://wiki.archlinux.org/index.php/Installation_guide#p-search
+  13. https://wiki.archlinux.org/index.php/Arch_Linux
+  14. https://wiki.archlinux.org/index.php/FAQ
+  15. https://wiki.archlinux.org/index.php/Help:Reading
+  16. https://wiki.archlinux.org/index.php/ArchWiki
+  17. https://wiki.archlinux.org/index.php/Man_page
+  18. https://wiki.archlinux.org/index.php/IRC_channel
+  19. https://bbs.archlinux.org/
+  20. https://en.wikipedia.org/wiki/X86-64
+  21. https://www.archlinux.org/groups/x86_64/base/
+  22. form field = checkbox
+  23. https://wiki.archlinux.org/index.php/Installation_guide#Pre-installation
+  24. https://wiki.archlinux.org/index.php/Installation_guide#Verify_signature
+  25. https://wiki.archlinux.org/index.php/Installation_guide#Boot_the_live_environment
+  26. https://wiki.archlinux.org/index.php/Installation_guide#Set_the_keyboard_layout
+  27. https://wiki.archlinux.org/index.php/Installation_guide#Verify_the_boot_mode
+  28. https://wiki.archlinux.org/index.php/Installation_guide#Connect_to_the_internet
+  29. https://wiki.archlinux.org/index.php/Installation_guide#Update_the_system_clock
+  30. https://wiki.archlinux.org/index.php/Installation_guide#Partition_the_disks
+  31. https://wiki.archlinux.org/index.php/Installation_guide#Example_layouts
+  32. https://wiki.archlinux.org/index.php/Installation_guide#Format_the_partitions
+  33. https://wiki.archlinux.org/index.php/Installation_guide#Mount_the_file_systems
+  34. https://wiki.archlinux.org/index.php/Installation_guide#Installation
+  35. https://wiki.archlinux.org/index.php/Installation_guide#Select_the_mirrors
+  36. https://wiki.archlinux.org/index.php/Installation_guide#Install_the_base_packages
+  37. https://wiki.archlinux.org/index.php/Installation_guide#Configure_the_system
+  38. https://wiki.archlinux.org/index.php/Installation_guide#Fstab
+  39. https://wiki.archlinux.org/index.php/Installation_guide#Chroot
+  40. https://wiki.archlinux.org/index.php/Installation_guide#Time_zone
+  41. https://wiki.archlinux.org/index.php/Installation_guide#Localization
+  42. https://wiki.archlinux.org/index.php/Installation_guide#Network_configuration
+  43. https://wiki.archlinux.org/index.php/Installation_guide#Initramfs
+  44. https://wiki.archlinux.org/index.php/Installation_guide#Root_password
+  45. https://wiki.archlinux.org/index.php/Installation_guide#Boot_loader
+  46. https://wiki.archlinux.org/index.php/Installation_guide#Reboot
+  47. https://wiki.archlinux.org/index.php/Installation_guide#Post-installation
+  48. https://wiki.archlinux.org/index.php/GnuPG
+  49. https://archlinux.org/download/
+  50. https://www2.cs.arizona.edu/stork/packagemanagersecurity/attacks-on-package-managers.html
+  51. https://wiki.archlinux.org/index.php/GnuPG
+  52. https://wiki.archlinux.org/index.php/GnuPG#Verify_a_signature
+  53. https://archlinux.org/download/
+  54. https://www.archlinux.org/people/developers/
+  55. https://en.wikipedia.org/wiki/Public-key_cryptography
+  56. https://wiki.archlinux.org/index.php/USB_flash_installation_media
+  57. https://wiki.archlinux.org/index.php/Optical_disc_drive#Burning
+  58. https://wiki.archlinux.org/index.php/PXE
+  59. https://wiki.archlinux.org/index.php/Category:Installation_process
+  60. https://en.wikipedia.org/wiki/Power-on_self_test
+  61. https://projects.archlinux.org/archiso.git/tree/docs/README.bootparams
+  62. https://wiki.archlinux.org/index.php/Kernel_parameters#Configuration
+  63. https://git.archlinux.org/archiso.git/tree/configs/releng/packages.x86_64
+  64. https://en.wikipedia.org/wiki/Virtual_console
+  65. https://wiki.archlinux.org/index.php/Zsh
+  66. https://wiki.archlinux.org/index.php/ELinks
+  67. https://wiki.archlinux.org/index.php/Keyboard_shortcuts
+  68. https://wiki.archlinux.org/index.php/Textedit
+  69. https://wiki.archlinux.org/index.php/Nano#Usage
+  70. https://en.wikipedia.org/wiki/vi
+  71. https://wiki.archlinux.org/index.php/Vim#Usage
+  72. https://wiki.archlinux.org/index.php/Console_keymap
+  73. https://en.wikipedia.org/wiki/File:KB_United_States-NoAltGr.svg
+  74. https://jlk.fjfi.cvut.cz/arch/manpages/man/loadkeys.1
+  75. https://en.wikipedia.org/wiki/File:KB_Germany.svg
+  76. https://wiki.archlinux.org/index.php/Console_fonts
+  77. https://jlk.fjfi.cvut.cz/arch/manpages/man/setfont.8
+  78. https://wiki.archlinux.org/index.php/UEFI
+  79. https://wiki.archlinux.org/index.php/Archiso
+  80. https://wiki.archlinux.org/index.php/Boot
+  81. https://wiki.archlinux.org/index.php/Systemd-boot
+  82. https://wiki.archlinux.org/index.php/UEFI#UEFI_variables
+  83. https://en.wikipedia.org/wiki/BIOS
+  84. https://wiki.archlinux.org/index.php/Network_interface
+  85. https://jlk.fjfi.cvut.cz/arch/manpages/man/ip-link.8
+  86. https://wiki.archlinux.org/index.php/Wireless_network_configuration
+  87. https://wiki.archlinux.org/index.php/Network_configuration#Static_IP_address
+  88. https://wiki.archlinux.org/index.php/DHCP
+  89. https://wiki.archlinux.org/index.php/Dhcpcd
+  90. https://git.archlinux.org/archiso.git/tree/configs/releng/airootfs/etc/udev/rules.d/81-dhcpcd.rules
+  91. https://en.wikipedia.org/wiki/ping
+  92. https://jlk.fjfi.cvut.cz/arch/manpages/man/timedatectl.1
+  93. https://wiki.archlinux.org/index.php/Block_device
+  94. https://wiki.archlinux.org/index.php/Lsblk
+  95. https://wiki.archlinux.org/index.php/Partition
+  96. https://wiki.archlinux.org/index.php/UEFI
+  97. https://wiki.archlinux.org/index.php/EFI_system_partition
+  98. https://wiki.archlinux.org/index.php/LVM
+  99. https://wiki.archlinux.org/index.php/Dm-crypt
+ 100. https://wiki.archlinux.org/index.php/RAID
+ 101. https://wiki.archlinux.org/index.php/MBR
+ 102. https://en.wikipedia.org/wiki/Partition_type
+ 103. https://wiki.archlinux.org/index.php/GPT
+ 104. https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
+ 105. https://wiki.archlinux.org/index.php/EFI_system_partition
+ 106. https://wiki.archlinux.org/index.php/Partitioning#Example_layouts
+ 107. https://wiki.archlinux.org/index.php/Fdisk
+ 108. https://wiki.archlinux.org/index.php/Parted
+ 109. https://wiki.archlinux.org/index.php/Swap
+ 110. https://wiki.archlinux.org/index.php/Swap_file
+ 111. https://wiki.archlinux.org/index.php/File_system
+ 112. https://wiki.archlinux.org/index.php/File_systems#Create_a_file_system
+ 113. https://wiki.archlinux.org/index.php/Mount
+ 114. https://git.archlinux.org/arch-install-scripts.git/tree/genfstab.in
+ 115. https://wiki.archlinux.org/index.php/Mirrors
+ 116. https://projects.archlinux.org/arch-install-scripts.git/tree/pacstrap.in
+ 117. https://www.archlinux.org/groups/x86_64/base/
+ 118. https://www.archlinux.org/packages/?name=btrfs-progs
+ 119. https://projects.archlinux.org/archiso.git/tree/configs/releng/packages.x86_64
+ 120. https://wiki.archlinux.org/index.php/Install
+ 121. https://www.archlinux.org/groups/x86_64/base-devel/
+ 122. https://wiki.archlinux.org/index.php/Pacman
+ 123. https://wiki.archlinux.org/index.php/Installation_guide#Chroot
+ 124. https://wiki.archlinux.org/index.php/Fstab
+ 125. https://wiki.archlinux.org/index.php/UUID
+ 126. https://wiki.archlinux.org/index.php/Change_root
+ 127. https://wiki.archlinux.org/index.php/Time_zone
+ 128. https://jlk.fjfi.cvut.cz/arch/manpages/man/hwclock.8
+ 129. https://en.wikipedia.org/wiki/UTC
+ 130. https://wiki.archlinux.org/index.php/System_time#Time_standard
+ 131. https://wiki.archlinux.org/index.php/Locale
+ 132. https://jlk.fjfi.cvut.cz/arch/manpages/man/locale.conf.5
+ 133. https://wiki.archlinux.org/index.php/Variable
+ 134. https://wiki.archlinux.org/index.php/Installation_guide#Set_the_keyboard_layout
+ 135. https://jlk.fjfi.cvut.cz/arch/manpages/man/vconsole.conf.5
+ 136. https://wiki.archlinux.org/index.php/Hostname
+ 137. https://jlk.fjfi.cvut.cz/arch/manpages/man/hosts.5
+ 138. https://wiki.archlinux.org/index.php/Network_configuration
+ 139. https://wiki.archlinux.org/index.php/Mkinitcpio
+ 140. https://www.archlinux.org/packages/?name=linux
+ 141. https://wiki.archlinux.org/index.php/LVM#Configure_mkinitcpio
+ 142. https://wiki.archlinux.org/index.php/Dm-crypt
+ 143. https://wiki.archlinux.org/index.php/RAID#Configure_mkinitcpio
+ 144. https://jlk.fjfi.cvut.cz/arch/manpages/man/mkinitcpio.conf.5
+ 145. https://wiki.archlinux.org/index.php/Password
+ 146. https://wiki.archlinux.org/index.php/Boot_loader
+ 147. https://wiki.archlinux.org/index.php/Microcode
+ 148. https://jlk.fjfi.cvut.cz/arch/manpages/man/fuser.1
+ 149. https://wiki.archlinux.org/index.php/General_recommendations
+ 150. https://wiki.archlinux.org/index.php/List_of_applications
+ 151. https://wiki.archlinux.org/index.php?title=Installation_guide&oldid=581705
+ 152. https://wiki.archlinux.org/index.php/Special:Categories
+ 153. https://wiki.archlinux.org/index.php/Category:Installation_process
+ 154. https://wiki.archlinux.org/index.php?title=Special:CreateAccount&returnto=Installation+guide
+ 155. https://wiki.archlinux.org/index.php?title=Special:UserLogin&returnto=Installation+guide
+ 156. https://wiki.archlinux.org/index.php/Installation_guide
+ 157. https://wiki.archlinux.org/index.php/Talk:Installation_guide
+ 158. form field = checkbox
+ 159. https://wiki.archlinux.org/index.php/Installation_guide
+ 160. https://wiki.archlinux.org/index.php?title=Installation_guide&action=edit
+ 161. https://wiki.archlinux.org/index.php?title=Installation_guide&action=history
+ 162. form field = checkbox
+ 163. form field = text entry field
+ 164. form field = submit button
+ 165. form field = submit button
+ 166. https://wiki.archlinux.org/index.php/Main_page
+ 167. https://wiki.archlinux.org/index.php/Table_of_contents
+ 168. https://wiki.archlinux.org/index.php/Getting_involved
+ 169. https://wiki.archlinux.org/index.php/ArchWiki:News
+ 170. https://wiki.archlinux.org/index.php/Special:Random
+ 171. https://wiki.archlinux.org/index.php/Category:Help
+ 172. https://wiki.archlinux.org/index.php/ArchWiki:Contributing
+ 173. https://wiki.archlinux.org/index.php/Special:RecentChanges
+ 174. https://wiki.archlinux.org/index.php/Special:RecentChanges?namespace=0&invert=1
+ 175. https://wiki.archlinux.org/index.php/Special:NewPages
+ 176. https://wiki.archlinux.org/index.php/ArchWiki:Statistics
+ 177. https://wiki.archlinux.org/index.php/ArchWiki:Requests
+ 178. https://wiki.archlinux.org/index.php/Special:WhatLinksHere/Installation_guide
+ 179. https://wiki.archlinux.org/index.php/Special:RecentChangesLinked/Installation_guide
+ 180. https://wiki.archlinux.org/index.php/Special:SpecialPages
+ 181. https://wiki.archlinux.org/index.php?title=Installation_guide&printable=yes
+ 182. https://wiki.archlinux.org/index.php?title=Installation_guide&oldid=581705
+ 183. https://wiki.archlinux.org/index.php?title=Installation_guide&action=info
+ 184. https://wiki.archlinux.org/index.php/Installation_guide_(%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9)
+ 185. https://wiki.archlinux.org/index.php/Installation_guide_(%D0%91%D1%8A%D0%BB%D0%B3%D0%B0%D1%80%D1%81%D0%BA%D0%B8)
+ 186. https://wiki.archlinux.org/index.php/Installation_guide_(%C4%8Cesky)
+ 187. https://wiki.archlinux.org/index.php/Installation_guide_(Dansk)
+ 188. https://wiki.archlinux.de/title/Arch_Install_Scripts
+ 189. https://wiki.archlinux.org/index.php/Installation_guide_(%CE%95%CE%BB%CE%BB%CE%B7%CE%BD%CE%B9%CE%BA%CE%AC)
+ 190. https://wiki.archlinux.org/index.php/Installation_guide_(Espa%C3%B1ol)
+ 191. https://wiki.archlinux.org/index.php/Installation_guide_(Suomi)
+ 192. https://wiki.archlinux.fr/Arch_install_scripts
+ 193. https://wiki.archlinux.org/index.php/Installation_guide_(Hrvatski)
+ 194. https://wiki.archlinux.org/index.php/Installation_guide_(Magyar)
+ 195. https://wiki.archlinux.org/index.php/Installation_guide_(Indonesia)
+ 196. https://wiki.archlinux.org/index.php/Installation_guide_(Italiano)
+ 197. https://wiki.archlinux.jp/index.php/%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB%E3%82%AC%E3%82%A4%E3%83%89
+ 198. https://wiki.archlinux.org/index.php/Installation_guide_(%ED%95%9C%EA%B5%AD%EC%96%B4)
+ 199. https://wiki.archlinux.org/index.php/Installation_guide_(Lietuvi%C5%A1kai)
+ 200. https://wiki.archlinux.org/index.php/Installation_guide_(Nederlands)
+ 201. https://wiki.archlinux.org/index.php/Installation_guide_(Polski)
+ 202. https://wiki.archlinux.org/index.php/Installation_guide_(Portugu%C3%AAs)
+ 203. https://wiki.archlinux.org/index.php/Installation_guide_(%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9)
+ 204. https://wiki.archlinux.org/index.php/Installation_guide_(Slovensk%C3%BD)
+ 205. https://wiki.archlinux.org/index.php/Installation_guide_(%D0%A1%D1%80%D0%BF%D1%81%D0%BA%D0%B8)
+ 206. https://wiki.archlinux.org/index.php/Installation_guide_(Svenska)
+ 207. https://wiki.archlinux.org/index.php/Installation_guide_(%E0%B9%84%E0%B8%97%E0%B8%A2)
+ 208. https://wiki.archlinux.org/index.php/Installation_guide_(T%C3%BCrk%C3%A7e)
+ 209. https://wiki.archlinux.org/index.php/Installation_guide_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)
+ 210. https://wiki.archlinux.org/index.php/Installation_guide_(%E6%AD%A3%E9%AB%94%E4%B8%AD%E6%96%87)
+ 211. http://www.gnu.org/copyleft/fdl.html
+ 212. https://wiki.archlinux.org/index.php/ArchWiki:Privacy_policy
+ 213. https://wiki.archlinux.org/index.php/ArchWiki:About
+ 214. https://wiki.archlinux.org/index.php/ArchWiki:General_disclaimer
+
+   Hidden links:
+ 216. https://www.archlinux.org/
+ 217. https://wiki.archlinux.org/index.php/Main_page
