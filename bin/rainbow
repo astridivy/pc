@@ -8,56 +8,56 @@
 # 2019-08-21
 
 printblocks () {
-  echo $'@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+  echo $'############ uwu ############'
   echo -en '\e[0m'
 }
 
 echo -en '\e[0m'
 # black
-echo -en '\e[30m'
+echo -en '\e[30m 0 '
 printblocks
 # black bold
-echo -en '\e[1;30m'
+echo -en '\e[1;30m 8 '
 printblocks
 # red
-echo -en '\e[0;31m'
+echo -en '\e[0;31m 1 '
 printblocks
 # red bold
-echo -en '\e[1;31m'
+echo -en '\e[1;31m 9 '
 printblocks
 # green
-echo -en '\e[32m'
+echo -en '\e[32m 2 '
 printblocks
 # green bold
-echo -en '\e[1;32m'
+echo -en '\e[1;32m10 '
 printblocks
 # yellow 
-echo -en '\e[33m'
+echo -en '\e[33m 3 '
 printblocks
 # yellow bold
-echo -en '\e[1;33m'
+echo -en '\e[1;33m11 '
 printblocks
 # blue
-echo -en '\e[34m'
+echo -en '\e[34m 4 '
 printblocks
 # blue bold
-echo -en '\e[1;34m'
+echo -en '\e[1;34m12 '
 printblocks
 # uhhh
-echo -en '\e[35m'
+echo -en '\e[35m 5 '
 printblocks
 
-echo -en '\e[1;35m'
+echo -en '\e[1;35m13 '
 printblocks
 
-echo -en '\e[36m'
+echo -en '\e[36m 6 '
 printblocks
 
-echo -en '\e[1;36m'
+echo -en '\e[1;36m14 '
 printblocks
 
-echo -en '\e[37m'
+echo -en '\e[37m 7 '
 printblocks
 
-echo -en '\e[1;37m'
+echo -en '\e[1;37m15 '
 printblocks

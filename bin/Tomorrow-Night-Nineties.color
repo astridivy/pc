@@ -1,22 +1,39 @@
 #!/bin/sh
 if [ "$TERM" = "linux" ]; then
+
+ f0_black=$'\e]P000000e'
+   f1_red=$'\e]P1e82e3b'
+ f2_green=$'\e]P270d070'
+f3_yellow=$'\e]P3ffc166'
+  f4_blue=$'\e]P4c238d6'
+f5_purple=$'\e]P5ef389e'
+  f6_cyan=$'\e]P67ae19c'
+ f7_white=$'\e]P7d889aa'
+ b8_black=$'\e]P85a284b'
+   b9_red=$'\e]P9f2275d'
+ bA_green=$'\e]PA68e94b'
+bB_yellow=$'\e]PBffa166'
+  bC_blue=$'\e]PC7466cc'
+bD_purple=$'\e]PDf667ac'
+  bE_cyan=$'\e]PE7ae1b7'
+ bF_white=$'\e]PFea9cc3'
+
   /bin/echo -en "\
-\e]P000000e\
-\e]P1e82e3b\
-\e]P270d070\
-\e]P3ffc166\
-\e]P4c238d6\
-\e]P5ef389e\
-\e]P67ae19c\
-\e]P7d889aa\
-\
-\e]P85a284b\
-\e]P9f2275d\
-\e]PA68e94b\
-\e]PBffa166\
-\e]PC7466cc\
-\e]PDf667ac\
-\e]PE7ae1b7\
-\e]PFea9cc3\
+$f0_black\
+$f1_red\
+$f2_green\
+$f3_yellow\
+$f4_blue\
+$f5_purple\
+$f6_cyan\
+$f7_white\
+$b8_black
+$b9_red\
+$bA_green\
+$bB_yellow\
+$bC_blue\
+$bD_purple\
+$bE_cyan\
+$bF_white\
 "
 fi

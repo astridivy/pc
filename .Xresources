@@ -1,11 +1,14 @@
 XTerm*font: -misc-tamsyn-medium-r-normal--16-116-100-100-c-80-iso8859-1
 XTerm*boldMode: false
 XTerm*boldFont: -misc-tamsyn-medium-r-normal--16-116-100-100-c-80-iso8859-1
+XTerm*selectToClipboard: true
 !Tomorrow Night Nineties :3
+XTerm*foreground: rgb:ea/9c/c3
 XTerm*background: rgb:00/00/0e
-XTerm*foreground: rgb:7a/e1/b7
 XTerm*color0: rgb:00/00/0e
 XTerm*color1: rgb:ea/9c/c3
+!XTerm*color1: rgb:e8/2e/3b
+! why does it have to be so inconsistent with linux terminal... unu
 XTerm*color2: rgb:70/d0/70
 XTerm*color3: rgb:ff/c1/66
 XTerm*color4: rgb:c2/38/d6
