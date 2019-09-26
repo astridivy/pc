@@ -404,6 +404,8 @@ command! FixSpaces4 %s /\t/    /g
 command! FixTabs %s /  /\t/g
 command! FixTabs4 %s /    /\t/g
 
+command! -nargs=1 E call SiblingEdit(<f-args>)
+
 function VimAndDie ()
   execute "!vim -S ~/.restart.vim"
   exit
@@ -411,6 +413,10 @@ endfunction
 
 function! Here () 
   cd %:p:h
+endfunction
+
+function! SiblingEdit (filename)
+  execute "edit " . expand("%:h") . "/" . a:filename
 endfunction
 
 "NEOCOMPLETE
