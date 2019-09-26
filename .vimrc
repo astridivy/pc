@@ -404,7 +404,11 @@ command! FixSpaces4 %s /\t/    /g
 command! FixTabs %s /  /\t/g
 command! FixTabs4 %s /    /\t/g
 
+"edit something next to the current file
 command! -nargs=1 E call SiblingEdit(<f-args>)
+
+"oh you forgot to run vim with sudo did ya?
+command! W execute 'silent w !sudo tee "%" > /dev/null' | edit!
 
 function VimAndDie ()
   execute "!vim -S ~/.restart.vim"
@@ -416,7 +420,7 @@ function! Here ()
 endfunction
 
 function! SiblingEdit (filename)
-  execute "edit " . expand("%:h") . "/" . a:filename
+  execute "edit " . expand("%:h") . "/" . a:filename . "*"
 endfunction
 
 "NEOCOMPLETE
