@@ -22,11 +22,13 @@ module.exports = {
   //}
   //},
   "rules": {
-    //"indent": [
-    //1,
-    //4
-    //],
-    "indent": 0,
+    "indent": [
+      1,
+      2,
+      {
+        "ignoreComments": true
+      }
+    ],
     "linebreak-style": 0,
     "quotes": [
       1,
@@ -34,12 +36,12 @@ module.exports = {
     ],
     "semi": [
       1,
-      "always",
+      "never",
     ],
-    //"space-before-function-paren": [1, "always"],
+    "space-before-function-paren": [1, "always"],
     "no-unused-vars": [1, {"args": "after-used"}],
-    //"comma-dangle": [1, "always-multiline"],
-    //"no-mixed-spaces-and-tabs": [1, "smart-tabs"],
+    "comma-dangle": [1, "always-multiline"],
+    "no-mixed-spaces-and-tabs": [1, "smart-tabs"],
     "camelcase": 0,
     "no-use-before-define": 0,
     "no-plusplus": 0,
