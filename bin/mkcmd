@@ -10,6 +10,8 @@
 CMD="$1"
 TAGLINE="$2"
 
-echo -e "$CMD\n$TAGLINE\n" | vim - -S $HOME/.skel/mkcmd.vim
+echo -e "$CMD\n$TAGLINE\n" | vim - -S $HOME/lib/mkcmd.vim
+
+echo `script_path`
 
 [[ -f $HOME/bin/$CMD ]] && chmod +x $HOME/bin/$CMD
