@@ -4,6 +4,8 @@
   [exec] (Minecraft)  {minecraft-launcher}
   [exec] (Discord)    {discord}
   [exec] (Files)      {thunar}
+  [exec] (Volume Mixer)      {xterm -e alsamixer}
+  [exec] (Clock)      {xterm -e clock}
 
   [submenu] (Styles) {Choose a style...}
     [stylesdir] (/usr/share/blackbox/styles)

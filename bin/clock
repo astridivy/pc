@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# clock
+#
+# Honestly? It's just a tty clock!
+#
+# 4strid
+# 2019-09-30
+
+tty-clock -s -t -c
