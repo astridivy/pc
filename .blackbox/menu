@@ -1,4 +1,6 @@
 [begin] (Blackbox)
+  [workspaces] (Workspace List)
+
   [exec] (Chromium)   {chromium}
   [exec] (xterm)      {xterm -ls}
   [exec] (Minecraft)  {minecraft-launcher}
@@ -7,12 +9,12 @@
   [exec] (Volume Mixer)      {xterm -e alsamixer}
   [exec] (Clock)      {xterm -e clock}
 
-  [submenu] (Styles) {Choose a style...}
-    [stylesdir] (/usr/share/blackbox/styles)
+  [submenu] (Blackbox) {Styles and configuration...}
+    [config] (Configuration)
+    [submenu] (Styles)
+      [stylesdir] (/usr/share/blackbox/styles)
+    [end]
+    [exit] (Exit)
   [end]
 
-  [workspaces] (Workspace List)
-  [config] (Configuration)
-
-  [exit] (Exit)
 [end]
