@@ -279,7 +279,7 @@ nnoremap - :lprevious<CR>
 
 "ridiculous maps
 command! Date read !date -I
-command! Sign execute "normal! aastridivy (Astrid REDACTED IV)\<CR>"
+command! Sign execute "normal! a4strid (Astrid REDACTED IV)\<CR>"
 
 "text decoration
 nnoremap __ yypVr-
