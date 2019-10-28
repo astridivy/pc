@@ -13,7 +13,7 @@ cat > /mnt/root/3_chroot.sh <<EOF
     TMZN="\$1"
     HSNM="\$2"
 
-    ln -sf "/usr/share/zoneinfo/\$TMZN" /etc/localtime
+    ln -is "/usr/share/zoneinfo/\$TMZN" /etc/localtime
     
     hwclock --systohc
     
@@ -33,11 +33,14 @@ cat > /mnt/root/3_chroot.sh <<EOF
     
     grub-mkconfig
     
-    echo "Install grub (grub-install /dev/sdX"
+    echo "Install grub (grub-install /dev/sdX)"
     
     bash
   }
 
+  export -f chroot_time
+
+  echo "In the following shell, please invoke \`chroot_time'"
   chroot_time
 
   bash
@@ -69,10 +72,15 @@ user () {
 
   bash
 
-  visudo
+  echo "ok visudo time: uncomment the desired line to enable sudo group"
+
+  bash
 }
 
+export -f user
+
 user
+echo "In the following shell, please invoke \`user'"
 
 bash
 EOF
