@@ -1,8 +1,8 @@
 [begin] (Blackbox)
   [workspaces] (Workspace List)
 
-  [exec] (Chromium)   {chromium}
   [exec] (xterm)      {xterm -ls}
+  [exec] (Chromium)   {chromium}
   [exec] (Minecraft)  {minecraft-launcher}
   [exec] (Discord)    {discord}
   [exec] (Files)      {thunar}
