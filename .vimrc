@@ -6,6 +6,11 @@ set nocompatible    "be IMproved!
 set rtp+=$HOME/.vim/bundle/Vundle.vim  "setup for Vundle
 let path='$HOME/.vim/bundle'           "with Unix paths
 
+if has('unix')
+  set encoding=utf-8      "makes alt keys work
+  set clipboard=unnamedplus   "makes clipboard work
+end
+
 if has('win32')
   set encoding=utf-8      "makes alt keys work
   set clipboard=unnamed   "makes clipboard work
@@ -237,6 +242,9 @@ nnoremap <leader>p :bp<CR>
 " delete buffers without changing window flow
 "(this also means ;d won't delete the last buffer)
 " heck this messes up tabs though
+" also EPICALLY fails when the previous buffer is a terminal
+" TODO: separate terminals from normal ;n ;p flow
+" ideally a ;t switches to and between terminals
 nnoremap <leader>d :bp<CR>:bd #<CR>
 " May start using vim as "tmux" in which case tabs would be
 " a welcome replacement to actually switching ttys
@@ -244,6 +252,7 @@ nnoremap <leader>tt :tabnew<CR>
 nnoremap <leader>tn :tabn<CR>
 nnoremap <leader>tb :tabp<CR>
 nnoremap <leader>tp :tabp<CR>
+" TODO: figure out a way to open / close windows without totally f***ing tabs
 
 "relative line number in visual line and visual block mode
 
@@ -363,9 +372,6 @@ no <expr> F Multift(-1,getchar(),-1)
 no <expr> f Multift(1,getchar(),1)
 no <expr> T Multift(-2,getchar(),-2)
 no <expr> t Multift(2,getchar(),2)
-
-"TODO: I never actually use this. consider removing
-nnoremap <C-N> :NERDTreeToggle<CR>
 
 "COLORS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -587,6 +593,9 @@ vnoremap [[A <Esc>
 if filereadable($HOME."/.local.vimrc")
   so ~/.local.vimrc
 endif
+
+"pesky indentLine 
+set conceallevel=1
 
 "TODO:
 "why is vim so slow in WSL?

@@ -1,11 +1,13 @@
 [begin] (Blackbox)
   [workspaces] (Workspace List)
 
-  [exec] (xterm)      {xterm -ls}
+  [exec] (Xterm)      {xterm -ls}
+  [exec] (Vim)      {xterm -e vim}
   [exec] (Chromium)   {chromium}
   [exec] (Minecraft)  {minecraft-launcher}
   [exec] (Discord)    {discord}
   [exec] (Files)      {thunar}
+  [exec] (Musikcube)      {xterm -e musikcube}
   [exec] (Volume Mixer)      {xterm -e alsamixer}
   [exec] (Clock)      {xterm -e clock}
 
@@ -15,6 +17,12 @@
       [stylesdir] (/usr/share/blackbox/styles)
     [end]
     [exit] (Exit)
+  [end]
+
+  [submenu] (System) { systemctl }
+    [exec] (Sleep) {systemctl suspend}
+    [exec] (Shut Down) {systemctl poweroff}
+    [exec] (Restart) {systemctl reboot}
   [end]
 
 [end]

@@ -3,12 +3,15 @@ XTerm*boldMode: false
 XTerm*boldFont: -misc-tamsyn-medium-r-normal--16-116-100-100-c-80-iso8859-1
 XTerm*selectToClipboard: true
 !Tomorrow Night Nineties :3
-XTerm*foreground: rgb:ea/9c/c3
+XTerm*foreground: rgb:cc/cc/cc
+! idk what this is used for exactly but it should not be the same
+! as color1 because that causes stuff to be unreadable sometimes
 XTerm*background: rgb:00/00/0e
 XTerm*color0: rgb:00/00/0e
 XTerm*color1: rgb:ea/9c/c3
 !XTerm*color1: rgb:e8/2e/3b
 ! why does it have to be so inconsistent with linux terminal... unu
+! this is the primary color (what you type in the terminal)
 XTerm*color2: rgb:70/d0/70
 XTerm*color3: rgb:ff/c1/66
 XTerm*color4: rgb:c2/38/d6
