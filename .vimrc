@@ -1,4 +1,4 @@
-"2019/Aug
+"2019/Nov
 
 set nocompatible    "be IMproved!
 
@@ -198,7 +198,7 @@ vnoremap ;k <Esc>
 nnoremap <silent>;k :noh<CR>:set norelativenumber<CR>
 cnoremap ;k <c-e><c-u><Esc>:echo ""<CR>
 " if only we had this in Bash too lol
-tnoremap ;k <CR>
+tnoremap ;k <Esc>
 
 "convenience commands
 nnoremap <leader>s :%s /
