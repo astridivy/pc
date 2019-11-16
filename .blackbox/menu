@@ -1,7 +1,7 @@
 [begin] (Blackbox)
   [workspaces] (Workspace List)
 
-  [exec] (Xterm)      {xterm -ls}
+  [exec] (Xterm)      {xterm -ls -sl 500}
   [exec] (Vim)      {xterm -e vim}
   [exec] (Chromium)   {chromium}
   [exec] (Minecraft)  {minecraft-launcher}
@@ -12,11 +12,12 @@
   [exec] (Clock)      {xterm -e clock}
 
   [submenu] (Blackbox) {Styles and configuration...}
+    [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
     [config] (Configuration)
     [submenu] (Styles)
       [stylesdir] (/usr/share/blackbox/styles)
     [end]
-    [exit] (Exit)
+    [exit] (Exit Blackbox)
   [end]
 
   [submenu] (System) { systemctl }

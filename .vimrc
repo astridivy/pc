@@ -116,14 +116,12 @@ set noerrorbells visualbell t_vb=
 augroup VIMRC
   autocmd!
   autocmd GUIEnter * set visualbell t_vb=
-  autocmd BufWritePost $MYVIMRC source $MYVIMRC
   autocmd GUIEnter * set visualbell t_vb=
 
   "Special for python <3
   autocmd FileType python :setlocal softtabstop=4 | :setlocal expandtab
   "Special for HTML <3
-  autocmd FileType html :setlocal shiftwidth=2 | :setlocal tabstop=2
-  ""autocmd FileType javascript :setlocal shiftwidth=2 | :setlocal tabstop=2 | :setlocal softtabstop=2 | :setlocal expandtab
+  "autocmd FileType javascript setlocal shiftwidth=2 | setlocal tabstop=2 | setlocal softtabstop=2 | setlocal expandtab | hi Conceal ctermfg=8
   "autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
 
   autocmd FileType haskell :setlocal softtabstop=4 | :setlocal expandtab
@@ -135,6 +133,9 @@ augroup VIMRC
   "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif " delete straight away
   autocmd InsertLeave * if pumvisible() == 0|pclose|endif " waits until exit
   "autocmd CompleteDone * pclose " probably more performant
+
+  " please god make the indent lines dark
+  autocmd BufReadPost * hi Conceal ctermfg=8
 
 augroup end
 
@@ -544,9 +545,10 @@ function! IsThisHelp ()
   return &filetype == "help"
 endfunction
 
-
 function! Remember ()
-  mksession! $HOME/.vim/restore.session
+  if g:remember_me == 1
+    mksession! $HOME/.vim/restore.session
+  endif
 endfunction
 
 function! AutoCloseEmpty ()
@@ -556,13 +558,22 @@ function! AutoCloseEmpty ()
   endif
 endfunction
 
-function! Remember ()
-  mksession! $HOME/.vim/restore.session
+function! Recall ()
+  source $HOME/.vim/restore.session
 endfunction
 
 " seems weird to reset the airline theme but after much, much trial and error it's the
 " only thing I've found to recover tabline when reloading vimrc
-command! Vimrc source $MYVIMRC | AirlineTheme bubblegum | redraw | echo "reticulating vimrc..."
+command! Vimrc source $MYVIMRC | AirlineRefresh | redraw | echon "reticulating vimrc..."
+
+if ! exists("g:remember_me")
+  let g:remember_me = 0
+endif
+
+command! RememberMe let g:remember_me = 1
+command! Recall call Recall()
+
+command! StdLayout vert split rightbelow | vert split rightbelow | split belowright | term++curwin
 
 augroup VIMRC_BUFF_STUFF
   autocmd!
@@ -572,14 +583,16 @@ augroup VIMRC_BUFF_STUFF
 
   autocmd TabEnter * Here
 
-  autocmd BufWritePost $MYVIMRC Vimrc 
+  " at least try to keep viminfos in sync between vim instances (:wv and :rv can be used)
+  " to trigger it manually
+  " this is probably not smart
+  "autocmd BufWritePost * rv | wv
+  "autocmd BufEnter * rv
+
+  autocmd BufWritePost $MYVIMRC Vimrc
   "autocmd BufWritePost .vimrc Vimrc 
   "autocmd BufWritePost _vimrc Vimrc 
 
-  " at least try to keep viminfos in sync between vim instances (:wv and :rv can be used)
-  " to trigger it manually
-  autocmd BufWritePost * rv | wv
-  autocmd BufEnter * rv
 augroup end
 
 "if i wanted help, i'd type :help
@@ -596,6 +609,9 @@ endif
 
 "pesky indentLine 
 set conceallevel=1
+
+" WHY DOES THIS KEEP TURNING ON
+set textwidth=999999
 
 "TODO:
 "why is vim so slow in WSL?

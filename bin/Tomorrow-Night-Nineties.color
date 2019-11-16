@@ -1,22 +1,22 @@
 #!/bin/sh
 if [ "$TERM" = "linux" ]; then
 
- f0_black=$'\e]P000000e'
-   f1_red=$'\e]P1e82e3b'
- f2_green=$'\e]P270d070'
-f3_yellow=$'\e]P3ffc166'
-  f4_blue=$'\e]P47466cc'
-f5_purple=$'\e]P5ef389e'
-  f6_cyan=$'\e]P67ae19c'
+ f0_black=$'\e]P0010116'
+   f1_red=$'\e]P1e85678'
+ f2_green=$'\e]P289e079'
+f3_yellow=$'\e]P3ffff66'
+  f4_blue=$'\e]P45577d0'
+f5_purple=$'\e]P5e975b5'
+  f6_cyan=$'\e]P645ffff'
  f7_white=$'\e]P7d889aa'
- b8_black=$'\e]P85a284b'
-   b9_red=$'\e]P9f2275d'
- bA_green=$'\e]PA68e94b'
-bB_yellow=$'\e]PBffa166'
-  bC_blue=$'\e]PC9261e6'
+ b8_black=$'\e]P8442244'
+   b9_red=$'\e]P9f25678'
+ bA_green=$'\e]PA67c967'
+bB_yellow=$'\e]PBff9965'
+  bC_blue=$'\e]PC7a67ac'
 bD_purple=$'\e]PDf667ac'
-  bE_cyan=$'\e]PE7ae1b7'
- bF_white=$'\e]PFea9cc3'
+  bE_cyan=$'\e]PE69ffb0'
+ bF_white=$'\e]PFffa5de'
 
   /bin/echo -en "\
 $f0_black\

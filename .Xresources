@@ -3,27 +3,27 @@ XTerm*boldMode: false
 XTerm*boldFont: -misc-tamsyn-medium-r-normal--16-116-100-100-c-80-iso8859-1
 XTerm*selectToClipboard: true
 !Tomorrow Night Nineties :3
-XTerm*foreground: rgb:cc/cc/cc
+XTerm*foreground: rgb:ee/cc/cc
 ! idk what this is used for exactly but it should not be the same
 ! as color1 because that causes stuff to be unreadable sometimes
-XTerm*background: rgb:00/00/0e
-XTerm*color0: rgb:00/00/0e
+XTerm*background: rgb:01/01/16
+XTerm*color0: rgb:01/01/16
 XTerm*color1: rgb:ea/9c/c3
-!XTerm*color1: rgb:e8/2e/3b
-! why does it have to be so inconsistent with linux terminal... unu
+!XTerm*color1: rgb:e8/56/78
+! why does it have to be so inconsistent with linux terminal... >:U
 ! this is the primary color (what you type in the terminal)
-XTerm*color2: rgb:70/d0/70
-XTerm*color3: rgb:ff/c1/66
-XTerm*color4: rgb:c2/38/d6
-XTerm*color5: rgb:ef/38/9e
-XTerm*color6: rgb:7a/e1/9c
+XTerm*color2: rgb:89/e0/79
+XTerm*color3: rgb:ff/ff/66
+XTerm*color4: rgb:55/77/d0
+XTerm*color5: rgb:e9/75/b5
+XTerm*color6: rgb:45/ff/ff
 XTerm*color7: rgb:d8/89/aa
 
-XTerm*color8: rgb:5a/28/4b
-XTerm*color9: rgb:f2/27/5d
-XTerm*color10: rgb:68/e9/4b
-XTerm*color11: rgb:ff/a1/66
-XTerm*color12: rgb:74/66/cc
+XTerm*color8: rgb:44/22/44
+XTerm*color9: rgb:f2/56/78
+XTerm*color10: rgb:67/c9/67
+XTerm*color11: rgb:ff/99/65
+XTerm*color12: rgb:7a/67/ac
 XTerm*color13: rgb:f6/67/ac
-XTerm*color14: rgb:7a/e1/b7
-XTerm*color15: rgb:ff/bb/dd
+XTerm*color14: rgb:69/ff/b0
+XTerm*color15: rgb:ff/a5/de
