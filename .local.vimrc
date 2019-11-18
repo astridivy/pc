@@ -26,6 +26,7 @@ hi javaScriptExceptions ctermfg=150
 hi javaScriptRegExp ctermfg=150
 hi javaScriptRegExpstring ctermfg=150
 hi javaScriptFuncExp ctermfg=15
+hi javaScriptBranch ctermfg=1
 
 "hmm this is hacky but we'll unify them someday
 if (&term == "xterm")

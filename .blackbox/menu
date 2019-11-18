@@ -24,6 +24,7 @@
     [exec] (Sleep) {systemctl suspend}
     [exec] (Shut Down) {systemctl poweroff}
     [exec] (Restart) {systemctl reboot}
+    [exec] (Screenshot) {screenshot}
   [end]
 
 [end]

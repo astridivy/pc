@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# screenshot
+#
+# take a picture, it'll last longer
+#
+# 4strid
+# 2019-11-17
+
+[[ ! -d $HOME/doc/screenshots ]] && mkdir -p $HOME/doc/screenshots
+xwd -root -display :0 | convert xwd:- png:- > $HOME/doc/screenshots/`date +%F-%I.%M.%S-%P.png`
