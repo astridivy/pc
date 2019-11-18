@@ -3,7 +3,7 @@ XTerm*boldMode: false
 XTerm*boldFont: -misc-tamsyn-medium-r-normal--16-116-100-100-c-80-iso8859-1
 XTerm*selectToClipboard: true
 !Tomorrow Night Nineties :3
-XTerm*foreground: rgb:ee/cc/cc
+XTerm*foreground: rgb:ff/b1/f3
 ! idk what this is used for exactly but it should not be the same
 ! as color1 because that causes stuff to be unreadable sometimes
 XTerm*background: rgb:01/01/16
@@ -24,6 +24,6 @@ XTerm*color9: rgb:f2/56/78
 XTerm*color10: rgb:67/c9/67
 XTerm*color11: rgb:ff/99/65
 XTerm*color12: rgb:7a/67/ac
-XTerm*color13: rgb:f6/67/ac
+XTerm*color13: rgb:fc/74/f4
 XTerm*color14: rgb:69/ff/b0
-XTerm*color15: rgb:ff/a5/de
+XTerm*color15: rgb:ff/b1/f3

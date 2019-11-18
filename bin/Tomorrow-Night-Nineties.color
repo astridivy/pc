@@ -14,9 +14,9 @@ f5_purple=$'\e]P5e975b5'
  bA_green=$'\e]PA67c967'
 bB_yellow=$'\e]PBff9965'
   bC_blue=$'\e]PC7a67ac'
-bD_purple=$'\e]PDf667ac'
+bD_purple=$'\e]PDfc74f4'
   bE_cyan=$'\e]PE69ffb0'
- bF_white=$'\e]PFffa5de'
+ bF_white=$'\e]PFffb1f3'
 
   /bin/echo -en "\
 $f0_black\
