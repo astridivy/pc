@@ -32,6 +32,9 @@ if [ -d /etc/X11/xinit/xinitrc.d ] ; then
  unset f
 fi
 
-xsetroot -bitmap $HOME/doc/galaxy.bmp
+# pile a crap 1 bit color... just why lmao
+# xsetroot -bitmap $HOME/doc/galaxy.xbm
 
-blackbox
+setxkbmap -option ctrl:nocaps
+
+blackbox & feh --bg-scale $HOME/doc/galaxy.png & dockapps

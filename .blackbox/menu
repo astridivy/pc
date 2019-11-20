@@ -13,6 +13,7 @@
 
   [submenu] (Blackbox) {Styles and configuration...}
     [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
+    [exec] (Dockapps) {dockapps &}
     [config] (Configuration)
     [submenu] (Styles)
       [stylesdir] (/usr/share/blackbox/styles)

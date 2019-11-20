@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# dockapps
+#
+# cute!
+#
+# astrid
+# 2019-11-18
+
+wmcpuload & wmmemload & wmclockmon
