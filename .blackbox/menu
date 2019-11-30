@@ -1,31 +1,42 @@
 [begin] (Blackbox)
   [workspaces] (Workspace List)
 
-  [exec] (Xterm)      {xterm -ls -sl 500}
-  [exec] (Vim)      {xterm -e vim}
+  [submenu] (Terminal)     {xterm and its friends}
+    [exec] (Xterm)         {xterm -ls -sl 500}
+    [exec] (Vim)           {xterm -e vim}
+    [exec] (Musikcube)     {xterm -e musikcube}
+    [exec] (Volume Mixer)  {xterm -e alsamixer}
+    [exec] (Clock)         {xterm -e clock}
+    [submenu] (Connect to) {SSH connection}
+      [exec] (Bulbasaur)   {xterm -e "ssh bulbasaur"}
+    [end]
+  Clock[end]
+
+  [submenu] (Games)     {make play gaem}
+    [exec] (Minecraft)  {minecraft-launcher}
+    [exec] (Battle.net) {xterm -e "/home/astrid/doc/windoze/Battle.net/Battle.net\ Launcher.exe"}
+    [exec] (Tetris)     {xterm -e vitetris}
+  [end]
+
   [exec] (Chromium)   {chromium}
-  [exec] (Minecraft)  {minecraft-launcher}
   [exec] (Discord)    {discord}
   [exec] (Files)      {thunar}
-  [exec] (Musikcube)      {xterm -e musikcube}
-  [exec] (Volume Mixer)      {xterm -e alsamixer}
-  [exec] (Clock)      {xterm -e clock}
 
-  [submenu] (Blackbox) {Styles and configuration...}
+  [submenu] (Blackbox) {Styles and configuration}
     [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
-    [exec] (Dockapps) {dockapps &}
-    [config] (Configuration)
     [submenu] (Styles)
       [stylesdir] (/usr/share/blackbox/styles)
     [end]
+    [config] (Configuration)
     [exit] (Exit Blackbox)
   [end]
 
-  [submenu] (System) { systemctl }
-    [exec] (Sleep) {systemctl suspend}
-    [exec] (Shut Down) {systemctl poweroff}
-    [exec] (Restart) {systemctl reboot}
-    [exec] (Screenshot) {screenshot}
+  [submenu] (System)        {Bleep bloop computer}
+    [exec] (Sleep)          {systemctl suspend}
+    [exec] (Shut Down)      {shutdown now}
+    [exec] (Restart)        {shutdown now -r}
+    [exec] (Screenshot)     {screenshot}
+    [exec] (Screenshot An App) {screenshot -1}
   [end]
 
 [end]

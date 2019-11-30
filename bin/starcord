@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# starcord
+#
+# (it's just starcraft and discord)
+#
+# 4strid
+# 2019-11-29
+
+discord && $HOME/.wine/drive_c/Program\ Files/Battle.net/Battle.net.exe

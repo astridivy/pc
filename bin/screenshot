@@ -7,5 +7,29 @@
 # 4strid
 # 2019-11-17
 
-[[ ! -d $HOME/doc/screenshots ]] && mkdir -p $HOME/doc/screenshots
-xwd -root -display :0 | convert xwd:- png:- > $HOME/doc/screenshots/`date +%F-%I.%M.%S-%P.png`
+ONE=0
+DIR=$HOME/doc/screenshots
+FILE="${DIR}/`date +%F-%I.%M.%S-%P`.png"
+
+OPTIND=0
+while getopts "1D:" OPT; do
+  case $OPT in
+  1)
+    ONE=1
+    ;;
+  D)
+    DIR="$OPTARG"
+    ;;
+  *)
+    exit
+    ;;
+  esac
+done
+
+[[ ! -d $DIR ]] && mkdir -p "$DIR"
+
+if (( $ONE )); then
+  xwd | convert xwd:- png:- > "$FILE"
+else
+  xwd -root -display :0 | convert xwd:- png:- > "$FILE"
+fi

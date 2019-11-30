@@ -10,6 +10,7 @@ hi Conceal ctermfg=8
 hi String ctermfg=2
 hi Constant ctermfg=7
 hi Special ctermfg=5
+hi Todo ctermfg=5
 
 hi Label ctermfg=5
 
@@ -27,6 +28,8 @@ hi javaScriptRegExp ctermfg=150
 hi javaScriptRegExpstring ctermfg=150
 hi javaScriptFuncExp ctermfg=15
 hi javaScriptBranch ctermfg=1
+hi javaScriptCommentTodo ctermfg=5
+
 
 "hmm this is hacky but we'll unify them someday
 if (&term == "xterm")

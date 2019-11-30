@@ -37,4 +37,4 @@ fi
 
 setxkbmap -option ctrl:nocaps
 
-blackbox & feh --bg-scale $HOME/doc/galaxy.png & dockapps
+feh --bg-scale $HOME/doc/galaxy.png & dockapps & blackbox
