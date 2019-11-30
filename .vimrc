@@ -61,6 +61,7 @@ Plugin 'sjbach/lusty'
 "Plugin 'PProvost/vim-ps1'
 
 " unused utilities
+"Plugin 'FredKSchott/CoVim' #damn, it'd be really cool if this had worked
 "Plugin 'justinmk/vim-gtfo'
 "Plugin 'scrooloose/nerdtree'
 "Plugin 'ternjs/tern_for_vim'
@@ -104,27 +105,26 @@ set t_RV= ttymouse=xterm2  " fixes weird 2c at startup HACK (shouldn't need it f
 set ignorecase     " let search be case insensitive
 set smartcase      " *unless* it contains a capitalized letter
 set hidden         " hide buffers without saving them
-set scrolloff=5
-set noswapfile
-set undofile
-set undodir=~/.vim/undo/
-set autoread
+set scrolloff=5    " just a shade more than normal
+set noswapfile     " no thx
+set undofile       " persistent undo
+set undodir=~/.vim/undo/ "but without polluting working directories
+set autoread       " idk what this does i should look it up
 
 "actually i like the bell :P
 "set noerrorbells visualbell t_vb=
-set noerrorbells visualbell t_vb=
 augroup VIMRC
   autocmd!
   autocmd GUIEnter * set visualbell t_vb=
   autocmd GUIEnter * set visualbell t_vb=
 
   "Special for python <3
-  autocmd FileType python :setlocal softtabstop=4 | :setlocal expandtab
+  autocmd FileType python setlocal softtabstop=4 | setlocal expandtab
   "Special for HTML <3
   "autocmd FileType javascript setlocal shiftwidth=2 | setlocal tabstop=2 | setlocal softtabstop=2 | setlocal expandtab | hi Conceal ctermfg=8
   "autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
 
-  autocmd FileType haskell :setlocal softtabstop=4 | :setlocal expandtab
+  autocmd FileType haskell setlocal softtabstop=4 | setlocal expandtab
 
   "REDACTED
   "autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
@@ -202,8 +202,11 @@ cnoremap ;k <c-e><c-u><Esc>:echo ""<CR>
 tnoremap ;k <Esc>
 
 "convenience commands
-nnoremap <leader>s :%s /
+"available for something else now
+"nnoremap <leader>s :%s /
+nnoremap <c-/> /\v
 nnoremap \ :%s /
+nnoremap <c-\> :%s /\v
 
 "hop out of vim real quick
 nnoremap ! :!$SHELL<CR>
@@ -213,6 +216,9 @@ nnoremap ! :!$SHELL<CR>
 " very useful when auto pairs is being a pain
 nnoremap <leader>i i <Esc>r
 nnoremap <leader>a a <Esc>r
+"heck why not just do braces
+nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
+nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"
 
 "TODO: make i autotab the way o does
 " note: just use S
@@ -220,10 +226,12 @@ nnoremap <leader>a a <Esc>r
 "toggle semicolon at the end of a line;
 nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
 "same deal but with commas (nice)
-nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`m"
-"heck why not braces too
-nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
-nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"
+nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
+"mostly to get rid of .js when it sneaks in imports and requires
+" ah HECK let's make all KINDS OF THESE
+nnoremap <Backspace> ldF.
+nnoremap <S-Backspace> dT x
+inoremap <S-Backspace> <Esc>dT xi
 
 "new window nav shortcuts
 nnoremap <c-W><c-H> <c-W>v
@@ -242,11 +250,13 @@ nnoremap <leader>n :bn<CR>
 nnoremap <leader>p :bp<CR>
 " delete buffers without changing window flow
 "(this also means ;d won't delete the last buffer)
+" TODO: this could use considerable improvement
 " heck this messes up tabs though
 " also EPICALLY fails when the previous buffer is a terminal
+" also causes reflow 
 " TODO: separate terminals from normal ;n ;p flow
 " ideally a ;t switches to and between terminals
-nnoremap <leader>d :bp<CR>:bd #<CR>
+nnoremap <leader>d :bn<CR>:bd #<CR>
 " May start using vim as "tmux" in which case tabs would be
 " a welcome replacement to actually switching ttys
 nnoremap <leader>tt :tabnew<CR>
@@ -294,7 +304,9 @@ command! Sign execute "normal! a4strid (Astrid REDACTED IV)\<CR>"
 "text decoration
 nnoremap __ yypVr-
 nnoremap _= yypVr=
-nnoremap _# yyPVr#I##<Esc>yyjpkI#<Esc>A#<Esc>
+"lol
+nnoremap _# yyPVr#I####<Esc>yyjpkI# <Esc>A #<Esc>
+"TODO: would be nice if these worked in visual line mode
 
 "Hides search highlighting with CR
 "Any subsequent search action will bring the highlighting back
@@ -305,8 +317,6 @@ nnoremap <silent><CR> :noh<CR>
 "change indentation all modes preserving cursor location
 nnoremap <Tab> mm>>`ml
 nnoremap <S-Tab> mm<<`mh
-inoremap <C-Tab> <Esc>>>gi<Right>
-inoremap <S-Tab> <Esc><<gi<Left>
 " idk why vnoremap <Tab> doesn't work
 vnoremap > >gv
 vnoremap < <gv
@@ -314,6 +324,7 @@ vnoremap < <gv
 "line as a text object
 onoremap <silent>al :<c-u>normal! 0v$<CR>
 onoremap <silent>il :<c-u>normal! 0v$h<CR>
+" why do these exist?
 vnoremap <silent>al <Esc>0v$
 vnoremap <silent>il <Esc>0v$h
 
@@ -530,11 +541,12 @@ nnoremap <silent>;k :noh<CR>:set norelativenumber<CR>
 
 " GOD YES TERMINAL MODE. I THOUGHT I DIDN'T NEED IT BUT IT IS EVERYTHING I WANT
 " change buffers in a terminal
-tnoremap <C-w>;n <C-w>:bn<CR>
-tnoremap <C-w>;p <C-w>:bp<CR>
-nnoremap <C-w>;n :bn<CR>
-nnoremap <C-w>t :term<CR>
-tnoremap <C-w>t <C-w>:belowright term<CR>
+tnoremap <leader>n <C-w>:bn<CR>
+tnoremap <leader>p <C-w>:bp<CR>
+tnoremap <leader>d <C-w>:bn<CR>:bd! #<CR>
+tnoremap <C-w><C-u> <C-w>N<C-u>
+"nnoremap <C-w>;n :bn<CR>
+nnoremap <C-w>t :belowright term<CR>
 nnoremap <C-w><C-t> :term++curwin<CR>
 
 " ODDS N ENDS
@@ -560,6 +572,7 @@ endfunction
 
 function! Recall ()
   source $HOME/.vim/restore.session
+  let g:remember_me = 1
 endfunction
 
 " seems weird to reset the airline theme but after much, much trial and error it's the
@@ -571,13 +584,13 @@ if ! exists("g:remember_me")
 endif
 
 command! RememberMe let g:remember_me = 1
-command! Recall call Recall()
+command! Recall call Recall() | Vimrc
 
 command! StdLayout vert split rightbelow | vert split rightbelow | split belowright | term++curwin
 
 augroup VIMRC_BUFF_STUFF
   autocmd!
-  autocmd BufLeave * call AutoCloseEmpty()
+  "autocmd BufLeave * call AutoCloseEmpty()
   autocmd ExitPre * bufdo call AutoCloseEmpty()
   autocmd ExitPre * call Remember()
 
@@ -595,7 +608,7 @@ augroup VIMRC_BUFF_STUFF
 
 augroup end
 
-"if i wanted help, i'd type :help
+"if i wanted help, i'd type :help (Kill F1)
 nnoremap [[A <Esc>
 lnoremap [[A <Esc>
 cnoremap [[A <Esc>
@@ -603,7 +616,7 @@ inoremap [[A <Esc>
 vnoremap [[A <Esc>
 
 " System Specifics
-if filereadable($HOME."/.local.vimrc")
+if filereadable($HOME . "/.local.vimrc")
   so ~/.local.vimrc
 endif
 
@@ -612,6 +625,8 @@ set conceallevel=1
 
 " WHY DOES THIS KEEP TURNING ON
 set textwidth=999999
+
+noh
 
 "TODO:
 "why is vim so slow in WSL?
