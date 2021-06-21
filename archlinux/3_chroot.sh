@@ -1,14 +1,14 @@
 #!/bin/bash
-echo "See you on the other side!"
-echo "(The next two scripts have been installed to /mnt/root)"
-
 cat > /mnt/root/4_configure.sh <<EOF
+
   chroot_time () {
     if [[ ! \$1 ]] || [[ ! \$2 ]]; then
-      echo "Chroot Time:"
-      echo "usage: chroot_time <timezone> <hostname>"
+      echo "chroot_time()"
+      echo "  usage: chroot_time <timezone> <hostname>"
       return 1
     fi 
+
+
     TMZN="\$1"
     HSNM="\$2"
 
@@ -44,8 +44,16 @@ cat > /mnt/root/4_configure.sh <<EOF
 
   export -f chroot_time
 
-  echo "In the following shell, please invoke chroot_time"
-  chroot_time
+  list_tz () {
+    timedatectl list-timezones | column -x | less
+  }
+
+  export -f list_tz
+
+  echo "In the following shell, please invoke chroot_time()
+  echo "chroot_time()"
+  echo "  usage: chroot_time <timezone> <hostname>"
+  echo "You may want to list all available timezones first with list_tz()"
 
   bash
 EOF
@@ -58,7 +66,7 @@ passwd
 
 user () {
   if [[ ! \$1 ]]; then
-    echo "Set up user"
+    echo "Set up primary user"
     echo "usage: user <username>"
     return
   fi
@@ -74,7 +82,7 @@ user () {
   echo "auth sufficient pam_succeed_if.so user ingroup nopasswdlogin"
   echo "to /etc/pam.d/login"
   echo "(and make the group, etc.)"
-  echo "To continue, exit."
+  echo "To continue, exit now"
 
   bash
 
@@ -85,12 +93,20 @@ user () {
 
 export -f user
 
-user
 echo "In the following shell, please invoke user"
+echo "user()"
+echo "  Set up primary user"
+echo "  usage: user <username>"
 
 bash
 EOF
 
-chmod +x 
+chmod +x /mnt/root/5_user.sh
 
-arch-chroot /mnt
+echo "See you on the other side!"
+echo "(The next two scripts have been installed to /mnt/root)"
+echo "$ cd"
+echo "suffices to get you there once chroot'd"
+echo ""
+echo "Now time to chroot into the newly installed OS with"
+echo "$ arch-chroot /mnt"

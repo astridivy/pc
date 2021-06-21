@@ -13,4 +13,3 @@ Tomorrow-Night-Nineties.color
 
 [[ -f $HOME/.git-autocomplete.bash ]] &&
   source $HOME/.git-autocomplete.bash
-

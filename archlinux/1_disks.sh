@@ -1,7 +1,7 @@
 #!/bin/bash
 timedatectl set-ntp true
 
-echo "Partition the drive with fdisk"
+echo "Partition the drive with fdisk. Exit when finished."
 
 cat <<EOF
 Example layouts
@@ -29,8 +29,19 @@ cat <<EOF
     # swapon /dev/sdX2
 EOF
 
+echo "You should probably give the partitions labels too"
+
+cat <<EOF
+  EX.
+    # e2label "label" /dev/sdX1
+    # swaplabel /dev/sdX2 "label"
+EOF
+
+echo "Exit when finished."
+
 bash
 
 echo "Mount the file systems to /mnt (don't forget /efi if you need it)"
+echo "Exit when finished."
 
 bash

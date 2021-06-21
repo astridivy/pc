@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo pacman xorg xorg-xinit xterm blackbox chromium alsa-utils thunar unzip
+sudo pacman -S xorg xorg-xinit xterm blackbox feh chromium alsa-utils thunar unzip imagemagick

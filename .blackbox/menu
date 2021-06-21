@@ -28,6 +28,7 @@
       [stylesdir] (/usr/share/blackbox/styles)
     [end]
     [config] (Configuration)
+    [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
     [exit] (Exit Blackbox)
   [end]
 
