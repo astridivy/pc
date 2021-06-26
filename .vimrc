@@ -28,7 +28,9 @@ filetype off
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'scrooloose/syntastic'
-Plugin 'Shougo/neocomplete.vim'
+Plugin 'Shougo/deoplete.nvim'
+Plugin 'roxma/nvim-yarp'
+Plugin 'roxma/vim-hug-neovim-rpc'
 Plugin 'flazz/vim-colorschemes'
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'easymotion/vim-easymotion'
@@ -156,15 +158,22 @@ inoreabbrev propTyptes propTypes
 " TODO: Still causes an infinite loop at the end of files
 
 function! s:JumpToNextWord()
+	let l:lastln = -1
+	let l:lastcol = -1
   normal! w
   while strpart(getline('.'), col('.')-1, 1) !~ '\w'
     normal! w
+    if (l:lastln == line('.')) && (l:lastcol == col('.')) 
+      break
+    endif
+    let l:lastln = line('.')
+    let l:lastcol = col('.')
   endwhile
 endfunction
 
 function! s:JumpToPrevWord()
   normal! b
-  while strpart(getline('.'), col('.')-1, 1) !~ '\w'
+  while strpart(getline('.'), col('.')-1, 1) !~ '\w' && ( col('.') > 1 || line('.') > 1)
       normal! b
   endwhile
 endfunction
@@ -344,8 +353,8 @@ nnoremap x "xx
 nnoremap X "xX
 
 "neocomplete's recommended key maps
-inoremap <expr><C-g>     neocomplete#undo_completion()
-inoremap <expr><C-l>     neocomplete#complete_common_string()
+inoremap <expr><C-g>     deoplete#undo_completion()
+inoremap <expr><C-l>     deoplete#complete_common_string()
 " <CR>: close popup and save indent.
 inoremap <CR> <C-r>=<SID>my_cr_function()<CR>
 function! s:my_cr_function()
@@ -353,8 +362,8 @@ function! s:my_cr_function()
 endfunction
 inoremap <expr><Tab>  pumvisible() ? "\<C-n>" : "<Tab>"
 " <C-h>, <BS>: close popup and delete backword char.
-inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
-inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+inoremap <expr><C-h> deoplete#smart_close_popup()."\<C-h>"
+inoremap <expr><BS> deoplete#smart_close_popup()."\<C-h>"
 
 vmap <CR> <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
@@ -446,24 +455,25 @@ endfunction
 " Disable AutoComplPop.
 let g:acp_enableAtStartup = 0
 " Use neocomplete.
-let g:neocomplete#enable_at_startup = 1
+"let g:neocomplete#enable_at_startup = 1
+let g:deoplete#enable_at_startup = 1
 " Use smartcase.
-let g:neocomplete#enable_smart_case = 1
+"let g:deoplete#enable_smart_case = 1
 " Set minimum syntax keyword length.;
-let g:neocomplete#sources#syntax#min_keyword_length = 3
-let g:neocomplete#lock_buffer_name_pattern = '\*ku\*'
+"let g:deoplete#sources#syntax#min_keyword_length = 3
+"let g:deoplete#lock_buffer_name_pattern = '\*ku\*'
 " Define dictionary.
-let g:neocomplete#sources#dictionary#dictionaries = {
-    \ 'default' : '',
-    \ 'vimshell' : $HOME.'/.vimshell_hist',
-    \ 'scheme' : $HOME.'/.gosh_completions'
-        \ }
-" Define keyword.
-if !exists('g:neocomplete#keyword_patterns')
-    let g:neocomplete#keyword_patterns = {}
-endif
-let g:neocomplete#keyword_patterns['default'] = '\h\w*'
-let g:neocomplete#enable_auto_select = 1
+"let g:deoplete#sources#dictionary#dictionaries = {;
+    "\ 'default' : '',
+    "\ 'vimshell' : $HOME.'/.vimshell_hist',
+    "\ 'scheme' : $HOME.'/.gosh_completions'
+        "\ }
+"" Define keyword.
+"if !exists('g:neocomplete#keyword_patterns')
+    "let g:deoplete#keyword_patterns = {}
+"endif
+"let g:deoplete#keyword_patterns['default'] = '\h\w*'
+"let g:deoplete#enable_auto_select = 1
 " Enable omni completion.
 augroup VIMRC_NEOCOMPLETE
   autocmd!
