@@ -308,7 +308,7 @@ nnoremap - :lprevious<CR>
 
 "ridiculous maps
 command! Date read !date -I
-command! Sign execute "normal! a4strid (Astrid REDACTED IV)\<CR>"
+command! Sign execute "normal! a4strid (Astrid Ivy)\<CR>"
 
 "text decoration
 nnoremap __ yypVr-
@@ -354,16 +354,23 @@ nnoremap X "xX
 
 "neocomplete's recommended key maps
 inoremap <expr><C-g>     deoplete#undo_completion()
-inoremap <expr><C-l>     deoplete#complete_common_string()
 " <CR>: close popup and save indent.
 inoremap <CR> <C-r>=<SID>my_cr_function()<CR>
 function! s:my_cr_function()
   return pumvisible() ? "\<C-y>" : "\<CR>"
 endfunction
-inoremap <expr><Tab>  pumvisible() ? "\<C-n>" : "<Tab>"
+"inoremap <expr><Tab>  pumvisible() ? "\<C-n>" : deoplete#complete()
+inoremap <expr><Tab> Is_whitespace() ? "\<Tab>" : "\<C-n>"
+function! Is_whitespace()
+  if col('.') == 1
+    return 1
+  endif
+  return strpart(getline('.'), col('.')-2, 1) =~ '\s'
+endfunction
+
 " <C-h>, <BS>: close popup and delete backword char.
-inoremap <expr><C-h> deoplete#smart_close_popup()."\<C-h>"
-inoremap <expr><BS> deoplete#smart_close_popup()."\<C-h>"
+inoremap <expr><C-h> deoplete#close_popup()."\<C-h>"
+inoremap <expr><BS> deoplete#close_popup()."\<C-h>"
 
 vmap <CR> <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
@@ -457,6 +464,36 @@ let g:acp_enableAtStartup = 0
 " Use neocomplete.
 "let g:neocomplete#enable_at_startup = 1
 let g:deoplete#enable_at_startup = 1
+
+call deoplete#custom#option({
+\'auto_complete': 1,
+\'auto_complete_popup': 'manual',
+\})
+
+call deoplete#custom#var('around', {
+      \  'range_above': 40,
+      \'range_below': 20,
+      \'mark_above': '[^]',
+      \'mark_below': '[_]',
+      \'mark_changes': '[*]',
+      \})
+
+call deoplete#custom#var('file', { 'enable_buffer_path': 1, 'enable_slash_completion': 1})
+
+call deoplete#custom#var('omni', 'input_patterns', {
+\ 'javascript': '[^. *\t]\.\w*',
+\ })
+call deoplete#custom#var('omni', 'functions', {
+\ 'javascript': ['javascriptcomplete#CompleteJS']
+\})
+
+call deoplete#custom#option('sources' , {
+      \'_': [],
+      \})
+
+set shortmess+=c
+set completeopt=menu,longest,preview
+
 " Use smartcase.
 "let g:deoplete#enable_smart_case = 1
 " Set minimum syntax keyword length.;
@@ -472,6 +509,9 @@ let g:deoplete#enable_at_startup = 1
 "if !exists('g:neocomplete#keyword_patterns')
     "let g:deoplete#keyword_patterns = {}
 "endif
+
+call deoplete#custom#option('keyword_patterns' , {'default': '\h\w*'})
+
 "let g:deoplete#keyword_patterns['default'] = '\h\w*'
 "let g:deoplete#enable_auto_select = 1
 " Enable omni completion.
@@ -487,9 +527,9 @@ augroup VIMRC_NEOCOMPLETE
   autocmd CompleteDone * pclose
 augroup end
 " Enable heavy omni completion.
-if !exists('g:neocomplete#sources#omni#input_patterns')
-  let g:neocomplete#sources#omni#input_patterns = {}
-endif
+"if !exists('g:neocomplete#sources#omni#input_patterns')
+  "let g:neocomplete#sources#omni#input_patterns = {}
+"endif
 
 " too slow! 
 "if !exists('g:neocomplete#force_omni_input_patterns')
