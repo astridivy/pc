@@ -7,4 +7,13 @@
 # astrid
 # 2019-11-18
 
-wmcpuload & wmmemload & wmclockmon
+if [[ $1 == "kill" ]]; then
+  killall wmcpuload & sleep 0.11
+  killall wmmemload & sleep 0.10
+  killall wmclockmon
+  exit
+fi
+
+wmcpuload & sleep 0.18
+wmmemload & sleep 0.17
+wmclockmon &

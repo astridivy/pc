@@ -1,5 +1,5 @@
-[begin] (Blackbox)
-  [workspaces] (Workspace List)
+[begin] (astrid@ivy)
+  [workspaces] (Spaces)
 
   [submenu] (Terminal)     {xterm and its friends}
     [exec] (Xterm)         {xterm -ls -sl 500}
@@ -8,22 +8,33 @@
     [exec] (Volume Mixer)  {xterm -e alsamixer}
     [exec] (Clock)         {xterm -e clock}
     [submenu] (Connect to) {SSH connection}
-      [exec] (Bulbasaur)   {xterm -e "ssh bulbasaur"}
+      [exec] (Ivysaur)   {xterm -e "ssh -l ash ivysaur.astrid.host"}
     [end]
   Clock[end]
 
-  [submenu] (Games)     {make play gaem}
+  [submenu] (Gaming)     {make play gaem}
     [exec] (Minecraft)  {minecraft-launcher}
+    [exec] (Discord)    {discord}
     [exec] (Battle.net) {xterm -e "/home/astrid/doc/windoze/Battle.net/Battle.net\ Launcher.exe"}
     [exec] (Tetris)     {xterm -e vitetris}
   [end]
 
+  [submenu] (Audio)     {make play muisc}
+    [exec] (Volume Control)     {pavucontrol}
+    [exec] (Audacity)  {audacity}
+    [exec] (LMMS)  {lmms}
+    [exec] (taptempo)     {xterm -e taptempo}
+  [end]
+
   [exec] (Chromium)   {chromium}
-  [exec] (Discord)    {discord}
   [exec] (Files)      {thunar}
 
-  [submenu] (Blackbox) {Styles and configuration}
+  [submenu] (Blackbox) {window mamnager}
     [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
+    [submenu] (Dockapps) {widjets}
+      [exec] (Enable) {dockapps}
+      [exec] (Cull) {dockapps kill}
+    [end]
     [submenu] (Styles)
       [stylesdir] (/usr/share/blackbox/styles)
     [end]

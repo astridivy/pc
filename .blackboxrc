@@ -2,33 +2,33 @@ session.screen0.slit.placement:	BottomRight
 session.screen0.slit.direction:	Horizontal
 session.screen0.slit.onTop:	False
 session.screen0.slit.autoHide:	False
-session.screen0.toolbar.onTop:	False
-session.screen0.toolbar.autoHide:	True
+session.screen0.toolbar.onTop:	True
+session.screen0.toolbar.autoHide:	False
 session.screen0.toolbar.placement:	BottomCenter
-session.screen0.toolbar.widthPercent:	66
+session.screen0.toolbar.widthPercent:	77
 session.screen0.enableToolbar:	True
 session.screen0.workspaces:	4
-session.screen0.workspaceNames:	Workspace 1,Workspace 2,Workspace 3,Workspace 4
-session.screen0.strftimeFormat:	%I:%M %p
-session.toolbarActionsWithMouseWheel:	True
+session.screen0.workspaceNames:	Home,Workspace,Auxilary,Liminal
+session.screen0.strftimeFormat:	%A  |  %-m/%-d/%Y  |  %I:%M %P 
 session.changeWorkspaceWithMouseWheel:	True
-session.styleFile:	/usr/share/blackbox/styles/Nyz
-session.rowPlacementDirection:	LeftToRight
-session.opaqueMove:	True
+session.focusLastWindow:	True
+session.focusNewWindows:	True
+session.windowPlacement:	CenterPlacement
 session.fullMaximization:	True
+session.styleFile:	/usr/share/blackbox/styles/Nyz
+session.placementIgnoresShaded:	True
+session.disableBindingsWithScrollLock:	False
+session.focusModel:	SloppyFocus ClickRaise
 session.imageDither:	OrderedDither
+session.opaqueResize:	True
+session.rowPlacementDirection:	LeftToRight
+session.shadeWindowWithMouseWheel:	True
+session.colPlacementDirection:	TopToBottom
+session.opaqueMove:	True
+session.toolbarActionsWithMouseWheel:	True
 session.maximumColors:	0
 session.menuFile:	/home/astrid/.blackbox/menu
-session.autoRaiseDelay:	400
-session.windowPlacement:	RowSmartPlacement
-session.placementIgnoresShaded:	True
 session.edgeSnapThreshold:	0
-session.shadeWindowWithMouseWheel:	False
-session.focusLastWindow:	True
-session.focusModel:	SloppyFocus
-session.opaqueResize:	True
-session.disableBindingsWithScrollLock:	False
-session.windowSnapThreshold:	0
-session.colPlacementDirection:	TopToBottom
-session.focusNewWindows:	True
+session.autoRaiseDelay:	400
 session.doubleClickInterval:	250
+session.windowSnapThreshold:	0
