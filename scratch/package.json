@@ -1,0 +1,17 @@
+{
+  "name": "scratch",
+  "version": "1.0.0",
+  "description": "blah",
+  "main": "repl_test.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "lol",
+    "wheeee",
+    "wooo"
+  ],
+  "author": "Astrid Ivy",
+  "license": "UNLICENSED",
+  "babel": {}
+}

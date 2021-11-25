@@ -1,0 +1,357 @@
+<audacitykeyboard audacityversion="2.4.1">
+	<command name="New" key="Ctrl+N"/>
+	<command name="Open" key="Ctrl+O"/>
+	<command name="Close" key="Ctrl+W"/>
+	<command name="Save" key="Ctrl+S"/>
+	<command name="SaveAs" key=""/>
+	<command name="SaveCopy" key=""/>
+	<command name="SaveCompressed" key=""/>
+	<command name="ExportMp3" key=""/>
+	<command name="ExportWav" key=""/>
+	<command name="ExportOgg" key=""/>
+	<command name="Export" key="Ctrl+Alt+E"/>
+	<command name="ExportSel" key=""/>
+	<command name="ExportLabels" key=""/>
+	<command name="ExportMultiple" key="Ctrl+Alt+Shift+E"/>
+	<command name="ExportMIDI" key=""/>
+	<command name="ImportAudio" key="Ctrl+Alt+I"/>
+	<command name="ImportLabels" key=""/>
+	<command name="ImportMIDI" key=""/>
+	<command name="ImportRaw" key=""/>
+	<command name="PageSetup" key=""/>
+	<command name="Print" key=""/>
+	<command name="Exit" key="Ctrl+Q"/>
+	<command name="Undo" key="Ctrl+Z"/>
+	<command name="Redo" key="Ctrl+Y"/>
+	<command name="Cut" key="Ctrl+X"/>
+	<command name="Delete" key="Ctrl+K"/>
+	<command name="Copy" key="Ctrl+C"/>
+	<command name="Paste" key="Ctrl+V"/>
+	<command name="Duplicate" key="Ctrl+D"/>
+	<command name="SplitCut" key="Ctrl+Alt+X"/>
+	<command name="SplitDelete" key="Ctrl+Alt+K"/>
+	<command name="Silence" key="Ctrl+Alt+S"/>
+	<command name="Trim" key="Ctrl+T"/>
+	<command name="Split" key="Ctrl+I"/>
+	<command name="SplitNew" key=""/>
+	<command name="Join" key="Ctrl+J"/>
+	<command name="Disjoin" key=""/>
+	<command name="EditLabels" key=""/>
+	<command name="AddLabel" key="Ctrl+B"/>
+	<command name="AddLabelPlaying" key="Ctrl+M"/>
+	<command name="PasteNewLabel" key=""/>
+	<command name="TypeToCreateLabel" key=""/>
+	<command name="CutLabels" key=""/>
+	<command name="DeleteLabels" key=""/>
+	<command name="SplitCutLabels" key="Alt+Shift+X"/>
+	<command name="SplitDeleteLabels" key="Alt+Shift+K"/>
+	<command name="SilenceLabels" key="Alt+Shift+S"/>
+	<command name="CopyLabels" key="Alt+Shift+C"/>
+	<command name="SplitLabels" key="Alt+Shift+I"/>
+	<command name="JoinLabels" key=""/>
+	<command name="DisjoinLabels" key="Alt+Shift+J"/>
+	<command name="EditMetaData" key=""/>
+	<command name="Preferences" key="Ctrl+P"/>
+	<command name="SelectAll" key="Ctrl+A"/>
+	<command name="SelectNone" key=""/>
+	<command name="SelAllTracks" key="Ctrl+Shift+A"/>
+	<command name="SelSyncLockTracks" key="Ctrl+Shift+Y"/>
+	<command name="SetLeftSelection" key="["/>
+	<command name="SetRightSelection" key="]"/>
+	<command name="SelTrackStartToCursor" key="Shift+J"/>
+	<command name="SelCursorToTrackEnd" key="Shift+K"/>
+	<command name="SelTrackStartToEnd" key=""/>
+	<command name="SelSave" key="M"/>
+	<command name="SelRestore" key="&apos;"/>
+	<command name="ToggleSpectralSelection" key="Q"/>
+	<command name="NextHigherPeakFrequency" key=""/>
+	<command name="NextLowerPeakFrequency" key=""/>
+	<command name="SelPrevClipBoundaryToCursor" key=""/>
+	<command name="SelCursorToNextClipBoundary" key=""/>
+	<command name="SelPrevClip" key="Alt+,"/>
+	<command name="SelNextClip" key="Alt+."/>
+	<command name="SelCursorStoredCursor" key=""/>
+	<command name="StoreCursorPosition" key=""/>
+	<command name="ZeroCross" key="Z"/>
+	<command name="ZoomIn" key="Ctrl+1"/>
+	<command name="ZoomNormal" key="Ctrl+2"/>
+	<command name="ZoomOut" key="Ctrl+3"/>
+	<command name="ZoomSel" key="Ctrl+E"/>
+	<command name="ZoomToggle" key="Shift+Z"/>
+	<command name="AdvancedVZoom" key="Ctrl+Alt+Z"/>
+	<command name="FitInWindow" key="Ctrl+F"/>
+	<command name="FitV" key="Ctrl+Shift+F"/>
+	<command name="CollapseAllTracks" key="Ctrl+Shift+C"/>
+	<command name="ExpandAllTracks" key="Ctrl+Shift+X"/>
+	<command name="SkipSelStart" key=""/>
+	<command name="SkipSelEnd" key=""/>
+	<command name="UndoHistory" key=""/>
+	<command name="Karaoke" key="Ctrl+Alt+Shift+K"/>
+	<command name="MixerBoard" key="Ctrl+Alt+M"/>
+	<command name="ResetToolbars" key=""/>
+	<command name="ShowTransportTB" key=""/>
+	<command name="ShowToolsTB" key=""/>
+	<command name="ShowRecordMeterTB" key=""/>
+	<command name="ShowPlayMeterTB" key=""/>
+	<command name="ShowMixerTB" key=""/>
+	<command name="ShowEditTB" key=""/>
+	<command name="ShowTranscriptionTB" key=""/>
+	<command name="ShowScrubbingTB" key=""/>
+	<command name="ShowDeviceTB" key=""/>
+	<command name="ShowSelectionTB" key=""/>
+	<command name="ShowTimeTB" key=""/>
+	<command name="ShowSpectralSelectionTB" key=""/>
+	<command name="ShowExtraMenus" key=""/>
+	<command name="ShowClipping" key=""/>
+	<command name="PlayStop" key="Space"/>
+	<command name="PlayStopSelect" key="X"/>
+	<command name="PlayLooped" key="Shift+Space"/>
+	<command name="Pause" key="P"/>
+	<command name="Record1stChoice" key="R"/>
+	<command name="Record2ndChoice" key="Shift+R"/>
+	<command name="TimerRecord" key="Shift+T"/>
+	<command name="PunchAndRoll" key="Shift+D"/>
+	<command name="Scrub" key=""/>
+	<command name="Seek" key=""/>
+	<command name="ToggleScrubRuler" key=""/>
+	<command name="CursSelStart" key="H"/>
+	<command name="CursSelEnd" key="L"/>
+	<command name="CursTrackStart" key="J"/>
+	<command name="CursTrackEnd" key="K"/>
+	<command name="CursPrevClipBoundary" key=""/>
+	<command name="CursNextClipBoundary" key=""/>
+	<command name="CursProjectStart" key="Home"/>
+	<command name="CursProjectEnd" key="End"/>
+	<command name="LockPlayRegion" key=""/>
+	<command name="UnlockPlayRegion" key=""/>
+	<command name="RescanDevices" key=""/>
+	<command name="SoundActivationLevel" key=""/>
+	<command name="SoundActivation" key=""/>
+	<command name="PinnedHead" key=""/>
+	<command name="Overdub" key=""/>
+	<command name="SWPlaythrough" key=""/>
+	<command name="NewMonoTrack" key=""/>
+	<command name="NewStereoTrack" key=""/>
+	<command name="NewLabelTrack" key=""/>
+	<command name="NewTimeTrack" key=""/>
+	<command name="Stereo to Mono" key=""/>
+	<command name="MixAndRender" key=""/>
+	<command name="MixAndRenderToNewTrack" key=""/>
+	<command name="Resample" key=""/>
+	<command name="RemoveTracks" key=""/>
+	<command name="MuteAllTracks" key="Ctrl+U"/>
+	<command name="UnmuteAllTracks" key="Ctrl+Shift+U"/>
+	<command name="MuteTracks" key=""/>
+	<command name="UnmuteTracks" key="Ctrl+Alt+Shift+U"/>
+	<command name="PanLeft" key=""/>
+	<command name="PanRight" key=""/>
+	<command name="PanCenter" key=""/>
+	<command name="Align_EndToEnd" key=""/>
+	<command name="Align_Together" key=""/>
+	<command name="Align_StartToZero" key=""/>
+	<command name="Align_StartToSelStart" key=""/>
+	<command name="Align_StartToSelEnd" key=""/>
+	<command name="Align_EndToSelStart" key=""/>
+	<command name="Align_EndToSelEnd" key=""/>
+	<command name="MoveSelectionWithTracks" key=""/>
+	<command name="SortByTime" key=""/>
+	<command name="SortByName" key=""/>
+	<command name="SyncLock" key=""/>
+	<command name="ManageGenerators" key=""/>
+	<command name="Chirp..." key=""/>
+	<command name="DTMF Tones..." key=""/>
+	<command name="Noise..." key=""/>
+	<command name="Silence..." key=""/>
+	<command name="Tone..." key=""/>
+	<command name="Pluck..." key=""/>
+	<command name="Rhythm Track..." key=""/>
+	<command name="Risset Drum..." key=""/>
+	<command name="ManageEffects" key=""/>
+	<command name="RepeatLastEffect" key="Ctrl+R"/>
+	<command name="Amplify..." key=""/>
+	<command name="Auto Duck..." key=""/>
+	<command name="Bass and Treble..." key=""/>
+	<command name="Change Pitch..." key=""/>
+	<command name="Change Speed..." key=""/>
+	<command name="Change Tempo..." key=""/>
+	<command name="Click Removal..." key=""/>
+	<command name="Compressor..." key=""/>
+	<command name="Distortion..." key=""/>
+	<command name="Echo..." key=""/>
+	<command name="Fade In" key=""/>
+	<command name="Fade Out" key=""/>
+	<command name="Filter Curve..." key=""/>
+	<command name="Graphic EQ..." key=""/>
+	<command name="Invert" key=""/>
+	<command name="Loudness Normalization..." key=""/>
+	<command name="Noise Reduction..." key=""/>
+	<command name="Normalize..." key=""/>
+	<command name="Paulstretch..." key=""/>
+	<command name="Phaser..." key=""/>
+	<command name="Repair" key=""/>
+	<command name="Repeat..." key=""/>
+	<command name="Reverb..." key=""/>
+	<command name="Reverse" key=""/>
+	<command name="Sliding Stretch..." key=""/>
+	<command name="Truncate Silence..." key=""/>
+	<command name="Wahwah..." key=""/>
+	<command name="Adjustable Fade..." key=""/>
+	<command name="Clip Fix..." key=""/>
+	<command name="Crossfade Clips" key=""/>
+	<command name="Crossfade Tracks..." key=""/>
+	<command name="Delay..." key=""/>
+	<command name="High-Pass Filter..." key=""/>
+	<command name="Limiter..." key=""/>
+	<command name="Low-Pass Filter..." key=""/>
+	<command name="Noise Gate..." key=""/>
+	<command name="Notch Filter..." key=""/>
+	<command name="Spectral Delete" key=""/>
+	<command name="Spectral edit multi tool" key=""/>
+	<command name="Spectral edit parametric EQ..." key=""/>
+	<command name="Spectral edit shelves..." key=""/>
+	<command name="Studio Fade Out" key=""/>
+	<command name="Tremolo..." key=""/>
+	<command name="Vocal Reduction and Isolation..." key=""/>
+	<command name="Vocoder..." key=""/>
+	<command name="ManageAnalyzers" key=""/>
+	<command name="ContrastAnalyser" key=""/>
+	<command name="PlotSpectrum" key=""/>
+	<command name="Find Clipping..." key=""/>
+	<command name="Beat Finder..." key=""/>
+	<command name="Silence Finder..." key=""/>
+	<command name="Sound Finder..." key=""/>
+	<command name="ManageTools" key=""/>
+	<command name="ManageMacros" key=""/>
+	<command name="ApplyMacrosPalette" key=""/>
+	<command name="FancyScreenshot" key=""/>
+	<command name="Benchmark" key=""/>
+	<command name="Nyquist Prompt..." key=""/>
+	<command name="Nyquist Plug-in Installer..." key=""/>
+	<command name="Regular Interval Labels..." key=""/>
+	<command name="Sample Data Export..." key=""/>
+	<command name="Sample Data Import..." key=""/>
+	<command name="Play" key=""/>
+	<command name="Stop" key=""/>
+	<command name="PlayOneSec" key=""/>
+	<command name="PlayToSelection" key="B"/>
+	<command name="PlayBeforeSelectionStart" key=""/>
+	<command name="PlayAfterSelectionStart" key=""/>
+	<command name="PlayBeforeSelectionEnd" key=""/>
+	<command name="PlayAfterSelectionEnd" key=""/>
+	<command name="PlayBeforeAndAfterSelectionStart" key=""/>
+	<command name="PlayBeforeAndAfterSelectionEnd" key=""/>
+	<command name="PlayCutPreview" key="C"/>
+	<command name="KeyboardScrubBackwards" key="U"/>
+	<command name="KeyboardScrubForwards" key="I"/>
+	<command name="SelectTool" key="1"/>
+	<command name="EnvelopeTool" key="2"/>
+	<command name="DrawTool" key="5"/>
+	<command name="ZoomTool" key="4"/>
+	<command name="TimeShiftTool" key="3"/>
+	<command name="MultiTool" key="6"/>
+	<command name="PrevTool" key=""/>
+	<command name="NextTool" key=""/>
+	<command name="OutputGain" key=""/>
+	<command name="OutputGainInc" key=""/>
+	<command name="OutputGainDec" key=""/>
+	<command name="InputGain" key=""/>
+	<command name="InputGainInc" key=""/>
+	<command name="InputGainDec" key=""/>
+	<command name="DeleteKey" key="Backspace"/>
+	<command name="DeleteKey2" key="Delete"/>
+	<command name="PlayAtSpeed" key=""/>
+	<command name="PlayAtSpeedLooped" key=""/>
+	<command name="PlayAtSpeedCutPreview" key=""/>
+	<command name="SetPlaySpeed" key=""/>
+	<command name="PlaySpeedInc" key=""/>
+	<command name="PlaySpeedDec" key=""/>
+	<command name="MoveToPrevLabel" key="Alt+Left"/>
+	<command name="MoveToNextLabel" key="Alt+Right"/>
+	<command name="SeekLeftShort" key="Left"/>
+	<command name="SeekRightShort" key="Right"/>
+	<command name="SeekLeftLong" key="Shift+Left"/>
+	<command name="SeekRightLong" key="Shift+Right"/>
+	<command name="InputDevice" key=""/>
+	<command name="OutputDevice" key=""/>
+	<command name="AudioHost" key=""/>
+	<command name="InputChannels" key=""/>
+	<command name="SnapToOff" key=""/>
+	<command name="SnapToNearest" key=""/>
+	<command name="SnapToPrior" key=""/>
+	<command name="SelStart" key="Shift+Home"/>
+	<command name="SelEnd" key="Shift+End"/>
+	<command name="SelExtLeft" key="Shift+Left"/>
+	<command name="SelExtRight" key="Shift+Right"/>
+	<command name="SelSetExtLeft" key="Ctrl+Left"/>
+	<command name="SelSetExtRight" key="Ctrl+Right"/>
+	<command name="SelCntrLeft" key="Ctrl+Shift+Right"/>
+	<command name="SelCntrRight" key="Ctrl+Shift+Left"/>
+	<command name="PrevWindow" key=""/>
+	<command name="NextWindow" key=""/>
+	<command name="PrevFrame" key="Ctrl+Shift+F6"/>
+	<command name="NextFrame" key="Ctrl+F6"/>
+	<command name="PrevTrack" key="Up"/>
+	<command name="NextTrack" key="Down"/>
+	<command name="FirstTrack" key=""/>
+	<command name="LastTrack" key=""/>
+	<command name="ShiftUp" key="Shift+Up"/>
+	<command name="ShiftDown" key="Shift+Down"/>
+	<command name="Toggle" key="Return"/>
+	<command name="ToggleAlt" key="NUMPAD_ENTER"/>
+	<command name="CursorLeft" key="Left"/>
+	<command name="CursorRight" key="Right"/>
+	<command name="CursorShortJumpLeft" key=","/>
+	<command name="CursorShortJumpRight" key="."/>
+	<command name="CursorLongJumpLeft" key="Shift+,"/>
+	<command name="CursorLongJumpRight" key="Shift+."/>
+	<command name="ClipLeft" key=""/>
+	<command name="ClipRight" key=""/>
+	<command name="TrackPan" key=""/>
+	<command name="TrackPanLeft" key=""/>
+	<command name="TrackPanRight" key=""/>
+	<command name="TrackGain" key="Shift+G"/>
+	<command name="TrackGainInc" key="NUMPAD_ADD"/>
+	<command name="TrackGainDec" key="NUMPAD_SUBTRACT"/>
+	<command name="TrackMenu" key="Shift+M"/>
+	<command name="TrackMute" key="Shift+U"/>
+	<command name="TrackSolo" key="Shift+S"/>
+	<command name="TrackClose" key=""/>
+	<command name="TrackMoveUp" key="Ctrl+Alt+U"/>
+	<command name="TrackMoveDown" key="Ctrl+Alt+D"/>
+	<command name="TrackMoveTop" key="Ctrl+Alt+T"/>
+	<command name="TrackMoveBottom" key="Ctrl+Alt+B"/>
+	<command name="SelectTime" key=""/>
+	<command name="SelectFrequencies" key=""/>
+	<command name="SelectTracks" key=""/>
+	<command name="SetTrackStatus" key=""/>
+	<command name="SetTrackAudio" key=""/>
+	<command name="SetTrackVisuals" key=""/>
+	<command name="GetPreference" key=""/>
+	<command name="SetPreference" key=""/>
+	<command name="SetClip" key=""/>
+	<command name="SetEnvelope" key=""/>
+	<command name="SetLabel" key=""/>
+	<command name="SetProject" key=""/>
+	<command name="Select" key=""/>
+	<command name="SetTrack" key=""/>
+	<command name="GetInfo" key=""/>
+	<command name="Message" key=""/>
+	<command name="Help" key=""/>
+	<command name="Import2" key=""/>
+	<command name="Export2" key=""/>
+	<command name="OpenProject2" key=""/>
+	<command name="SaveProject2" key=""/>
+	<command name="Drag" key=""/>
+	<command name="CompareAudio" key=""/>
+	<command name="Screenshot" key=""/>
+	<command name="FullScreenOnOff" key="F11"/>
+	<command name="QuickHelp" key=""/>
+	<command name="Manual" key=""/>
+	<command name="DeviceInfo" key=""/>
+	<command name="MidiDeviceInfo" key=""/>
+	<command name="Log" key=""/>
+	<command name="CrashReport" key=""/>
+	<command name="CheckDeps" key=""/>
+	<command name="Updates" key=""/>
+	<command name="About" key=""/>
+</audacitykeyboard>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+NoDisplay=true
+Exec=xterm -e "feh -Z -x --auto-rotate -F %f"
+Name="feh.fullscreen"
+Comment=Custom definition for "feh"
