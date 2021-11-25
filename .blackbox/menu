@@ -7,10 +7,17 @@
     [exec] (Musikcube)     {xterm -e musikcube}
     [exec] (Volume Mixer)  {xterm -e alsamixer}
     [exec] (Clock)         {xterm -e clock}
+
+    [submenu] (Hardware)     {beep boop computer !}
+      [exec] (Sensors)        {xterm -e watch -n 0 sensors}
+      [exec] (Battery)        {xterm -e batt}
+      [exec] (Volume Mixer)  {xterm -e alsamixer}
+    [end]
+
     [submenu] (Connect to) {SSH connection}
       [exec] (Ivysaur)   {xterm -e "ssh -l ash ivysaur.astrid.host"}
     [end]
-  Clock[end]
+  [end]
 
   [submenu] (Gaming)     {make play gaem}
     [exec] (Minecraft)  {minecraft-launcher}
@@ -19,11 +26,18 @@
     [exec] (Tetris)     {xterm -e vitetris}
   [end]
 
-  [submenu] (Audio)     {make play muisc}
+  [submenu] (Media)     {make play muisc}
     [exec] (Volume Control)     {pavucontrol}
+    [exec] (Jack)     {jack}
     [exec] (Audacity)  {audacity}
     [exec] (LMMS)  {lmms}
     [exec] (taptempo)     {xterm -e taptempo}
+    [exec] (Strawberry)     {strawberry}
+    [exec] (Baka MPlayer) {baka-mplayer}
+  [end]
+
+  [submenu] (Todo)     {much todos about nothign}
+    [exec] (Treesheets) {treesheets}
   [end]
 
   [exec] (Chromium)   {chromium}
@@ -31,6 +45,7 @@
 
   [submenu] (Blackbox) {window mamnager}
     [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
+    [exec] (Configurator) {bbconf}
     [submenu] (Dockapps) {widjets}
       [exec] (Enable) {dockapps}
       [exec] (Cull) {dockapps kill}
