@@ -1,4 +1,5 @@
 module.exports = {
+  "root": true,
   "env": {
     "browser": true,
     "node": true,
@@ -6,7 +7,7 @@ module.exports = {
     "protractor": true,
     "es6": true
   },
-  "parser": "babel-eslint",
+  "parser": "@babel/eslint-parser",
   "extends": [
     "eslint:recommended",
   ],
@@ -14,7 +15,10 @@ module.exports = {
   ],
   "parserOptions": {
     "sourceType": "module",
-    "ecmaVersion": 2018
+    "ecmaVersion": 2018,
+    "babel": {
+      "requireConfigFile": false,
+    },
   },
   //"settings": {
   //"react": {
@@ -30,14 +34,8 @@ module.exports = {
       }
     ],
     "linebreak-style": 0,
-    "quotes": [
-      1,
-      "single",
-    ],
-    "semi": [
-      1,
-      "never",
-    ],
+    "quotes": 0,
+    "semi": 0,
     "space-before-function-paren": [1, "always"],
     "no-unused-vars": [1, {"args": "after-used"}],
     "comma-dangle": [1, "always-multiline"],
@@ -48,7 +46,7 @@ module.exports = {
     "consistent-return": 0,
     "no-underscore-dangle": 0,
     "arrow-body-style": 0,
-    "no-console": 1,
+    "no-console": 0,
     "object-curly-spacing": 0,
     "no-multiple-empty-lines": 0,
     "spaced-comment": 0,

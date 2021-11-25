@@ -1,4 +1,4 @@
-"2019/Nov
+"2021/Nov
 
 set nocompatible    "be IMproved!
 
@@ -97,10 +97,10 @@ set whichwrap=b,s,h,l,<,>,[,]   " give keys wraparound
 set backspace=indent,eol,start  " thank you jesus, normal acting backspace
 set nowrap        " who needs it
 "WELCOME TO 2019: we 2 spaces now
-set shiftwidth=2   " indents have a width of 4
+set shiftwidth=2   " indents have a width of 2
 set softtabstop=2
 set expandtab      "look into when we do or don't want this
-set tabstop=2      " width of tab character. useful to set this to 4 so we don't go out of sync
+set tabstop=2      " width of tab character. useful to set this to 2 so we don't go out of sync
 set showtabline=2
 set t_RV= ttymouse=xterm2  " fixes weird 2c at startup HACK (shouldn't need it forever)
 "set mouse=n       " only important in macvim?
@@ -113,8 +113,9 @@ set undofile       " persistent undo
 set undodir=~/.vim/undo/ "but without polluting working directories
 set autoread       " idk what this does i should look it up
 
-"actually i like the bell :P
 "set noerrorbells visualbell t_vb=
+"actually i like the bell :P
+
 augroup VIMRC
   autocmd!
   autocmd GUIEnter * set visualbell t_vb=
@@ -155,7 +156,6 @@ inoreabbrev propTyptes propTypes
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "when moving by word, skip until alphanumeric word is found
 " TODO: apply a count though
-" TODO: Still causes an infinite loop at the end of files
 
 function! s:JumpToNextWord()
 	let l:lastln = -1
@@ -229,8 +229,8 @@ nnoremap <leader>a a <Esc>r
 nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
 nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"
 
-"TODO: make i autotab the way o does
-" note: just use S
+"todo???? : make i autotab the way o does
+"actually : just use S
 
 "toggle semicolon at the end of a line;
 nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"

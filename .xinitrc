@@ -37,4 +37,7 @@ fi
 
 setxkbmap -option ctrl:nocaps
 
-dockapps & feh --bg-scale $HOME/doc/galaxy.png & blackbox
+# fonts? ??
+xset fp+ /usr/share/fonts/
+
+wallpaper & dockapps & bbkeys & blackbox
