@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# jack
+#
+#
+# astrid
+# 2021-09-05
+
+(qjackctl &) && (sleep 2 ; jack-rack)

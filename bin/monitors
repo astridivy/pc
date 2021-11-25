@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# monitors
+#
+# fuck fuck fuck fuck fuck
+#
+# astrid
+# 2021-10-09
+
+if [[ $1 == '-o' ]]; then
+  xrandr -q
+elif [[ $1 == '-q' ]]; then
+  xrandr -q
+elif (( $# == 0 )); then
+  xrandr --output VGA1 --auto --output LVDS1 --auto --right-of VGA1
+elif (( $# == 2 )); then
+  xrandr --output $1 --auto --output $2 --auto --right-of $1
+else
+  xrandr --output $1 --auto
+fi

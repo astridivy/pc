@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# wallpaper
+#
+# wait for it ...
+#
+# astrid
+# 2021-09-03
+
+sleep 1.61 &&
+feh --bg-scale $HOME/doc/galaxy.png
