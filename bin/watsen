@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# watsen
+#
+# watch sensors
+#
+# astrid
+# 2022-12-06
+#
+
+CMD="watch -n 0 -w -t -c sensors"
+
+alacritty --config-file ~/.alacritty.eensy.yml --title "sens" -e $CMD ||
+  xterm -geometry 23x8 -e $CMD

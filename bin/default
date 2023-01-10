@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# default
+#
+# THIS IS USUALLY WHAT WE WANT
+#
+# astrid
+# 2021-12-10
+
+xrandr --output LVDS-1 --off
+
+jack &
+
+pavucontrol &
+
+alacritty --title alsamixer -e alsamixer &
+alacritty --title clock -e clock

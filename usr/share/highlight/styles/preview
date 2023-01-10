@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# preview
+#
+# let's see what we're workin with here...
+#
+# 2023-01-06
+# 4strid
+#
+###############
+
+#TESTFILE=${1:-/etc/fstab}
+TESTFILE=
+
+if  [ $1 = '--help' ]; then
+  cat <<EOF
+  usage: $0 [testfile] [...themes-to-preview]
+  if <testfile> is  omitted, /etc/fstab is used by default
+  if a list of themes is not provided, every theme in /usr/share/higlhight/styles is used
+EOF
+  exit 0
+elif [ -f "$1" ]; then
+  TESTFILE="$1"
+  shift
+else
+  TESTFILE=/etc/fstab
+fi
+
+THEMES="${@:-*.theme */*.theme}"
+
+for THEME in $THEMES; do
+  #     0        10        20       30       40
+  echo $C_PINK
+  echo '###########################################'
+  printf -v THEMEPAD %-40s $THEME
+  echo "# $THEMEPAD #"
+  echo '###########################################'
+  echo $_C_RESET
+
+  highlight -O xterm256 --style $THEME $TESTFILE
+
+done
+
+exit 0

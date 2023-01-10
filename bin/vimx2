@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# vimx2
+#
+# 200% vim 200% performance
+#
+# astrid
+# 2022-12-26
+
+
+CMD=("vim" "-O2" "-c" "term++curwin" "-c" "wincmd l" "-c"  "term++curwin" "-c" "wincmd h")
+
+alacritty --title "200%vim" -e "${CMD[@]}" ||
+  xterm -geometry 100x33 -e "${CMD[@]}"

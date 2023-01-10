@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# meters
+#
+# 300,000,000 m/s
+#
+# astrid
+# 2022-04-15
+
+xterm -geometry 115x3+1-29 -e jack_meter -w 111 &
+xterm -geometry 115x3-65-2 -e jack_meter -w 111 &

@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# volume
+#
+# (Psalm 100:1) Make a joyful noise unto the LORD, all ye lands
+#
+# astrid
+# 2022-12-06
+
+alacritty --config-file ~/.alacritty.medium.yml --title "volume ctrl" -e alsamixer ||
+  xterm -geometry 84x32 -e alsamixer

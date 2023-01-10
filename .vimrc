@@ -55,6 +55,7 @@ Plugin 'mbbill/undotree'
 Plugin 'jeetsukumaran/vim-indentwise'
 Plugin 'Yggdroot/indentLine'
 Plugin 'sjbach/lusty'
+Plugin 'https://gitlab.com/HiPhish/info.vim'
 
 " unused languages
 "Plugin 'itchyny/vim-haskell-indent'
@@ -129,28 +130,33 @@ augroup VIMRC
 
   autocmd FileType haskell setlocal softtabstop=4 | setlocal expandtab
 
-  "REDACTED
+  "REDACTED (A relic of the bygone era of nested callback hell)
   "autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
 
   " close preview window automatically when using annotated code completions
-  "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif " delete straight away
-  autocmd InsertLeave * if pumvisible() == 0|pclose|endif " waits until exit
-  "autocmd CompleteDone * pclose " probably more performant
+  "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif 
+  "                                                         delete straight away
+  autocmd InsertLeave * if pumvisible() == 0|pclose|endif 
+  "                                                        waits until exit
+  "autocmd CompleteDone * pclose 
+  "                               probably more performant
 
   " please god make the indent lines dark
-  autocmd BufReadPost * hi Conceal ctermfg=8
+  autocmd BufReadPost * hi Conceal ctermfg=8 ctermbg=0
+  autocmd BufWritePost * hi Conceal ctermfg=8 ctermbg=0
 
 augroup end
+
 
 " ABBREVIATONS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 "common typos
 " this is either really smart or REALLY dumb
-inoreabbrev fucntion function
+iab fucntion function
 " idk why i can't spell this word specifically
-inoreabbrev PropTyptes PropTypes
-inoreabbrev propTyptes propTypes
+iab PropTyptes PropTypes
+iab propTyptes propTypes
 
 " FUNCTIONS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -227,7 +233,7 @@ nnoremap <leader>i i <Esc>r
 nnoremap <leader>a a <Esc>r
 "heck why not just do braces
 nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
-nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"
+nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"}
 
 "todo???? : make i autotab the way o does
 "actually : just use S
@@ -236,11 +242,22 @@ nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"
 nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
 "same deal but with commas (nice)
 nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
-"mostly to get rid of .js when it sneaks in imports and requires
+
+let &t_TI = "\<Esc>[>4;2m"
+let &t_TE = "\<Esc>[>4;m"
+
+" this was mostly to get rid of .js when it snuck in imports and requires
+" but then , it turned out !!! deleting everything back to the . is useful, like , all the time !
+nnoremap <Backspace> ldF.
 " ah HECK let's make all KINDS OF THESE
+nnoremap <S-Backspace> dT x
+inoremap <S-Backspace> <Esc>dT xi
+
+" TIL backspace was  control - h ??? (2022-12)
 nnoremap <Backspace> ldF.
 nnoremap <S-Backspace> dT x
 inoremap <S-Backspace> <Esc>dT xi
+
 
 "new window nav shortcuts
 nnoremap <c-W><c-H> <c-W>v
@@ -419,7 +436,7 @@ hi Normal                 cterm=NONE             ctermbg=234  ctermfg=145
 
 "COMMANDS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-command! Restart mksession! ~/.restart.vim | call VimAndDie()
+command! Restart mksession! ~/.vim/restart.vim | call VimAndDie()
 "command! Restart :mksession! ~/.vim/_restart_.vim | Cmd gvim -S ~/.vim/_restart_.vim
 "(better for gvim, add to .local.vimrc if desired)
 command! ShowWhitespace :set listchars=eol:$,tab:>-,trail:~,extends:>,precedes:< | :set list
@@ -445,13 +462,15 @@ command! -nargs=1 E call SiblingEdit(<f-args>)
 command! W execute 'silent w !sudo tee "%" > /dev/null' | edit!
 
 function VimAndDie ()
-  execute "!vim -S ~/.restart.vim"
+  execute "!vim -S ~/.vim/restart.vim"
   exit
 endfunction
 
 function! Here () 
   cd %:p:h
 endfunction
+
+
 
 function! SiblingEdit (filename)
   execute "edit " . expand("%:h") . "/" . a:filename . "*"
@@ -467,7 +486,7 @@ let g:deoplete#enable_at_startup = 1
 
 call deoplete#custom#option({
 \'auto_complete': 1,
-\'auto_complete_popup': 'manual',
+\'auto_complete_popup': 'automatic',
 \})
 
 call deoplete#custom#var('around', {
@@ -595,6 +614,7 @@ tnoremap <leader>n <C-w>:bn<CR>
 tnoremap <leader>p <C-w>:bp<CR>
 tnoremap <leader>d <C-w>:bn<CR>:bd! #<CR>
 tnoremap <C-w><C-u> <C-w>N<C-u>
+tnoremap <C-u> <C-w>N<C-u>
 "nnoremap <C-w>;n :bn<CR>
 nnoremap <C-w>t :belowright term<CR>
 nnoremap <C-w><C-t> :term++curwin<CR>
@@ -653,6 +673,7 @@ augroup VIMRC_BUFF_STUFF
   "autocmd BufEnter * rv
 
   autocmd BufWritePost $MYVIMRC Vimrc
+  autocmd BufWritePost ~/.local.vimrc Vimrc
   "autocmd BufWritePost .vimrc Vimrc 
   "autocmd BufWritePost _vimrc Vimrc 
 

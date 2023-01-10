@@ -35,9 +35,16 @@ fi
 # pile a crap 1 bit color... just why lmao
 # xsetroot -bitmap $HOME/doc/galaxy.xbm
 
+if [ $_X_TRANSPARENCY ]; then
+  TRANSPROG='picom -f --xrender-sync-fence -D 2'
+else
+  TRANSPROG=':'
+fi
+
+
 setxkbmap -option ctrl:nocaps
 
 # fonts? ??
 xset fp+ /usr/share/fonts/
 
-wallpaper & dockapps & bbkeys & blackbox
+wallpaper & dockapps & bbkeys & ${TRANSPROG} & blackbox

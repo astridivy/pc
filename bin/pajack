@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# pajack
+#
+# flap jacks? idk . f*** it
+#
+# astrid
+# 2022-12-28
+
+pacmd unload-module module-jack-sink
+pacmd unload-module module-jack-source
+pacmd load-module module-jack-sink
+pacmd load-module module-jack-source

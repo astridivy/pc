@@ -1,0 +1,9 @@
+#
+# emdash
+#
+# --
+#
+# astrid
+# 2021-11-19
+
+echo -n -e '\u2014' | xclip -f -i -selection clipboard

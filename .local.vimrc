@@ -1,14 +1,17 @@
 "colorscheme Chasing_Logic
-colorscheme Tomorrow-Night-Nineties
 "colorscheme lilydjwg_dark
+colorscheme Tomorrow-Night-Nineties
+
+" transparent bg
+hi Normal guibg=NONE ctermbg=none
 
 "doctor colorscheme a bit
 hi Comment ctermfg=8
-hi Visual ctermfg=8 ctermbg=7
-hi Number ctermfg=3
-hi Conceal ctermfg=8
-hi String ctermfg=2
-hi Constant ctermfg=7
+hi Visual ctermbg=lightcyan ctermfg=0
+hi Number ctermfg=yellow
+hi Conceal ctermfg=8 ctermbg=0
+hi String ctermfg=darkgreen
+hi Constant ctermfg=gray
 hi Special ctermfg=5
 hi Todo ctermfg=5
 
@@ -30,7 +33,6 @@ hi javaScriptFuncExp ctermfg=15
 hi javaScriptBranch ctermfg=1
 hi javaScriptCommentTodo ctermfg=5
 
-
 "hmm this is hacky but we'll unify them someday
 if (&term == "xterm")
   hi javaScriptExceptions ctermfg=3
@@ -39,3 +41,7 @@ if (&term == "xterm")
   hi Number ctermfg=209
   hi javaScriptNumber ctermfg=209
 endif
+
+
+hi ErrorMsg ctermbg=black ctermfg=red
+hi WarningMsg ctermbg=black ctermfg=lightred

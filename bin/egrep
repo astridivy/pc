@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# egrep
+#
+# grep needs to get a grip ! why gripe about egrep ??
+#
+# astrid
+# 2022-11-30
+
+exec grep -E "$@@"

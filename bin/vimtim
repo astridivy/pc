@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# vimtim
+#
+# everyone's favorite text editor ! now in staggering 256*256*256 color
+#
+# astrid
+# 2022-12-26
+
+
+CMD="vim $@"
+
+alacritty --title "$CMD" -e $CMD ||
+  xterm -geometry 80x20 -e $CMD

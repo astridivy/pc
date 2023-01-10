@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# watbat
+#
+# watch battery
+#
+# astrid
+# 2022-12-06
+#
+
+CMD="watch -n 2 -w -t -c -d batt"
+
+alacritty --config-file ~/.alacritty.bitsy.yml --title "+b-" -e $CMD ||
+  xterm -geometry 36x4 -e $CMD

@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# sanity
+#
+# am i crazy ? or ???
+#
+# astrid
+# 2022-12-19
+
+if [[ ! "$1"  ]]; then
+  echo "no input given"
+  exit 0
+fi
+
+echo "\$1 is $1"
+
+if [[ $2 ]]; then
+  echo "there was additional input"
+fi
+
+exit 0

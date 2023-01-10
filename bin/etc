@@ -1,0 +1,12 @@
+#!/bin/bash
+##
+## #!/bin/bash etc
+##
+## astrid
+## 2022-12-19
+
+if [[ ! $1 ]]; then
+  /bin/ls --color /etc
+else
+  highlight /etc/"$1" -O xterm256 | less -R
+fi

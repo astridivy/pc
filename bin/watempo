@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# watempo
+#
+# pick up the tempo !
+#
+# astrid
+# 2022-12-25
+#
+
+CMD="taptempo"
+
+alacritty --config-file ~/.alacritty.eensy.yml --title "tmpo" -e $CMD ||
+  xterm -geometry 36x8 -e $CMD

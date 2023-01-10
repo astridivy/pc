@@ -6,4 +6,4 @@
 # astrid
 # 2021-09-05
 
-(qjackctl &) && (sleep 2 ; jack-rack)
+qjackctl # & (sleep 6 ; meters111)

@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# meusic
+#
+# THIS IS USUALLY WHAT WE WANT
+#
+# astrid
+# 2022-02-24
+
+jack &
+#lmms &
+ardour7 &
+carla-single ~/doc/baby_grand.carxp &
+#(sleep 6 ; calfjackhost) &
+volume &
+(sleep 6 ; meters111 & cadence-jackmeter ) &
+

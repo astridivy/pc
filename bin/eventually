@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# eventually
+#
+# all things come to an end , some day
+#
+# astrid
+# 2021-12-11
+
+TIMER="$1"
+shift 1
+CMD="$*"
+
+sleep $TIMER;
+
+$CMD

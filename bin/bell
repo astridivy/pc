@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# bell
+#
+# ding ding ding !
+#
+# astrid
+# 2021-12-11
+
+sequence () {
+  local DIR="$1"
+  local SEQ="$1/.sequence"
+  local TEMP="$1/.temp"
+  local NEXT=
+
+  if [[ -d $DIR ]]; then
+    if [[ ! -f $SEQ ]]; then
+      ls -1 $DIR > $SEQ
+    fi
+
+    NEXT=`head -n 1 $SEQ`
+    tail -n +2 $SEQ > $TEMP
+    mv -f $TEMP $SEQ
+    echo $NEXT >> $SEQ
+
+    echo "$DIR/$NEXT"
+    #( eventually 10 rm $SEQ 2>/dev/null & )
+
+    return 0
+  fi
+
+  echo "usage: sequence <dir>"
+  return 127
+}
+
+paplay $(sequence ~/.pc/bell)
+
+eventually 30 rm ~/.pc/bell/.sequence 2>/dev/null

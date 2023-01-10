@@ -1,69 +1,89 @@
+# blackbox menu, configured with style by bbconf
+
 [begin] (astrid@ivy)
   [workspaces] (Spaces)
-
-  [submenu] (Terminal)     {xterm and its friends}
-    [exec] (Xterm)         {xterm -ls -sl 500}
-    [exec] (Vim)           {xterm -e vim}
-    [exec] (Musikcube)     {xterm -e musikcube}
-    [exec] (Volume Mixer)  {xterm -e alsamixer}
-    [exec] (Clock)         {xterm -e clock}
-
-    [submenu] (Hardware)     {beep boop computer !}
-      [exec] (Sensors)        {xterm -e watch -n 0 sensors}
-      [exec] (Battery)        {xterm -e batt}
-      [exec] (Volume Mixer)  {xterm -e alsamixer}
+  [submenu] (Terminal) {xterm and its frends}
+    [exec] (Xterm) { xterm -ls -sl 1000}
+    [exec] (Alacritty) { alacritty }
+    [submenu] (Alt. TTYs)  {i feel pre TTY...}
+      [exec] (Alacritty {Tall}) { alacritty --config-file ~/.alacritty.tall.yml }
+      [exec] (Alacritty {Huge}) { alacritty --config-file ~/.alacritty.xlarge.yml }
+      [exec] (200%Vim) { vimx2 }
     [end]
-
-    [submenu] (Connect to) {SSH connection}
-      [exec] (Ivysaur)   {xterm -e "ssh -l ash ivysaur.astrid.host"}
+    [submenu] (Applications) {C-L-I love the terminal}
+      [exec] (Vim) { vimtim }
+      [exec] (Musikcube) { alacritty --title "music kube" -e musikcube}
+      [exec] (Clock) { clock }
+      [exec] (Volume Mixer) { volumectl }
+    [end]
+    [submenu] (Hardware) {beep boop computer !}
+      [exec] (Battery) { watbat } 
+      [exec] (Watch Sensors) { watsen }
+      [exec] (Jack Meters) { meters }
+    [end]
+    [submenu] (Connect to) {SSH || wifi}
+      [exec] (Ivysaur) {alacritty --title "astrid@ivysaur" -e "ssh ivysaur.astrid.website"}
+      [exec] (Imperfect) {xterm -e "nmcli con up imperfect"}
+      [exec] (7626) {xterm -e "nmcli con up 7626"}
     [end]
   [end]
-
-  [submenu] (Gaming)     {make play gaem}
-    [exec] (Minecraft)  {minecraft-launcher}
-    [exec] (Discord)    {discord}
-    [exec] (Battle.net) {xterm -e "/home/astrid/doc/windoze/Battle.net/Battle.net\ Launcher.exe"}
-    [exec] (Tetris)     {xterm -e vitetris}
+  [submenu] (Gaming) {make play gaem}
+    [exec] (Minecraft <=1.16) { xterm -e "MESA_GL_VERSION_OVERRIDE=2.1 minecraft-launcher"}
+    [exec] (Minecraft >=1.17) { xterm -e "MESA_GL_VERSION_OVERRIDE=4.3 minecraft-launcher"}
+    [exec] (Discord) { discord}
+    [exec] (Battle.net) { xterm -e "/home/astrid/doc/windoze/Battle.net/Battle.net\ Launcher.exe"}
+    [exec] (Tetris) { xterm -e vitetris}
+    [exec] (Obs Studio) { obs }
+    [exec] (RGB Keyboard LEDs) { keyledsd }
   [end]
-
-  [submenu] (Media)     {make play muisc}
-    [exec] (Volume Control)     {pavucontrol}
-    [exec] (Jack)     {jack}
-    [exec] (Audacity)  {audacity}
-    [exec] (LMMS)  {lmms}
-    [exec] (taptempo)     {xterm -e taptempo}
-    [exec] (Strawberry)     {strawberry}
-    [exec] (Baka MPlayer) {baka-mplayer}
+  [submenu] (Audio) {make play mueseic}
+    [exec] (Ardour 7) { ardour7 }
+    [exec] (Calf FX) { calfjackhost}
+    [exec] (Labs) { carla-jack-single ~/doc/labs.carxp }
+    [exec] (Carla-Rack) {carla-rack}
+    [exec] (Hydrogen) { hydrogen}
+    [exec] (All of the Above) { maeusic}
+    [submenu] (Jack) { of all trades baby }
+      [exec] (QJackctl) { qjackctl }
+      [exec] (CLI Meters) { meters111 }
+      [exec] (Output Meter) { cadence-jackmeter }
+      [exec] (Input Meter) { cadence-jackmeter -in }
+      [exec] (Reset Pulse Shi*) { pajack }
+    [end]
+    [submenu] (Etc) {whatev er}
+      [exec] (Volume Control) { pavucontrol}
+      [exec] (Audacity) { audacity}
+      [exec] (Carla) { carla}
+      [exec] (LMMS) { lmms}
+      [exec] (taptempo) { xterm -e taptempo}
+    [end]
   [end]
-
-  [submenu] (Todo)     {much todos about nothign}
-    [exec] (Treesheets) {treesheets}
-  [end]
-
-  [exec] (Chromium)   {chromium}
-  [exec] (Files)      {thunar}
-
+  [exec] (Chrome) {google-chrome-stable}
+  [exec] (Files) {thunar}
   [submenu] (Blackbox) {window mamnager}
-    [exec] (Edit This Menu) {xterm -e vim ~/.blackbox/menu}
+    [exec] (Sensible Defaults) {default}
+    [exec] (Edit This Menu) { xterm -e vim ~/.blackbox/menu}
+    [exec] (Edit .blackboxrc) { xterm -e vim ~/.blackboxrc}
     [exec] (Configurator) {bbconf}
-    [submenu] (Dockapps) {widjets}
-      [exec] (Enable) {dockapps}
-      [exec] (Cull) {dockapps kill}
+    [submenu] (Dockapps) { widjets}
+      [exec] (Enable) { dockapps}
+      [exec] (Cull) { dockapps kill}
     [end]
-    [submenu] (Styles)
+    [submenu] (Styles) {}
       [stylesdir] (/usr/share/blackbox/styles)
     [end]
     [config] (Configuration)
     [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
+    [restart] (Restart Blackbox) {}
     [exit] (Exit Blackbox)
   [end]
-
-  [submenu] (System)        {Bleep bloop computer}
-    [exec] (Sleep)          {systemctl suspend}
-    [exec] (Shut Down)      {shutdown now}
-    [exec] (Restart)        {shutdown now -r}
-    [exec] (Screenshot)     {screenshot}
-    [exec] (Screenshot An App) {screenshot -1}
+  [submenu] (System) { Bleep bloop computer}
+    [exec] (Sleep) { systemctl suspend}
+    [exec] (Shut Down) { shutdown now}
+    [exec] (Restart) { shutdown now -r}
+    [exec] (Screenshot) { screenshot}
+    [exec] (Screenshot An App) { screenshot -1}
+    [exec] (Enable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --on'}
+    [exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
   [end]
-
 [end]

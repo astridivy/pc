@@ -5,6 +5,9 @@
 # Honestly? It's just a tty clock!
 #
 # 4strid
-# 2019-09-30
+# 2022-12-25
 
-tty-clock -s -t -c
+CMD='tty-clock -s -t -c -C 6'
+
+alacritty --config-file ~/.alacritty.medium.yml --title " tty-clock " -e $CMD ||
+  xterm -geometry 54x11 -e $CMD
