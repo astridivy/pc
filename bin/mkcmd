@@ -10,6 +10,6 @@
 CMD="$1"
 TAGLINE="$2"
 
-echo -e "$CMD\n$TAGLINE\n" | vim - -c "set ft=bash" -S $HOME/lib/mkcmd.vim 
+echo -e "$CMD\n$TAGLINE\n" | vim - -S $HOME/bin/lib/mkcmd.vim 
 
 [[ -f $HOME/bin/$CMD ]] && chmod +x $HOME/bin/$CMD

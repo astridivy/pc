@@ -4,7 +4,7 @@
 CMDFILE=$HOME/bin/$1
 
 if [[ -e $CMDFILE ]]; then {
-    vim -c "set ft=bash" -- $CMDFILE;
+    $EDITOR -c "set ft=bash" -- $CMDFILE;
     if [[ ! -x $CMDFILE ]]; then
       chmod +x $CMDFILE;
     fi

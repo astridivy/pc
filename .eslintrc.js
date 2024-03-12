@@ -3,11 +3,11 @@ module.exports = {
   "env": {
     "browser": true,
     "node": true,
-    "jasmine": true,
-    "protractor": true,
+    //"jasmine": true,
+    //"protractor": true,
     "es6": true
   },
-  "parser": "@babel/eslint-parser",
+  //"parser": "@babel/eslint-parser",
   "extends": [
     "eslint:recommended",
   ],
@@ -15,10 +15,10 @@ module.exports = {
   ],
   "parserOptions": {
     "sourceType": "module",
-    "ecmaVersion": 2018,
-    "babel": {
-      "requireConfigFile": false,
-    },
+    "ecmaVersion": 2023,
+    //"babel": {
+      //"requireConfigFile": false,
+    //},
   },
   //"settings": {
   //"react": {
