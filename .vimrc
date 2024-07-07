@@ -54,7 +54,8 @@ Plugin 'mbbill/undotree'
 "TODO: learn how to use this! super useful but a bit unwieldy
 Plugin 'jeetsukumaran/vim-indentwise'
 Plugin 'Yggdroot/indentLine'
-Plugin 'sjbach/lusty'
+" NO RUBY
+"Plugin 'sjbach/lusty'
 Plugin 'https://gitlab.com/HiPhish/info.vim'
 
 " unused languages
