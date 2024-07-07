@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# keyleds_toggle
+#
+# ROYAL RAINBOW
+#
+# astrid
+# 2023-01-26
+
+top -b -n 1 | grep keyledsd && killall keyledsd || keyledsd

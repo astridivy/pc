@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+# clicky
+#
+# astrid
+# 2023-01-25
+
+xdotool click 1

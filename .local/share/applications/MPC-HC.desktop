@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=MPC-HC
+Exec=env WINEPREFIX="/home/astrid/.wine/dosdevices/f:/home/astrid/.wine" wine C:\\\\Program\\ Files\\ \\(x86\\)\\\\MPC-HC\\\\mpc-hc.exe "%f"
+Type=Application
+StartupNotify=true
+Comment=MPC-HC 1.7.13
+Path=/home/astrid/.wine/dosdevices/c:/Program Files (x86)/MPC-HC
+Icon=8303_mpc-hc.0
+StartupWMClass=mpc-hc.exe

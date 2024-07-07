@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# splash
+#
+# splish splash 
+#
+# astrid
+# 2023-01-27
+
+COLS=`tput cols`
+WIDTH=$(($COLS * 2))
+
+catimg -w $WIDTH "$@"

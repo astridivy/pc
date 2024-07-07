@@ -7,11 +7,11 @@
 # astrid
 # 2022-02-24
 
+xdotool set_desktop 5 &
 jack &
 #lmms &
-ardour7 &
-carla-single ~/doc/baby_grand.carxp &
+ardour7 & xdotool search --sync --classname Ardour set_desktop_for_window 4 &
+carla-jack-single ~/doc/carla/LABS.carxp &
 #(sleep 6 ; calfjackhost) &
-volume &
-(sleep 6 ; meters111 & cadence-jackmeter ) &
-
+volumectl &
+(sleep 6 ; meters111 )

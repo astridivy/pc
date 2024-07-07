@@ -309,8 +309,10 @@ vnoremap <silent><Esc> :<C-U>set norelativenumber<CR>
 vnoremap <silent>y y:<C-U>set norelativenumber<CR>
 vnoremap <silent>d d:<C-U>set norelativenumber<CR>
 vnoremap <silent>x x:<C-U>set norelativenumber<CR>
+vnoremap Y Y:<C-U>set norelativenumber<CR>:XClip<CR>
+vnoremap D D:<C-U>set norelativenumber<CR>:XClip<CR>
+vnoremap X X:<C-U>set norelativenumber<CR>:XClip<CR>
 "don't clobber register when pasting 
-"vnoremap p "xd"pp
 vnoremap <C-p> p
 
 nnoremap <leader>I mmI <Esc>r
@@ -455,6 +457,8 @@ command! FixSpaces4 %s /\t/    /g
 command! FixTabs %s /  /\t/g
 command! FixTabs4 %s /    /\t/g
 
+command! XClip call system('xclip -selection clipboard', @0)
+
 "edit something next to the current file
 command! -nargs=1 E call SiblingEdit(<f-args>)
 
@@ -512,22 +516,6 @@ call deoplete#custom#option('sources' , {
 
 set shortmess+=c
 set completeopt=menu,longest,preview
-
-" Use smartcase.
-"let g:deoplete#enable_smart_case = 1
-" Set minimum syntax keyword length.;
-"let g:deoplete#sources#syntax#min_keyword_length = 3
-"let g:deoplete#lock_buffer_name_pattern = '\*ku\*'
-" Define dictionary.
-"let g:deoplete#sources#dictionary#dictionaries = {;
-    "\ 'default' : '',
-    "\ 'vimshell' : $HOME.'/.vimshell_hist',
-    "\ 'scheme' : $HOME.'/.gosh_completions'
-        "\ }
-"" Define keyword.
-"if !exists('g:neocomplete#keyword_patterns')
-    "let g:deoplete#keyword_patterns = {}
-"endif
 
 call deoplete#custom#option('keyword_patterns' , {'default': '\h\w*'})
 
@@ -685,6 +673,8 @@ lnoremap [[A <Esc>
 cnoremap [[A <Esc>
 inoremap [[A <Esc>
 vnoremap [[A <Esc>
+
+nnoremap <C-S> :w<CR>
 
 " System Specifics
 if filereadable($HOME . "/.local.vimrc")

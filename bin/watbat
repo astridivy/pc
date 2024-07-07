@@ -8,7 +8,7 @@
 # 2022-12-06
 #
 
-CMD="watch -n 2 -w -t -c -d batt"
+CMD="watch -n 2 -w -t -c -d -x batt"
 
 alacritty --config-file ~/.alacritty.bitsy.yml --title "+b-" -e $CMD ||
-  xterm -geometry 36x4 -e $CMD
+  xterm -geometry 18x1 -e $CMD

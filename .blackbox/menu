@@ -14,17 +14,20 @@
       [exec] (Vim) { vimtim }
       [exec] (Musikcube) { alacritty --title "music kube" -e musikcube}
       [exec] (Clock) { clock }
+      [exec] (Tap Tempo) { watempo }
       [exec] (Volume Mixer) { volumectl }
     [end]
-    [submenu] (Hardware) {beep boop computer !}
-      [exec] (Battery) { watbat } 
-      [exec] (Watch Sensors) { watsen }
-      [exec] (Jack Meters) { meters }
+    [submenu] (Monitor) {beep boop computer !}
+      [exec] (batt) { watbat } 
+      [exec] (sensors) { watsen }
+      [exec] (jack meters) { meters }
+      [exec] (top) { alacritty --config-file ~/.alacritty.xlarge.yml --title "top - system monitor" -e top }
+      #[exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
     [end]
     [submenu] (Connect to) {SSH || wifi}
-      [exec] (Ivysaur) {alacritty --title "astrid@ivysaur" -e "ssh ivysaur.astrid.website"}
+      [exec] (Venusaur) {xterm -e "ssh astrid.computer -l ai"}
       [exec] (Imperfect) {xterm -e "nmcli con up imperfect"}
-      [exec] (7626) {xterm -e "nmcli con up 7626"}
+      [exec] (Brown 1) {xterm -e "nmcli con up Brown1"}
     [end]
   [end]
   [submenu] (Gaming) {make play gaem}
@@ -38,32 +41,32 @@
   [end]
   [submenu] (Audio) {make play mueseic}
     [exec] (Ardour 7) { ardour7 }
-    [exec] (Calf FX) { calfjackhost}
-    [exec] (Labs) { carla-jack-single ~/doc/labs.carxp }
+    [exec] (Labs) { carla-jack-single ~/doc/carla/labs.carxp }
     [exec] (Carla-Rack) {carla-rack}
     [exec] (Hydrogen) { hydrogen}
     [exec] (All of the Above) { maeusic}
     [submenu] (Jack) { of all trades baby }
       [exec] (QJackctl) { qjackctl }
+      [exec] (Calf FX) { calfjackhost}
       [exec] (CLI Meters) { meters111 }
       [exec] (Output Meter) { cadence-jackmeter }
       [exec] (Input Meter) { cadence-jackmeter -in }
       [exec] (Reset Pulse Shi*) { pajack }
     [end]
     [submenu] (Etc) {whatev er}
-      [exec] (Volume Control) { pavucontrol}
       [exec] (Audacity) { audacity}
       [exec] (Carla) { carla}
       [exec] (LMMS) { lmms}
-      [exec] (taptempo) { xterm -e taptempo}
+      [exec] (taptempo) { watempo }
     [end]
+    [exec] (Volume Control) { pavucontrol}
   [end]
   [exec] (Chrome) {google-chrome-stable}
   [exec] (Files) {thunar}
   [submenu] (Blackbox) {window mamnager}
     [exec] (Sensible Defaults) {default}
-    [exec] (Edit This Menu) { xterm -e vim ~/.blackbox/menu}
-    [exec] (Edit .blackboxrc) { xterm -e vim ~/.blackboxrc}
+    [exec] (Edit This Menu) { vimtim ~/.blackbox/menu}
+    [exec] (Edit Hotkeys) { vimtim ~/.bbkeysrc}
     [exec] (Configurator) {bbconf}
     [submenu] (Dockapps) { widjets}
       [exec] (Enable) { dockapps}
@@ -83,7 +86,6 @@
     [exec] (Restart) { shutdown now -r}
     [exec] (Screenshot) { screenshot}
     [exec] (Screenshot An App) { screenshot -1}
-    [exec] (Enable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --on'}
-    [exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
+    [exec] (Terminate An App) { xdotool  selectwindow  windowkill }
   [end]
 [end]

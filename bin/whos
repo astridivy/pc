@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# whos
+#
+# show me what you got ?  huh  ? whozat ???
+#
+# astrid
+# 2023-01-30
+
+search="$1"
+
+shift 1
+
+for f in  *$search* ; do
+  echo "$f"
+  splash  "$f"  $@
+done

@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# show
+#
+# the show must go on
+#
+# astrid
+# 2023-01-30
+
+for f in  "$@" ; do
+  splash "$f";
+done
