@@ -2,6 +2,32 @@
 "colorscheme lilydjwg_dark
 colorscheme Tomorrow-Night-Nineties
 
+inoremap <c-u> <esc>u
+nnoremap n j
+vnoremap n j
+nnoremap <c-n> n
+
+nnoremap ik k
+nnoremap ki k
+
+vnoremap x "xygvx
+nnoremap yy "yyyyy
+vnoremap y "yygvy
+nnoremap Y "zYY
+vnoremap Y "zYY
+
+augroup visual_cleanup
+  autocmd!
+  autocmd ModeChanged *:[ni] call s:VisualLeave()
+augroup END
+
+function! s:VisualLeave()
+  set norelativenumber
+endfunction
+
+nnoremap <silent> V :set relativenumber<CR>:noh<CR>V
+
+
 " transparent bg
 hi Normal guibg=NONE ctermbg=none
 

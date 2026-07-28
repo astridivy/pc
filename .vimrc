@@ -1,25 +1,25 @@
 "2021/Nov
 
-set nocompatible    "be IMproved!
+set nocompatible		"be IMproved!
 
 " update 2018-11 consistently use .vim directory regardless of OS
-set rtp+=$HOME/.vim/bundle/Vundle.vim  "setup for Vundle
-let path='$HOME/.vim/bundle'           "with Unix paths
+set rtp+=$HOME/.vim/bundle/Vundle.vim	"setup for Vundle
+let path='$HOME/.vim/bundle'					 "with Unix paths
 
 if has('unix')
-  set encoding=utf-8      "makes alt keys work
-  set clipboard=unnamedplus   "makes clipboard work
+	set encoding=utf-8			"makes alt keys work
+	set clipboard=unnamedplus	 "makes clipboard work
 end
 
 if has('win32')
-  set encoding=utf-8      "makes alt keys work
-  set clipboard=unnamed   "makes clipboard work
+	set encoding=utf-8			"makes alt keys work
+	set clipboard=unnamed	 "makes clipboard work
 end
 
 "mac is uncomfortable since it's both Unix and Windows-like
 if has('osx')
-  set encoding=utf-8      "makes alt keys work
-  set clipboard=unnamed   "makes clipboard work
+	set encoding=utf-8			"makes alt keys work
+	set clipboard=unnamed	 "makes clipboard work
 end
 
 " PLUGINS
@@ -83,68 +83,68 @@ call vundle#end()
 " INITIALIZATION
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 if !isdirectory($HOME."/.vim/undo/")
-  call mkdir($HOME."/.vim/undo", "p")
+	call mkdir($HOME."/.vim/undo", "p")
 endif
 
 " SETTINGS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 filetype plugin indent on
-set mousehide      " hide mouse while typing
-set history=1000   " big history
-set number         " line numbers
-set showmatch      " match brackets
-set incsearch      " incremental search
-set hlsearch       " search highlighting
-set whichwrap=b,s,h,l,<,>,[,]   " give keys wraparound
-set backspace=indent,eol,start  " thank you jesus, normal acting backspace
-set nowrap        " who needs it
+set mousehide			" hide mouse while typing
+set history=111   " big history
+set number		   	" line numbers
+set showmatch			" match brackets
+set incsearch			" incremental search
+set hlsearch			" search highlighting
+set whichwrap=b,s,h,l,<,>,[,]	 " give keys wraparound
+set backspace=indent,eol,start	" thank you jesus, normal acting backspace
+set nowrap				" who needs it
 "WELCOME TO 2019: we 2 spaces now
-set shiftwidth=2   " indents have a width of 2
+set shiftwidth=2	 " indents have a width of 2
 set softtabstop=2
-set expandtab      "look into when we do or don't want this
-set tabstop=2      " width of tab character. useful to set this to 2 so we don't go out of sync
+set expandtab			"look into when we do or don't want this
+set tabstop=2			" width of tab character. useful to set this to 2 so we don't go out of sync
 set showtabline=2
-set t_RV= ttymouse=xterm2  " fixes weird 2c at startup HACK (shouldn't need it forever)
-"set mouse=n       " only important in macvim?
-set ignorecase     " let search be case insensitive
-set smartcase      " *unless* it contains a capitalized letter
-set hidden         " hide buffers without saving them
-set scrolloff=5    " just a shade more than normal
-set noswapfile     " no thx
-set undofile       " persistent undo
+set t_RV= ttymouse=xterm2	" fixes weird 2c at startup HACK (shouldn't need it forever)
+"set mouse=n			 " only important in macvim?
+set ignorecase		 " let search be case insensitive
+set smartcase			" *unless* it contains a capitalized letter
+set hidden				 " hide buffers without saving them
+set scrolloff=5		" just a shade more than normal
+set noswapfile		 " no thx
+set undofile			 " persistent undo
 set undodir=~/.vim/undo/ "but without polluting working directories
-set autoread       " idk what this does i should look it up
+set autoread			 " idk what this does i should look it up
 
 "set noerrorbells visualbell t_vb=
 "actually i like the bell :P
 
 augroup VIMRC
-  autocmd!
-  autocmd GUIEnter * set visualbell t_vb=
-  autocmd GUIEnter * set visualbell t_vb=
+	autocmd!
+	autocmd GUIEnter * set visualbell t_vb=
+	autocmd GUIEnter * set visualbell t_vb=
 
-  "Special for python <3
-  autocmd FileType python setlocal softtabstop=4 | setlocal expandtab
-  "Special for HTML <3
-  "autocmd FileType javascript setlocal shiftwidth=2 | setlocal tabstop=2 | setlocal softtabstop=2 | setlocal expandtab | hi Conceal ctermfg=8
-  "autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
+	"Special for python <3
+	autocmd FileType python setlocal softtabstop=4 | setlocal expandtab
+	"Special for HTML <3
+	"autocmd FileType javascript setlocal shiftwidth=2 | setlocal tabstop=2 | setlocal softtabstop=2 | setlocal expandtab | hi Conceal ctermfg=8
+	"autocmd FileType javascript :setlocal shiftwidth=4 | :setlocal tabstop=4
 
-  autocmd FileType haskell setlocal softtabstop=4 | setlocal expandtab
+	autocmd FileType haskell setlocal softtabstop=4 | setlocal expandtab
 
-  "REDACTED (A relic of the bygone era of nested callback hell)
-  "autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
+	"REDACTED (A relic of the bygone era of nested callback hell)
+	"autocmd FileType javascript :execute 'inoremap <CR> ' . maparg('<CR>','i') . "<c-o>:call <SID>CallbackSemicolon()\r"
 
-  " close preview window automatically when using annotated code completions
-  "autocmd CursorMovedI * if pumvisible() == 0|pclose|endif 
-  "                                                         delete straight away
-  autocmd InsertLeave * if pumvisible() == 0|pclose|endif 
-  "                                                        waits until exit
-  "autocmd CompleteDone * pclose 
-  "                               probably more performant
+	" close preview window automatically when using annotated code completions
+	"autocmd CursorMovedI * if pumvisible() == 0|pclose|endif 
+	"																												 delete straight away
+	autocmd InsertLeave * if pumvisible() == 0|pclose|endif 
+	"																												waits until exit
+	"autocmd CompleteDone * pclose 
+	"															 probably more performant
 
-  " please god make the indent lines dark
-  autocmd BufReadPost * hi Conceal ctermfg=8 ctermbg=0
-  autocmd BufWritePost * hi Conceal ctermfg=8 ctermbg=0
+	" please god make the indent lines dark
+	autocmd BufReadPost * hi Conceal ctermfg=8 ctermbg=0
+	autocmd BufWritePost * hi Conceal ctermfg=8 ctermbg=0
 
 augroup end
 
@@ -165,42 +165,45 @@ iab propTyptes propTypes
 " TODO: apply a count though
 
 function! s:JumpToNextWord()
-	let l:lastln = -1
-	let l:lastcol = -1
-  normal! w
-  while strpart(getline('.'), col('.')-1, 1) !~ '\w'
-    normal! w
-    if (l:lastln == line('.')) && (l:lastcol == col('.')) 
-      break
-    endif
-    let l:lastln = line('.')
-    let l:lastcol = col('.')
-  endwhile
+		let l:lastln = -1
+		let l:lastcol = -1
+	normal! w
+	while strpart(getline('.'), col('.')-1, 1) !~ '\w'
+		normal! w
+		if (l:lastln == line('.')) && (l:lastcol == col('.')) 
+			break
+		endif
+		let l:lastln = line('.')
+		let l:lastcol = col('.')
+	endwhile
 endfunction
 
 function! s:JumpToPrevWord()
-  normal! b
-  while strpart(getline('.'), col('.')-1, 1) !~ '\w' && ( col('.') > 1 || line('.') > 1)
-      normal! b
-  endwhile
+	normal! b
+	while strpart(getline('.'), col('.')-1, 1) !~ '\w' && ( col('.') > 1 || line('.') > 1)
+			normal! b
+	endwhile
 endfunction
 
 " Inserts semicolons at the end of constructs like Callback(function() {})
+"
+" (Heh . a relic of when we used semicolons and before Promises ♡ 2026-1-17)
+"
 "function! s:CallbackSemicolon()
-"  if strpart(getline('.'), col('.')-1) == '})'
-"    execute "normal! A;\<Esc>"
-"    execute "normal! O\t\b"
-"  endif
+"	if strpart(getline('.'), col('.')-1) == '})'
+"		execute "normal! A;\<Esc>"
+"		execute "normal! O\t\b"
+"	endif
 "endfunction
 
 function! s:LineEmpty()
-  return getline('.') == ''
+	return getline('.') == ''
 endfunction
 
 
 function! s:TrailingChar(check)
-	let l:line = getline('.')
-	return strpart(l:line, strlen(l:line) - 1) == a:check
+		let l:line = getline('.')
+		return strpart(l:line, strlen(l:line) - 1) == a:check
 endfunction
 
 
@@ -232,17 +235,35 @@ nnoremap ! :!$SHELL<CR>
 " very useful when auto pairs is being a pain
 nnoremap <leader>i i <Esc>r
 nnoremap <leader>a a <Esc>r
-"heck why not just do braces
-nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
-nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"}
 
 "todo???? : make i autotab the way o does
 "actually : just use S
 
 "toggle semicolon at the end of a line;
-nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
+"nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
 "same deal but with commas (nice)
-nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
+"nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
+
+"heck why not just do braces
+"nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m";
+"nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"}
+
+" 2026-01-17 ♡ (ChatGPT)
+" tabs -> 2-space indent
+command! FixSpaces  %s/^\t\+/\=repeat('  ', strlen(submatch(0)))/e
+
+" tabs -> 4-space indent
+command! FixSpaces4 %s/^\t\+/\=repeat('    ', strlen(submatch(0)))/e
+
+" 2-space indent -> tabs
+command! FixTabs    %s/^\%(  \)\+/\=repeat("\t", strlen(submatch(0))/2)/e
+
+" 4-space indent -> tabs
+command! FixTabs4   %s/^\%(    \)\+/\=repeat("\t", strlen(submatch(0))/4)/e
+
+" 4-space indent -> 2-space indent
+command! Fix4Spaces %s/^\%(    \)\+/\=repeat('  ', strlen(submatch(0))/4)/e
+
 
 let &t_TI = "\<Esc>[>4;2m"
 let &t_TE = "\<Esc>[>4;m"
@@ -254,7 +275,7 @@ nnoremap <Backspace> ldF.
 nnoremap <S-Backspace> dT x
 inoremap <S-Backspace> <Esc>dT xi
 
-" TIL backspace was  control - h ??? (2022-12)
+" TIL backspace was	control - h ??? (2022-12)
 nnoremap <Backspace> ldF.
 nnoremap <S-Backspace> dT x
 inoremap <S-Backspace> <Esc>dT xi
@@ -295,12 +316,12 @@ nnoremap <leader>tp :tabp<CR>
 "relative line number in visual line and visual block mode
 
 function! s:enter_visual_line()
-  execute "set relativenumber"
-  execute "normal! V"
+	execute "set relativenumber"
+	execute "normal! V"
 endfunction
 function! s:enter_visual_block()
-  execute "set relativenumber"
-  execute "normal! "
+	execute "set relativenumber"
+	execute "normal! "
 endfunction
 nnoremap <silent>V :call <SID>enter_visual_line()<CR>
 nnoremap <silent><c-v> :call <SID>enter_visual_block()<CR>
@@ -326,7 +347,10 @@ nnoremap - :lprevious<CR>
 
 "ridiculous maps
 command! Date read !date -I
-command! Sign execute "normal! a4strid (Astrid Ivy)\<CR>"
+command! Sign read !echo "Astrid Ivy "
+command! Heart read !heart
+"command! Sign execute "normal! aA
+
 
 "text decoration
 nnoremap __ yypVr-
@@ -371,19 +395,19 @@ nnoremap x "xx
 nnoremap X "xX
 
 "neocomplete's recommended key maps
-inoremap <expr><C-g>     deoplete#undo_completion()
+inoremap <expr><C-z>		 deoplete#undo_completion()
 " <CR>: close popup and save indent.
 inoremap <CR> <C-r>=<SID>my_cr_function()<CR>
 function! s:my_cr_function()
-  return pumvisible() ? "\<C-y>" : "\<CR>"
+	return pumvisible() ? "\<C-y>" : "\<CR>"
 endfunction
-"inoremap <expr><Tab>  pumvisible() ? "\<C-n>" : deoplete#complete()
+"inoremap <expr><Tab>	pumvisible() ? "\<C-n>" : deoplete#complete()
 inoremap <expr><Tab> Is_whitespace() ? "\<Tab>" : "\<C-n>"
 function! Is_whitespace()
-  if col('.') == 1
-    return 1
-  endif
-  return strpart(getline('.'), col('.')-2, 1) =~ '\s'
+	if col('.') == 1
+		return 1
+	endif
+	return strpart(getline('.'), col('.')-2, 1) =~ '\s'
 endfunction
 
 " <C-h>, <BS>: close popup and delete backword char.
@@ -399,6 +423,7 @@ vnoremap K k
 
 "easy motion
 " TODO: use this more, it's f***ing awesome
+" ♡ in 2026 , we use this SOMETIMES but not usually heh
 nmap <Space> <Plug>(easymotion-prefix)
 nmap <Space><Space> <Plug>(easymotion-bd-jk)
 
@@ -409,10 +434,10 @@ nnoremap <C-A> ggVG
 "(thanks to q335r49 from StackOverflow)
 let [pvft,pvftc]=[1,32]
 fun! Multift(x,c,i)
-    let [g:pvftc,g:pvft]=[a:c,a:i]
-    let pos=searchpos((a:x==2? mode(1)=='no'? '\C\V\_.\zs' : '\C\V\_.' : '\C\V').(a:x==1 && mode(1)=='no' || a:x==-2? nr2char(g:pvftc).'\zs' : nr2char(g:pvftc)),a:x<0? 'bW':'W')
-    call setpos("'x", pos[0]? [0,pos[0],pos[1],0] : [0,line('.'),col('.'),0])
-    return "`x"
+		let [g:pvftc,g:pvft]=[a:c,a:i]
+		let pos=searchpos((a:x==2? mode(1)=='no'? '\C\V\_.\zs' : '\C\V\_.' : '\C\V').(a:x==1 && mode(1)=='no' || a:x==-2? nr2char(g:pvftc).'\zs' : nr2char(g:pvftc)),a:x<0? 'bW':'W')
+		call setpos("'x", pos[0]? [0,pos[0],pos[1],0] : [0,line('.'),col('.'),0])
+		return "`x"
 endfun
 no <expr> F Multift(-1,getchar(),-1)
 no <expr> f Multift(1,getchar(),1)
@@ -421,8 +446,8 @@ no <expr> t Multift(2,getchar(),2)
 
 "COLORS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-set t_Co=256         "make colors work on xterm
-set background=dark  " dark background
+set t_Co=256				 "make colors work on xterm
+set background=dark	" dark background
 colorscheme sorcerer
 syntax on
 "removes italics from sorcerer theme
@@ -433,7 +458,7 @@ hi diffFile gui=NONE
 hi diffLine gui=NONE
 
 "set a background color (maybe machine specific? sorcerer specific?)
-hi Normal                 cterm=NONE             ctermbg=234  ctermfg=145
+hi Normal								 cterm=NONE						 ctermbg=234	ctermfg=145
 
 "COMMANDS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -451,30 +476,27 @@ command! Spaces setlocal shiftwidth=2 | setlocal softtabstop=2 | set expandtab
 command! Tabs setlocal shiftwidth=2 | setlocal tabstop=2 | set noexpandtab
 command! BigTabs setlocal shiftwidth=4 | setlocal tabstop=4 | set noexpandtab
 
-command! FixSpaces %s /\t/  /g
-command! FixSpaces4 %s /\t/    /g
-command! FixTabs %s /  /\t/g
-command! FixTabs4 %s /    /\t/g
-
 "edit something next to the current file
 command! -nargs=1 E call SiblingEdit(<f-args>)
 
 "oh you forgot to run vim with sudo did ya?
-command! W execute 'silent w !sudo tee "%" > /dev/null' | edit!
+command! W execute 'silent w !sudo tee -S "%" > /dev/null' | edit!
+
+command! T execute 'silent term++curwin'
 
 function VimAndDie ()
-  execute "!vim -S ~/.vim/restart.vim"
-  exit
+	execute "!vim -S ~/.vim/restart.vim"
+	exit
 endfunction
 
 function! Here () 
-  cd %:p:h
+	cd %:p:h
 endfunction
 
 
 
 function! SiblingEdit (filename)
-  execute "edit " . expand("%:h") . "/" . a:filename . "*"
+	execute "edit " . expand("%:h") . "/" . a:filename . "*"
 endfunction
 
 "NEOCOMPLETE
@@ -491,12 +513,12 @@ call deoplete#custom#option({
 \})
 
 call deoplete#custom#var('around', {
-      \  'range_above': 40,
-      \'range_below': 20,
-      \'mark_above': '[^]',
-      \'mark_below': '[_]',
-      \'mark_changes': '[*]',
-      \})
+			\	'range_above': 40,
+			\'range_below': 20,
+			\'mark_above': '[^]',
+			\'mark_below': '[_]',
+			\'mark_changes': '[*]',
+			\})
 
 call deoplete#custom#var('file', { 'enable_buffer_path': 1, 'enable_slash_completion': 1})
 
@@ -508,8 +530,8 @@ call deoplete#custom#var('omni', 'functions', {
 \})
 
 call deoplete#custom#option('sources' , {
-      \'_': [],
-      \})
+			\'_': [],
+			\})
 
 set shortmess+=c
 set completeopt=menu,longest,preview
@@ -521,10 +543,10 @@ set completeopt=menu,longest,preview
 "let g:deoplete#lock_buffer_name_pattern = '\*ku\*'
 " Define dictionary.
 "let g:deoplete#sources#dictionary#dictionaries = {;
-    "\ 'default' : '',
-    "\ 'vimshell' : $HOME.'/.vimshell_hist',
-    "\ 'scheme' : $HOME.'/.gosh_completions'
-        "\ }
+		"\ 'default' : '',
+		"\ 'vimshell' : $HOME.'/.vimshell_hist',
+		"\ 'scheme' : $HOME.'/.gosh_completions'
+				"\ }
 "" Define keyword.
 "if !exists('g:neocomplete#keyword_patterns')
     "let g:deoplete#keyword_patterns = {}
@@ -536,29 +558,29 @@ call deoplete#custom#option('keyword_patterns' , {'default': '\h\w*'})
 "let g:deoplete#enable_auto_select = 1
 " Enable omni completion.
 augroup VIMRC_NEOCOMPLETE
-  autocmd!
-  autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-  autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
-  autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-  "autocmd FileType javascript setlocal omnifunc=tern#Complete
-  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
-  autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+	autocmd!
+	autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
+	autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+	autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+	"autocmd FileType javascript setlocal omnifunc=tern#Complete
+	autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
+	autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 
-  autocmd CompleteDone * pclose
+	autocmd CompleteDone * pclose
 augroup end
 " Enable heavy omni completion.
 "if !exists('g:neocomplete#sources#omni#input_patterns')
-  "let g:neocomplete#sources#omni#input_patterns = {}
+	"let g:neocomplete#sources#omni#input_patterns = {}
 "endif
 
 " too slow! 
 "if !exists('g:neocomplete#force_omni_input_patterns')
-  "let g:neocomplete#force_omni_input_patterns = {}
+	"let g:neocomplete#force_omni_input_patterns = {}
 "endif
 "let g:neocomplete#force_omni_input_patterns.javascript = '[^. \t]\.\w*'
 
 "if !exists('g:neocomplete#sources#omni#functions')
-  "let g:neocomplete#sources#omni#functions = {}
+	"let g:neocomplete#sources#omni#functions = {}
 "endif
 "let g:neocomplete#sources#omni#functions.javascript = ['tern#Complete']
 
@@ -575,11 +597,12 @@ let g:AutoPairs = {'(':')', '[':']', '{':'}',"'":"'",'"':'"', '`':'`'}
 let g:syntastic_always_populate_loc_list=1
 "let g:syntastic_javascript_checkers = ['jshint']
 let g:syntastic_javascript_checkers = ['eslint']
+let g:syntastic_javascript_eslint_exec = '/usr/bin/eslint_d'
 
 " EASYMOTION
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:EasyMotion_use_upper = 1
-let g:EasyMotion_keys = "ABCDEFGHIJKLMNPQRSTUVWXZ12390"
+let g:EasyMotion_keys = "ACDEFGHIJKLMNPQRSTUVWXZ1234890"
 
 " AIRLINE
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -600,13 +623,13 @@ nnoremap <silent>;k :noh<CR>:set norelativenumber<CR>
 
 " only relevant to conemu (add to .local.vimrc if using conemu)
 "if (&term == "win32")
-	"set termencoding=utf-8
-	"set term=xterm
-	"set t_Co=256
-	"let &t_AB="\e[48;5;%dm"
-	"let &t_AF="\e[38;5;%dm"
-	"inoremap <Char-0x07F> <BS>
-	"nnoremap <Char-0x07F> <BS>
+		"set termencoding=utf-8
+		"set term=xterm
+		"set t_Co=256
+		"let &t_AB="\e[48;5;%dm"
+		"let &t_AF="\e[38;5;%dm"
+		"inoremap <Char-0x07F> <BS>
+		"nnoremap <Char-0x07F> <BS>
 "endif
 
 " GOD YES TERMINAL MODE. I THOUGHT I DIDN'T NEED IT BUT IT IS EVERYTHING I WANT
@@ -619,31 +642,34 @@ tnoremap <C-u> <C-w>N<C-u>
 "nnoremap <C-w>;n :bn<CR>
 nnoremap <C-w>t :belowright term<CR>
 nnoremap <C-w><C-t> :term++curwin<CR>
+" (need these for browser based ssh)
+nmap <leader>w <C-w>
+tmap <leader>w <C-w>
 
 " ODDS N ENDS
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nnoremap <expr>q IsThisHelp() ? "<C-w>q" : "q"
 
 function! IsThisHelp ()
-  return &filetype == "help"
+	return &filetype == "help"
 endfunction
 
 function! Remember ()
-  if g:remember_me == 1
-    mksession! $HOME/.vim/restore.session
-  endif
+	if g:remember_me == 1
+		mksession! $HOME/.vim/restore.session
+	endif
 endfunction
 
 function! AutoCloseEmpty ()
-  let lastline = line("$")
-  if lastline == 1 && getline(lastline) == "" && expand("%") == ""
-    exec "bdelete!"
-  endif
+	let lastline = line("$")
+	if lastline == 1 && getline(lastline) == "" && expand("%") == ""
+		exec "bdelete!"
+	endif
 endfunction
 
 function! Recall ()
-  source $HOME/.vim/restore.session
-  let g:remember_me = 1
+	source $HOME/.vim/restore.session
+	RememberMe
 endfunction
 
 " seems weird to reset the airline theme but after much, much trial and error it's the
@@ -651,7 +677,7 @@ endfunction
 command! Vimrc source $MYVIMRC | AirlineRefresh | redraw | echon "reticulating vimrc..."
 
 if ! exists("g:remember_me")
-  let g:remember_me = 0
+	let g:remember_me = 0
 endif
 
 command! RememberMe let g:remember_me = 1
@@ -660,23 +686,23 @@ command! Recall call Recall() | Vimrc
 command! StdLayout vert split rightbelow | vert split rightbelow | split belowright | term++curwin
 
 augroup VIMRC_BUFF_STUFF
-  autocmd!
-  "autocmd BufLeave * call AutoCloseEmpty()
-  autocmd ExitPre * bufdo call AutoCloseEmpty()
-  autocmd ExitPre * call Remember()
+	autocmd!
+	"autocmd BufLeave * call AutoCloseEmpty()
+	autocmd ExitPre * bufdo call AutoCloseEmpty()
+	autocmd ExitPre * call Remember()
 
-  autocmd TabEnter * Here
+	autocmd TabEnter * Here
 
-  " at least try to keep viminfos in sync between vim instances (:wv and :rv can be used)
-  " to trigger it manually
-  " this is probably not smart
-  "autocmd BufWritePost * rv | wv
-  "autocmd BufEnter * rv
+	" at least try to keep viminfos in sync between vim instances (:wv and :rv can be used)
+	" to trigger it manually
+	" this is probably not smart
+	"autocmd BufWritePost * rv | wv
+	"autocmd BufEnter * rv
 
-  autocmd BufWritePost $MYVIMRC Vimrc
-  autocmd BufWritePost ~/.local.vimrc Vimrc
-  "autocmd BufWritePost .vimrc Vimrc 
-  "autocmd BufWritePost _vimrc Vimrc 
+	autocmd BufWritePost $MYVIMRC Vimrc
+	autocmd BufWritePost ~/.local.vimrc Vimrc
+	"autocmd BufWritePost .vimrc Vimrc 
+	"autocmd BufWritePost _vimrc Vimrc 
 
 augroup end
 
@@ -689,7 +715,7 @@ vnoremap [[A <Esc>
 
 " System Specifics
 if filereadable($HOME . "/.local.vimrc")
-  so ~/.local.vimrc
+	so ~/.local.vimrc
 endif
 
 "pesky indentLine 
@@ -697,6 +723,19 @@ set conceallevel=1
 
 " WHY DOES THIS KEEP TURNING ON
 set textwidth=999999
+
+function! s:Pastey() abort
+  if &paste
+    set nopaste
+    " ensure Normal
+  else
+    set paste
+    " ensure Insert
+    startinsert
+  endif
+endfunction
+
+nnoremap <silent> <c-p> :call <SID>Pastey()<CR>
 
 noh
 

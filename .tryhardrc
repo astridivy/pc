@@ -1,1 +1,1 @@
-_TRY_COMMON=("." "lib" "src" ".." "$HOME" "/" "$HOME/src" "$HOME/doc" "mnt")
+_TRY_COMMON=("." "lib" ".." "$HOME" "/" "$HOME/src" "$HOME/www" "$HOME/mnt" "mnt")
