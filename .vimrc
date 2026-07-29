@@ -329,6 +329,7 @@ nnoremap - :lprevious<CR>
 "ridiculous maps
 command! Date read !date -I
 command! Sign execute "normal! a4strid (Astrid Ivy)\<CR>"
+command! Heart read !heart
 
 "text decoration
 nnoremap __ yypVr-
@@ -373,7 +374,7 @@ nnoremap x "xx
 nnoremap X "xX
 
 "neocomplete's recommended key maps
-inoremap <expr><C-g>     deoplete#undo_completion()
+inoremap <expr><C-z>     deoplete#undo_completion()
 " <CR>: close popup and save indent.
 inoremap <CR> <C-r>=<SID>my_cr_function()<CR>
 function! s:my_cr_function()
@@ -453,10 +454,24 @@ command! Spaces setlocal shiftwidth=2 | setlocal softtabstop=2 | set expandtab
 command! Tabs setlocal shiftwidth=2 | setlocal tabstop=2 | set noexpandtab
 command! BigTabs setlocal shiftwidth=4 | setlocal tabstop=4 | set noexpandtab
 
-command! FixSpaces %s /\t/  /g
-command! FixSpaces4 %s /\t/    /g
-command! FixTabs %s /  /\t/g
-command! FixTabs4 %s /    /\t/g
+" 2026-01-17 ♡ (chatgpt)
+" the old one-liners were naive :s/\t/  /g and mangled non-leading
+" whitespace (inside strings, trailing); these anchor to the indent only
+
+" tabs -> 2-space indent
+command! FixSpaces  %s/^\t\+/\=repeat('  ', strlen(submatch(0)))/e
+
+" tabs -> 4-space indent
+command! FixSpaces4 %s/^\t\+/\=repeat('    ', strlen(submatch(0)))/e
+
+" 2-space indent -> tabs
+command! FixTabs    %s/^\%(  \)\+/\=repeat("\t", strlen(submatch(0))/2)/e
+
+" 4-space indent -> tabs
+command! FixTabs4   %s/^\%(    \)\+/\=repeat("\t", strlen(submatch(0))/4)/e
+
+" 4-space indent -> 2-space indent
+command! Fix4Spaces %s/^\%(    \)\+/\=repeat('  ', strlen(submatch(0))/4)/e
 
 command! XClip call system('xclip -selection clipboard', @0)
 
@@ -464,7 +479,28 @@ command! XClip call system('xclip -selection clipboard', @0)
 command! -nargs=1 E call SiblingEdit(<f-args>)
 
 "oh you forgot to run vim with sudo did ya?
-command! W execute 'silent w !sudo tee "%" > /dev/null' | edit!
+" -n so it fails fast instead of blocking on a prompt it may not be able to
+" show; the v:shell_error guard is the important bit -- the old version ran
+" edit! unconditionally, so a failed write silently reverted the buffer and
+" ate your changes
+command! W call s:SudoWrite()
+function! s:SudoWrite() abort
+  let l:f = expand('%:p')
+  if empty(l:f)
+    echohl ErrorMsg | echomsg 'W: buffer has no filename' | echohl NONE
+    return
+  endif
+  execute 'silent write !sudo -n tee ' . shellescape(l:f, 1) . ' >/dev/null'
+  if v:shell_error
+    echohl ErrorMsg
+    echomsg 'W: sudo write failed (cold timestamp? try :!sudo -v) - buffer intact'
+    echohl NONE
+    return
+  endif
+  edit!
+endfunction
+
+command! T execute 'silent term++curwin'
 
 function VimAndDie ()
   execute "!vim -S ~/.vim/restart.vim"
@@ -567,7 +603,7 @@ let g:syntastic_javascript_checkers = ['eslint']
 " EASYMOTION
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:EasyMotion_use_upper = 1
-let g:EasyMotion_keys = "ABCDEFGHIJKLMNPQRSTUVWXZ12390"
+let g:EasyMotion_keys = "ACDEFGHIJKLMNPQRSTUVWXZ1234890"
 
 " AIRLINE
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -607,6 +643,9 @@ tnoremap <C-u> <C-w>N<C-u>
 "nnoremap <C-w>;n :bn<CR>
 nnoremap <C-w>t :belowright term<CR>
 nnoremap <C-w><C-t> :term++curwin<CR>
+" (need these for browser based ssh, where C-w gets eaten by the browser)
+nmap <leader>w <C-w>
+tmap <leader>w <C-w>
 
 " ODDS N ENDS
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -687,6 +726,19 @@ set conceallevel=1
 
 " WHY DOES THIS KEEP TURNING ON
 set textwidth=999999
+
+function! s:Pastey() abort
+  if &paste
+    set nopaste
+    " ensure Normal
+  else
+    set paste
+    " ensure Insert
+    startinsert
+  endif
+endfunction
+
+nnoremap <silent> <c-p> :call <SID>Pastey()<CR>
 
 noh
 

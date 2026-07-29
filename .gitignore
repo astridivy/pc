@@ -1,1 +1,4 @@
 doc/download
+
+# AUR build checkout: 141M of tarballs, pkg/, src/ and its own .git
+yay/yay/

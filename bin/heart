@@ -7,4 +7,13 @@
 # 2021-11-19
 
 #echo -e '\u2661'
-echo -n -e '\u2661' | xclip -f -i -selection clipboard
+#echo -n -e '\u2661' | xclip -f -i -selection clipboard
+# 2026-01-17 (chatgpt)
+heart=$'\u2661'
+
+if command -v xclip >/dev/null; then
+  printf '%s' "$heart" | xclip -i -selection clipboard -f
+  printf '\n'
+else
+  printf '%s\n' "$heart"
+fi
