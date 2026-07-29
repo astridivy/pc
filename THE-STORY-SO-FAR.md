@@ -83,12 +83,16 @@ passwords on `0.0.0.0:22`. SSH is now key-only from my phone.
 
 ## where things stand
 
-- pacman works; keyring current; **985 packages pending upgrade**
-- upgrading will need manual intervention for `linux-firmware`, and glibc 2.41
-  will break the Discord install
+- **the 21-month upgrade is done** -- 0 packages pending. node 22 -> 26,
+  npm 10 -> 12, eslint 9 -> 10. it did fill the root filesystem to 100% on the
+  way (14G of it was `/var/cache/pacman/pkg`), which is its own adventure
 - SSH is key-only
+- **linting works again**, for the first time in about a year -- flat config,
+  symlinked to `$HOME` so it actually covers things, and `eslint_d` because
+  this laptop is from 2010
 - 97 AUR packages, several long abandoned (`youtube-dl` frozen at 2021,
-  `google-chrome` at 128, `qt3`, `js78`)
-- ESLint still unfinished
+  `qt3`, `js78`)
+- there is an orphaned `~/src/node_modules` shadowing global packages for
+  everything under `~/src`. one day it will be someone's afternoon
 
 Everything on this computer is cursed. It's *my* curse though.

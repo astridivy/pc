@@ -71,15 +71,43 @@ clearer in scripts. Prefer either over the bare command.
   previous version's directory, which silently enshrines stale keybindings.
 - `etc/`, `usr/` — files destined for system paths, staged for manual install.
 
+## Linting
+
+ESLint is flat-config only since v9; v10 dropped `.eslintrc` support entirely.
+`eslint.config.js` lives here and `link.sh` symlinks it to
+`~/eslint.config.js`, so it covers any stray `.js` under `$HOME` that has no
+config of its own -- eslint searches *upward* from the file being linted. The
+old setup was never symlinked out, which is why it silently linted nothing
+outside this repo.
+
+The toolchain is npm-global rather than pacman's (pacman ships eslint too, but
+`$PATH` puts `~/.npm/packages/bin` first, so npm's wins -- and `eslint_d` has
+to resolve `eslint` from the same tree):
+
+```bash
+npm i -g eslint eslint_d @eslint/js globals
+```
+
+Use **`eslint_d`**, not `eslint`. It keeps a daemon resident and is ~3x faster
+on this hardware (185ms vs 574ms), which matters on a 2010 i5.
+
+`NODE_PATH` in `bashrc/exports` is what lets a config living in `$HOME`
+resolve globally-installed modules -- without it `require("@eslint/js")` fails.
+
+### gotcha: `~/src/node_modules`
+
+An orphaned `node_modules` sits at `~/src` -- 112 packages, no `package.json`,
+an old eslint 7 dependency tree. Node resolves requires by **realpath**, so
+`~/eslint.config.js` dereferences to `~/src/pc/eslint.config.js` and walks up
+into it, shadowing globally-installed packages for everything under `~/src`.
+It served an ancient `globals` whose `"AudioWorkletGlobalScope "` key has a
+trailing space, which eslint 10 rejects outright. The config now normalises
+global keys so this cannot break it, but the directory will bite other
+projects under `~/src`. Nothing declares it; deleting it is probably right.
+
 ## Open work
 
-- **ESLint migration is unfinished and deliberately uncommitted.** `.eslintrc.js`
-  is deleted and `eslint.config.js` is untracked in the working tree. The config
-  cannot load (`@eslint/js` lives in the global npm prefix, unreachable from this
-  repo) and was never symlinked into `$HOME`, so it only ever covered
-  `~/src/pc`. System ESLint is 9.6.0; upstream is on 10.x. Leave these two files
-  alone until that work is picked up.
-- The system is mid-catch-up after a 21-month gap. See `THE-STORY-SO-FAR.md`.
+- The orphaned `~/src/node_modules` above.
 
 ## Conventions
 
