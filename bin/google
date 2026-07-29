@@ -3,5 +3,11 @@
 #
 # search for something using google (with lynx!)
 
+FLAGS=()
+while [[ "$1" == -* ]]; do
+  FLAGS+=("$1") # add the flag to the array
+  shift # shift the argument list to the left
+done
+
 IFS='+'
-lynx --session ~/.lynxsession "https://www.google.com/search?q=$*"
+lynx --session="$HOME/.lynxsession" "${FLAGS[@]}" "https://www.google.com/search?q=$*"

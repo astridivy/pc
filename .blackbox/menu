@@ -34,17 +34,17 @@
     [exec] (Minecraft <=1.16) { xterm -e "MESA_GL_VERSION_OVERRIDE=2.1 minecraft-launcher"}
     [exec] (Minecraft >=1.17) { xterm -e "MESA_GL_VERSION_OVERRIDE=4.3 minecraft-launcher"}
     [exec] (Discord) { discord}
-    [exec] (Battle.net) { xterm -e "/home/astrid/doc/windoze/Battle.net/Battle.net\ Launcher.exe"}
+    [exec] (Steam) { steam }
     [exec] (Tetris) { xterm -e vitetris}
     [exec] (Obs Studio) { obs }
     [exec] (RGB Keyboard LEDs) { keyledsd }
   [end]
   [submenu] (Audio) {make play mueseic}
-    [exec] (Ardour 7) { ardour7 }
+    [exec] (Ardour 8) { ardour8 }
     [exec] (Labs) { carla-jack-single ~/doc/carla/labs.carxp }
     [exec] (Carla-Rack) {carla-rack}
     [exec] (Hydrogen) { hydrogen}
-    [exec] (All of the Above) { maeusic}
+    [exec] (All of the Above) { maeusic }
     [submenu] (Jack) { of all trades baby }
       [exec] (QJackctl) { qjackctl }
       [exec] (Calf FX) { calfjackhost}

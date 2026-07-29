@@ -1,0 +1,10 @@
+#
+# sup son
+#
+# sup son ?
+#
+# astrid
+# 2021-11-19
+
+#echo -e '\u2661'
+echo -n -e 'sup son ¯\_(ツ)_/¯' | xclip -f -i -selection clipboard
