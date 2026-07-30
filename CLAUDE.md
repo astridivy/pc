@@ -25,22 +25,33 @@ twice, both times because an alias silently prepended `sudo`.
 
 If a command needs root: print it and let the human run it. Do not call `sudo`.
 
-### Aliases that break non-interactive use
+### Aliases no longer reach non-interactive shells
 
-| alias | expands to | why it hurts |
-|---|---|---|
-| `cp` | `cp -i` | **hangs forever** waiting on a y/n that never comes |
-| `mv` | `mv -i` | same |
-| `ls` | `ls_or_cat` | a shell function, not `ls` |
-| `cat` | `cat_or_ls` | a shell function, not `cat` |
-| `cd`  | `cd+` | wrapped |
-| `grep` | `grep --exclude-dir=…` | silently skips `.git` and `node_modules` |
-| `time` | `date +%l:%M%P` | **interactive shells only** — `bashrc/danger` sits past a `[[ $- != *i* ]] && return` guard, so this shadows timing for a human but not for an agent shell |
-| `visudo` `umount` `wifi-menu` | `sudo …` | faillock trap above |
-| `shutdown` `restart` `suspend` | `sudo systemctl …` | faillock trap above |
+**Fixed 2026-07-30.** Every alias that shadowed a real command — `cp -i`,
+`mv -i`, `cd`, `cat`, `ls`, `grep`, `tree`, `info`, `lynx` — and every alias
+that called `sudo` — `visudo`, `umount`, `shutdown`, `restart`, `suspend` —
+moved from `bashrc/aliases` into `bashrc/danger`.
+
+`bashrc` sources `danger` *after* its `[[ $- != *i* ]] && return` guard, so
+scripts, cron jobs and agent shells now see none of them, while an interactive
+terminal is completely unchanged. Verified in both directions: all 15 absent
+from `bash -lc`, all 43 original aliases still present under `bash -ic`.
+
+What remains in `aliases`, and so still reaches a non-interactive shell, is
+new names only — `la`, `lsl`, `wifi`, `stop`, `whattime`, `desktop`, `vimrc`,
+`tree~` and friends. None of them shadow anything real.
+
+**The invariant that keeps this true:** `aliases` is above the guard and may
+only ever define *new names*; anything overriding an existing binary or shell
+builtin, or invoking `sudo`, belongs in `danger` below it. Both files state
+this in their header comments. Put new aliases in the correct one.
 
 `pacman` and `systemctl` used to be `sudo`-aliased too. They were removed on
-2026-07-29 precisely because they caused the lockouts — typing `sudo` is fine.
+2026-07-29 because they caused the lockouts — typing `sudo` yourself is fine.
+
+This does **not** retire the faillock warning above. It removes the trapdoor
+where an alias appended `sudo` behind your back; a `sudo` you type yourself is
+still a `sudo` with no TTY to answer.
 
 ### Use the escape-hatch variables
 
