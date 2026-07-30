@@ -7,7 +7,11 @@
 //
 // deps are resolved out of the global npm prefix via NODE_PATH (see
 // bashrc/exports). install with:
-//   npm i -g eslint eslint_d @eslint/js globals
+//   npm i -g eslint eslint_d @eslint/js globals eslint-formatter-compact
+//
+// eslint-formatter-compact is for syntastic, which hardcodes `-f compact` --
+// eslint 10 dropped that formatter from core, and without it vim silently
+// reports zero errors on every file. see CLAUDE.md.
 //
 
 const js = require("@eslint/js")

@@ -92,29 +92,45 @@ The toolchain is npm-global rather than pacman's (pacman ships eslint too, but
 to resolve `eslint` from the same tree):
 
 ```bash
-npm i -g eslint eslint_d @eslint/js globals
+npm i -g eslint eslint_d @eslint/js globals eslint-formatter-compact
 ```
 
 Use **`eslint_d`**, not `eslint`. It keeps a daemon resident and is ~3x faster
 on this hardware (185ms vs 574ms), which matters on a 2010 i5.
 
+`eslint-formatter-compact` is not optional — syntastic's eslint checker
+hardcodes `-f compact`, and eslint 10 moved that formatter out of core. Without
+it every run exits 2 with a message matching no `errorformat`, so vim reports
+**zero errors on every file** rather than an error. Symptom: linting looks
+"clean" no matter how broken the JS is. `.vimrc` pins the checker to `eslint_d`
+via `g:syntastic_javascript_eslint_exec`.
+
 `NODE_PATH` in `bashrc/exports` is what lets a config living in `$HOME`
 resolve globally-installed modules -- without it `require("@eslint/js")` fails.
 
-### gotcha: `~/src/node_modules`
+### gone: the orphaned `~/src/node_modules`
 
-An orphaned `node_modules` sits at `~/src` -- 112 packages, no `package.json`,
-an old eslint 7 dependency tree. Node resolves requires by **realpath**, so
-`~/eslint.config.js` dereferences to `~/src/pc/eslint.config.js` and walks up
-into it, shadowing globally-installed packages for everything under `~/src`.
-It served an ancient `globals` whose `"AudioWorkletGlobalScope "` key has a
-trailing space, which eslint 10 rejects outright. The config now normalises
-global keys so this cannot break it, but the directory will bite other
-projects under `~/src`. Nothing declares it; deleting it is probably right.
+Deleted 2026-07-30. It was 112 packages with no `package.json` -- a stray
+eslint 7 tree that nothing declared. Recorded here because the failure it
+caused is worth recognising if a `node_modules` ever reappears up there.
+
+Node resolves requires by **realpath**, so `~/eslint.config.js` dereferenced to
+`~/src/pc/eslint.config.js` and walked up into it, shadowing globally-installed
+packages for everything under `~/src`. It served an ancient `globals` whose
+`"AudioWorkletGlobalScope "` key has a trailing space, which eslint 10 rejects
+outright; the config still normalises global keys defensively.
+
+It bit `eslint_d` harder than plain `eslint`. `eslint_d` resolves the *eslint
+library* by walking `node_modules` up from cwd, so under `~/src` it loaded that
+tree's **eslint 7**, which predates flat config and died with `No ESLint
+configuration found` -- while plain `eslint`, being the global binary, worked
+fine. If the two ever disagree again, suspect a local `node_modules` first.
 
 ## Open work
 
-- The orphaned `~/src/node_modules` above.
+- `~/src/diet-vhost` and `~/src/maitre-d` declare dependencies but have no
+  `node_modules` of their own -- they need an `npm install` before they'll run.
+  (Unrelated to the orphan deleted above; their deps were never in it.)
 
 ## Conventions
 

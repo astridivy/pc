@@ -599,6 +599,12 @@ let g:AutoPairs = {'(':')', '[':']', '{':'}',"'":"'",'"':'"', '`':'`'}
 let g:syntastic_always_populate_loc_list=1
 "let g:syntastic_javascript_checkers = ['jshint']
 let g:syntastic_javascript_checkers = ['eslint']
+" eslint_d keeps a daemon resident -- ~3x faster, so :w doesn't stall.
+" syntastic's checker still calls it 'eslint'; only the binary changes.
+" note: syntastic hardcodes `-f compact`, which eslint 10 dropped from core.
+" it's back via `npm i -g eslint-formatter-compact` -- without that the run
+" exits 2, matches no errorformat, and you get a silent zero errors.
+let g:syntastic_javascript_eslint_exec = 'eslint_d'
 
 " EASYMOTION
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
