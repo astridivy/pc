@@ -59,6 +59,40 @@ to get the real binary:
 Absolute paths (`/usr/bin/cp`, `/usr/bin/pacman`) work equally well and are
 clearer in scripts. Prefer either over the bare command.
 
+### The root filesystem is 38G smaller than its own partition
+
+`/dev/sda1` is a **92G partition containing a 55G ext4 filesystem**. The
+partition was grown at some point and `resize2fs` was never run, so ~38G is
+sitting there unreachable. `/home` is *not* a separate mount — it is on `/` —
+so dotfiles, `~/src`, npm caches and the system all compete for the same 55G.
+Verified 2026-07-30: fs 58862960640 B, partition 98784247808 B.
+
+This is the real reason the disk "keeps filling up", and it is one online
+command to fix (ext4 grows while mounted). It needs root, so print it and let
+Astrid run it — see the faillock warning above:
+
+```bash
+sudo resize2fs /dev/sda1
+```
+
+Until that happens, headroom is thin enough that a big upgrade can exhaust it.
+On 2026-07-30 a long-deferred full-system upgrade took `/` to **0 bytes
+available**, which is not a warning state — writes fail half-finished and
+things corrupt. The bulk was `/var/cache/pacman/pkg` at **14G across 8441
+archives**; pacman never prunes it on its own, and it grows by roughly the
+size of every upgrade you have ever done.
+
+- `pacman -Sc` drops cached packages for versions no longer installed.
+- `paccache -rk1` is finer-grained, but **`pacman-contrib` is not installed**,
+  so that command does not currently exist here. Don't suggest it as if it did.
+- `journalctl --vacuum-size=200M` caps the journal, a standing ~960M.
+- `/mnt/datao` (`sda2`, 138G, ~23G free) is the roomy partition. Large scratch
+  output belongs there, not under `$HOME`.
+
+Check `df -h /` before anything that writes a lot. A `du -x` sweep of `/` on
+this hardware takes minutes and is usually the wrong tool — `df` first, and
+only then `du` on the one directory that looks suspicious.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
@@ -138,3 +172,33 @@ fine. If the two ever disagree again, suspect a local `node_modules` first.
 - Old commits carry an older email on purpose — **never rewrite history to
   normalize author identity.** It was true when written.
 - `.claude/` is gitignored.
+
+## All tasks
+
+Getting the thing working is the middle of a task, not the end. Close every
+one with this sequence:
+
+**1. Commit.** Part of the close sequence, not a separate request — don't leave
+a dirty tree and report the job done. Note that work here often spans two
+repos: `~/src/pc` and `~/src/bashrc` each need their own commit. Push only if
+asked.
+
+**2. Post-mortem, then write it down.** Ask one question: *was there a step in
+this task I would not have needed to take — or a wrong turn I would not have
+taken — if CLAUDE.md had already told me something?* If yes, add it here, in
+the section it belongs to, and include it in the same commit.
+
+Write the instruction **generally**. The next reader needs the rule that
+prevents the trap, not a report of the incident that revealed it:
+
+- ✗ "the `globals` package shipped a key with a trailing space and eslint 10
+  rejected it" — an anecdote; only fires again on that exact package
+- ✓ "node resolves requires by **realpath**, so a config symlinked into `$HOME`
+  picks up `node_modules` from wherever the file actually lives" — a rule that
+  catches the whole family of failures
+
+Bias toward writing it down. Anything that cost twenty minutes, or that
+silently did nothing while appearing to work, earns three lines here — the
+silent-success failures especially, since nothing else will ever surface them.
+This is the entire reason the curse section exists, and every entry in it was
+once someone's afternoon.
