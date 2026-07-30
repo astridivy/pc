@@ -1,0 +1,8 @@
+# mid-size terminal -- volumectl (alsamixer), clock (tty-clock)
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 84
+lines = 36

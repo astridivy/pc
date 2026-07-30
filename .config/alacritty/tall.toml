@@ -1,0 +1,8 @@
+# full-height terminal -- blackbox menu, "Alacritty {Tall}"
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 80
+lines = 52

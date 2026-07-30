@@ -7,5 +7,5 @@
 # astrid
 # 2022-12-06
 
-alacritty --config-file ~/.alacritty.medium.yml --title "volume ctrl    \\   alsamixer" -e alsamixer -c 0 ||
+alacritty --config-file ~/.config/alacritty/medium.toml --title "volume ctrl    \\   alsamixer" -e alsamixer -c 0 ||
   xterm -geometry 84x32 -e alsamixer -c 0

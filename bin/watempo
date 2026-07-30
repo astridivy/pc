@@ -10,5 +10,5 @@
 
 CMD="taptempo"
 
-alacritty --config-file ~/.alacritty.eensy.yml --title "tmpo" -e $CMD ||
+alacritty --config-file ~/.config/alacritty/eensy.toml --title "tmpo" -e $CMD ||
   xterm -geometry 36x8 -e $CMD

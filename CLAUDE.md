@@ -66,6 +66,13 @@ clearer in scripts. Prefer either over the bare command.
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop
   environment; X starts from a tty via the `desktop` alias.
+- `.config/alacritty/` — `alacritty.toml` is the base (colours, font, bell,
+  keybinds) and is found automatically; `tall/medium/bitsy/eensy/xlarge.toml`
+  each `import` it and override only window geometry. Edit colours in the base
+  once, not six times. Alacritty dropped YAML in 0.14, so the old
+  `~/.alacritty.*.yml` are gone — anything passing `--config-file` wants the
+  `.toml` paths (`bin/{watbat,watsen,watempo,volumectl,clock}`,
+  `.blackbox/menu`).
 - `.config/ardour{7,8}/` — one directory per Ardour major version. When
   upgrading, copy the *live* `~/.config/ardourN/` files in; don't `cp -r` the
   previous version's directory, which silently enshrines stale keybindings.

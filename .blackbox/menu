@@ -6,8 +6,8 @@
     [exec] (Xterm) { xterm -ls -sl 1000}
     [exec] (Alacritty) { alacritty }
     [submenu] (Alt. TTYs)  {i feel pre TTY...}
-      [exec] (Alacritty {Tall}) { alacritty --config-file ~/.alacritty.tall.yml }
-      [exec] (Alacritty {Huge}) { alacritty --config-file ~/.alacritty.xlarge.yml }
+      [exec] (Alacritty {Tall}) { alacritty --config-file ~/.config/alacritty/tall.toml }
+      [exec] (Alacritty {Huge}) { alacritty --config-file ~/.config/alacritty/xlarge.toml }
       [exec] (200%Vim) { vimx2 }
     [end]
     [submenu] (Applications) {C-L-I love the terminal}
@@ -21,7 +21,7 @@
       [exec] (batt) { watbat } 
       [exec] (sensors) { watsen }
       [exec] (jack meters) { meters }
-      [exec] (top) { alacritty --config-file ~/.alacritty.xlarge.yml --title "top - system monitor" -e top }
+      [exec] (top) { alacritty --config-file ~/.config/alacritty/xlarge.toml --title "top - system monitor" -e top }
       #[exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
     [end]
     [submenu] (Connect to) {SSH || wifi}

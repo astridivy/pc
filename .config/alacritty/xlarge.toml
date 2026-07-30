@@ -1,0 +1,10 @@
+# maximized, bigger type -- blackbox menu "Alacritty {Huge}" and top
+
+[general]
+import = ["alacritty.toml"]
+
+[window]
+startup_mode = "Maximized"
+
+[font]
+size = 14

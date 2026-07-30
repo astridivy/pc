@@ -1,0 +1,12 @@
+# small pinned box, top-right corner -- watsen (sensors), watempo (tempo)
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 23
+lines = 8
+
+[window.position]
+x = 1880
+y = 5

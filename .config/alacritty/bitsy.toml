@@ -1,0 +1,8 @@
+# three-line strip -- watbat (battery readout)
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 18
+lines = 3

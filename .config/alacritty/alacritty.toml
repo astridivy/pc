@@ -1,0 +1,96 @@
+# base config -- everything shared by every alacritty window.
+#
+# the size variants next to this file (tall, medium, bitsy, eensy, xlarge) each
+# import this and then override only their window geometry, so colours and font
+# live in exactly one place. imports load first and the importing file wins, so
+# a variant always beats the base.
+#
+# launched with `alacritty --config-file ~/.config/alacritty/tall.toml` etc.
+# this file needs no --config-file; alacritty finds it on its own.
+
+[general]
+live_config_reload = true
+
+[window]
+title = "astrid@ivy"
+dynamic_title = true
+opacity = 0.5
+
+[window.padding]
+x = 0
+y = 0
+
+[font]
+size = 12
+
+[font.normal]
+family = "Misc Tamsyn"
+style = "Regular"
+
+[font.bold]
+family = "Misc Tamsyn"
+style = "Regular"
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[colors.primary]
+background = "#010116"
+foreground = "#ffb1f3"
+
+[colors.normal]
+black   = "#010116"
+red     = "#e85678"
+green   = "#89e079"
+yellow  = "#ffff66"
+blue    = "#5577d0"
+magenta = "#e975b5"
+cyan    = "#45ffff"
+white   = "#d889aa"
+
+[colors.bright]
+black   = "#604070"
+red     = "#f25678"
+green   = "#67c967"
+yellow  = "#ff9965"
+blue    = "#7a67ac"
+magenta = "#fc74f4"
+cyan    = "#69ffb0"
+white   = "#ffb1f3"
+
+[bell]
+animation = "EaseOutSine"
+duration = 233
+color = "#ffb1f3"
+
+[bell.command]
+program = "bell"
+args = []
+
+[cursor]
+vi_mode_style = "Beam"
+blink_interval = 750
+unfocused_hollow = true
+thickness = 0.15
+
+[cursor.style]
+shape = "Block"
+blinking = "On"
+
+[selection]
+save_to_clipboard = true
+
+[mouse]
+hide_when_typing = false
+
+[[keyboard.bindings]]
+key = "NumpadMultiply"
+action = "ResetFontSize"
+
+[[keyboard.bindings]]
+key = "NumpadAdd"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "NumpadSubtract"
+action = "DecreaseFontSize"
