@@ -42,7 +42,36 @@ hardcode an output name from memory or from another machine's config; run
 
 The `~/bin` terminal launchers are sized for the machine too (`watbat` is 18x1,
 `watsen` 23x8). A geometry that looks wrong may just be tuned for the other
-screen.
+screen. The grub cmdline carries `video=LVDS-1:d` for the same reason — it
+blanked the Acer's panel and is inert on the Dell. Another keeper, not a bug.
+
+### The initramfs has to survive the transplant
+
+The disk moves between machines, so **the boot image must not be
+hardware-specific.** mkinitcpio's `autodetect` hook bundles drivers only for
+the machine present when the image was built, which makes the default image a
+snapshot of whatever box generated it. The 7.1.5 image was built on the Acer at
+15:35 and first booted on the Dell at 23:13 the same day; it worked only
+because both use Intel AHCI SATA. That was luck, not design.
+
+The safety net is the **fallback** image, which the stock preset builds with
+`fallback_options="-S autodetect"` — autodetect *disabled*, so every module is
+included and the image boots anything. That is exactly what this disk needs,
+and it is currently switched off: `/etc/mkinitcpio.d/linux.preset` has
+`PRESETS=('default')` with the fallback lines commented out, so no
+`initramfs-linux-fallback.img` exists — while `grub.cfg` still offers a
+"fallback initramfs" menu entry pointing at that missing file. Choosing it
+fails.
+
+Before regenerating anything on the boot path, keep the image that is known to
+boot the current hardware:
+
+```bash
+sudo cp /boot/initramfs-linux.img /boot/initramfs-linux.img.known-good
+```
+
+There is no separate `/boot` partition — it is on `/`, so boot images compete
+with everything else for the same thin 55G.
 
 `link.sh` links **files, not directories**, unless the directory has no
 counterpart in `$HOME` yet. Its backup step is a plain `cp` and its link step is
