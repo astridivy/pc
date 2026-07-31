@@ -210,6 +210,26 @@ Run it twice for anything that toggles, and assert the *undo* half too — half
 of these maps are `mm…`m` cursor-restore dances or `"_x` black-hole deletes
 whose whole point is what they leave untouched, which a one-way test misses.
 
+Don't `git stash` to get at a pre-change baseline. This repo is a live `$HOME`
+and the tree routinely holds the human's in-flight edits to unrelated files;
+`git show master:.vimrc > "$TMP/base.vimrc"` gets the same comparison without
+picking up anyone else's work.
+
+### nnoremap does not remap what an `<expr>` returns
+
+This is load-bearing, not trivia. auto-pairs owns `"` and `'` in insert mode,
+so `:normal A"` yields `""` while `:normal! A"` yields `"`. A mapping defined
+with **`nnoremap <expr>`** returns keys that are fed *without* remapping, so
+its `A"` never reaches auto-pairs and inserts exactly one character. That is
+precisely why the `<leader>"` / `<leader>'` toggles exist — auto-pairs is
+wanted almost always, and these are the escape hatch for when it isn't.
+
+The same non-recursion is a trap in the other direction: an `<expr>` map that
+*wants* another mapping to fire has to be `nmap`, not `nnoremap`. And when
+testing, `:normal` vs `:normal!` is the difference between measuring the map
+and measuring raw keystrokes — pick deliberately, and run the plain-`A` control
+alongside, or a plugin's interference looks like your map's behaviour.
+
 ## Merging the per-machine branches
 
 `origin/{serverside,baby,phone,remote,windoze,wsl}` are long-lived per-machine

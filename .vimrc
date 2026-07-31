@@ -257,12 +257,21 @@ nnoremap <expr><leader>) <SID>ToggleTrailing(')')
 "todo???? : make i autotab the way o does
 "actually : just use S
 
-" s:ToggleTrailing does the semicolon/comma job now, it just isn't bound to
-" anything -- ;; and ,, were in the way and we don't miss them. if you want
-" them back it's one line each, and the old broken `" on the comma one is
-" already fixed inside the function:
-"nnoremap <expr>;; <SID>ToggleTrailing(';')
-"nnoremap <expr>,, <SID>ToggleTrailing(',')
+"toggle a semicolon at the end of a line; and the same for commas (nice)
+nnoremap <expr>;; <SID>ToggleTrailing(';')
+nnoremap <expr>,, <SID>ToggleTrailing(',')
+
+"quotes, and these are the reason the whole thing is worth having: they put
+"down exactly ONE quote where you asked for it. auto-pairs owns " and ' in
+"insert mode and would give you a matched pair, which is usually what we want
+"and occasionally exactly what we don't. nnoremap does not remap the keys an
+"<expr> returns, so the A" here never reaches auto-pairs at all -- no fighting
+"with it, no :set paste, no deleting the ghost half afterwards.
+"(the swapped quoting is required: the character being toggled has to sit
+"inside the *other* kind of quote or the string ends early and the rest of the
+"line becomes a comment.)
+nnoremap <expr><leader>" <SID>ToggleTrailing('"')
+nnoremap <expr><leader>' <SID>ToggleTrailing("'")
 
 let &t_TI = "\<Esc>[>4;2m"
 let &t_TE = "\<Esc>[>4;m"
