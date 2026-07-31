@@ -1,10 +1,8 @@
 #
 # ~/.bashrc
 #
-# (astridivy/bashrc)
 
-source $HOME/.cutestrap
-import bashrc/bashrc
+source $HOME/src/bashrc/bashrc
 
 alias wifi-menu='sudo wifi-menu'
 

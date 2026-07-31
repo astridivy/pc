@@ -63,8 +63,8 @@ from being committed.
 ## This machine is cursed. Read this before running anything.
 
 The interactive shell is heavily aliased. The aliases live in **`~/src/bashrc`**
-— a *separate* repo, pulled in via the `~/lib/bashrc` symlink and the `import`
-function in `~/.cutestrap`. Grepping this repo for an alias will not find it.
+— a *separate* repo, pulled in by the `source $HOME/src/bashrc/bashrc` line at
+the top of `.bashrc`. Grepping this repo for an alias will not find it.
 
 ### Never let a bare `sudo` run non-interactively
 

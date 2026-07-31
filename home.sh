@@ -1,4 +1,3 @@
 #!/bin/bash
-mkdir $HOME/lib
-mkdir $HOME/doc
-cp -i .bashrc $HOME
+mkdir -p $HOME/doc
+./link.sh .bashrc
