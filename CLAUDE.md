@@ -1,14 +1,48 @@
 # CLAUDE.md
 
-Dotfiles for `ivy`, an Acer Aspire 5741G running Arch. **This repo is `$HOME`.**
-Paths here mirror their destination (`bin/`, `.config/`, `.blackbox/`), and
-`link.sh` symlinks them into place:
+Dotfiles for `ivy`, an Arch install that has outlived its original computer.
+**This repo is `$HOME`.** Paths here mirror their destination (`bin/`,
+`.config/`, `.blackbox/`), and `link.sh` symlinks them into place:
 
 ```bash
 ./link.sh bin .vimrc .inputrc     # ln -s $REPO/$T -T ~/$T, backing up any existing file
 ```
 
 Nothing is copied. Editing `~/bin/google` *is* editing `bin/google` here.
+
+## `ivy` is a disk, not a computer
+
+The install began life on an **Acer Aspire 5741G** laptop. That machine is dead
+— it was dropped and the DC jack sheared clean off the board — so the drive was
+moved into a **Dell Inspiron 24-3452** all-in-one (Pentium J3710, Intel
+integrated graphics), which is what boots today. The laptop board may yet be
+resurrected.
+
+So this repo configures **two different machines**, and config that matches
+neither the current box nor any obvious purpose is usually correct for the
+*other* one. Don't delete hardware-specific settings just because they don't
+apply here; make them conditional, or leave them and note which machine they
+serve. Anything referencing a discrete GPU, a battery, or a laptop panel is
+Acer-era.
+
+Display output names are the sharp edge, because there are three naming schemes
+in play and none of them agree:
+
+| where | looks like |
+|---|---|
+| `xrandr` on the Dell (intel/modesetting) | `eDP1`, `HDMI1`, `DP1` — **no hyphen** |
+| `/sys/class/drm` on the Dell | `card0-eDP-1`, `card0-HDMI-A-1` |
+| Acer era, in `.xinitrc` and `.blackbox/menu` | `HDMI-0`, `LVDS-1` |
+
+Only `eDP1` is connected here. `.xinitrc` still runs `xrandr --output HDMI-0
+--primary`, which matches nothing on the Dell and fails silently on every X
+start — harmless, and correct again if the laptop board comes back. **Never
+hardcode an output name from memory or from another machine's config; run
+`xrandr --query` on the box you're actually targeting.**
+
+The `~/bin` terminal launchers are sized for the machine too (`watbat` is 18x1,
+`watsen` 23x8). A geometry that looks wrong may just be tuned for the other
+screen.
 
 `link.sh` links **files, not directories**, unless the directory has no
 counterpart in `$HOME` yet. Its backup step is a plain `cp` and its link step is
@@ -157,7 +191,9 @@ npm i -g eslint eslint_d @eslint/js globals eslint-formatter-compact
 ```
 
 Use **`eslint_d`**, not `eslint`. It keeps a daemon resident and is ~3x faster
-on this hardware (185ms vs 574ms), which matters on a 2010 i5.
+on this hardware (185ms vs 574ms), which matters on a low-power Pentium — and
+mattered just as much on the Acer's 2010 i5, so the reasoning survives whichever
+board the disk is in.
 
 `eslint-formatter-compact` is not optional — syntastic's eslint checker
 hardcodes `-f compact`, and eslint 10 moved that formatter out of core. Without
