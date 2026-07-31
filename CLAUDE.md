@@ -122,6 +122,14 @@ directory with a symlink would take them out of the only place their tools look
 for them. Link the individual file instead — `./link.sh .ssh/config` — which is
 how `~/.ssh/config` is wired up.
 
+Two more things about `link.sh` before reaching for it. It links
+`$REPO/$T` → `~/$T`, so **the repo copy has to exist first** — adopting a file
+that currently only lives in `$HOME` means copying it in before linking, not
+after. And its link step is `ln -s -i`, which against an *existing* file
+prompts; with no TTY the prompt reads EOF, answers no, and exits 1, so the
+link silently never happens while the `.own` backup still gets made. From a
+non-interactive shell, do the swap by hand.
+
 Corollary for anything secret-adjacent: give it a deny-by-default rule in
 `.gitignore` and allowlist the one file that belongs (`.ssh/*` then
 `!.ssh/config`). This repo is `$HOME`, so an unignored key is one `git add .`
@@ -141,6 +149,26 @@ for 10 minutes** — locking Astrid out of their own machine. This has happened
 twice, both times because an alias silently prepended `sudo`.
 
 If a command needs root: print it and let the human run it. Do not call `sudo`.
+
+### Never `pkill -f` / `pgrep -f` from a shell you are running in
+
+`-f` matches against the **whole command line**, and an agent shell's command
+line contains the script it was told to run. So a pattern naming the thing you
+want to kill also names *the shell asking the question*, and `pkill -f foo`
+shoots the asker. This killed the session twice in one afternoon (exit 144),
+both times while trying to restart a daemon called `dotkeyd` from a command
+that mentioned `dotkeyd`. `pgrep -f` fails the same way more quietly: it
+answers "yes, running" about itself, so a liveness check is always true.
+
+The fix is to identify processes by something that isn't your own text:
+
+```bash
+[ -r "$PIDFILE" ] && read -r pid < "$PIDFILE" && kill -0 "$pid"   # best
+```
+
+Failing a pidfile, walk `/proc/*/cmdline` and skip your own PID. Long-running
+daemons here should write a pidfile precisely so callers never have to guess —
+`bin/dotkeyd` does.
 
 ### Aliases no longer reach non-interactive shells
 
@@ -382,6 +410,105 @@ consequences worth knowing before debugging anything clipboard-shaped:
 
 `xclip -o -selection {clipboard,primary}` shows what is actually held, and
 `pgrep -a xclip` shows who is holding it.
+
+## dotkey, and the three ways X11 lies about input
+
+`bin/dotkeyd` is a resident daemon that pops an override-redirect window on
+**Mod4-period**, searches all ~149k named codepoints, and delivers the pick to
+whatever window you were already typing in. `bin/dotkey` is the client.
+`TODO.md` has the feature list; what follows is the part that cost the time.
+
+**Resident because process startup dominates, not rendering.** Measured here:
+`import gi` + GTK 3.24 alone is **1.64s**, building the unicode index 2.2s,
+alacritty cold 0.61s, xterm cold 0.19s, bare python3 0.20s. Anything
+cold-started is too slow for a key you hit constantly, so the daemon pays it
+once at login and afterwards only maps a prebuilt window. This generalises: on
+this CPU, *measure import cost before designing around render cost.*
+
+The whole unicode database is already local — `python3 -c "import unicodedata"`
+knows every name, so there is nothing to download and no `UnicodeData.txt` to
+parse. ~149k codepoints enumerate in about 2s.
+
+### 1. A keyboard grab with `owner_events=True` silently delivers keys elsewhere
+
+`Gdk.Seat.grab(...)` reports `GrabStatus.SUCCESS` either way. With
+`owner_events=True` X routes key events to the window that would *normally*
+have received them — i.e. the still-focused window underneath — so the popup
+sits there holding a perfectly good grab and never sees a keystroke. Pass
+**False** to route keys to the grab holder. Textbook silent success: the API
+says yes, the feature does nothing.
+
+An override-redirect window (`Gtk.WindowType.POPUP`) is still the right shape
+here, because blackbox predates most `_NET_WM_*` hints and anything needing WM
+cooperation is a gamble. And because a grab is not focus, the window underneath
+keeps X input focus the entire time — which is what makes delivery possible at
+all.
+
+### 2. `xdotool type` cannot reliably type characters your keymap lacks
+
+To type an unmapped keysym, xdotool temporarily remaps a spare keycode, sends
+the key, and restores the keymap immediately — so an application that reads the
+event *after* the restore sees whatever that keycode used to mean. Measured
+2026-07-31: typing a lone `♡` landed correctly **1 run in 8**; the other 7
+arrived as `BackSpace`. Tuning `--delay` does not fix it and is not monotonic
+(20 and 60 dropped characters that 40 got through). There are 15 spare keycodes
+free, so this is not exhaustion — don't go looking for one.
+
+**Put the glyph on the clipboard and send a paste chord instead.** `ctrl+v` and
+`ctrl+shift+v` are ordinary mapped keys, so no remapping happens and there is
+no race to lose. Measured 100% reliable across repeated trials.
+
+Paste is not one keystroke, though. Terminals treat `ctrl+v` as the shell's
+literal-next, and the xterm family pastes PRIMARY via `shift+Insert` rather
+than CLIPBOARD at all — so match on `xdotool getactivewindow
+getwindowclassname` and pick the chord (`PASTE_CHORDS` in `bin/dotkeyd`).
+Getting it wrong fails silently: the glyph really is on the clipboard, the
+window simply never reads it. Own **both** selections and middle-click works
+too.
+
+### 3. bbkeys keysym names are case-sensitive, and a wrong one fails silently
+
+`[execute] (Mod4-Period) { dotkey }` does nothing at all. The X keysym for `.`
+is `period`, lowercase — `Mod4-period` works. bbkeys does not warn, does not
+log, and does not grab the key; the binding is simply absent, which is
+indistinguishable from "my program is broken" until you check from the other
+end. Modifiers and named keys are capitalised (`Mod4`, `Tab`, `Prior`) but
+letter and punctuation keysyms are not, so don't infer the case from
+neighbouring lines.
+
+Verify a binding by having it leave a trace (a log line, `date >> /tmp/x`)
+rather than by watching for its effect — and note `autoConfig` is on with a 1s
+poll, so `touch ~/.bbkeysrc` is enough to reload, no restart needed.
+
+`.bbkeysrc` **is** tracked here now (2026-07-31) and `~/.bbkeysrc` is a symlink
+into the repo, so keybindings travel with the checkout instead of living only
+on whichever box last had them. bbkeys follows the symlink and its `autoConfig`
+poll still notices edits, so `touch` reloads as before.
+
+Swapping a live config file for a symlink wants a **rename**, not
+`rm && ln -s`: build the link under a temp name and `mv -T` it over the
+original. bbkeys re-reads on a 1s timer, and the delete-then-create window is
+long enough for a poll to land on a missing file.
+
+### Testing anything GUI on the live session
+
+The human is using this computer. Their clicking changes which window has
+focus, and with focus-follows-mouse their keystrokes land in whatever probe
+window you just opened — which looks exactly like your synthetic input going
+astray, and produced two false diagnoses here. Before concluding a GUI bug is
+real, confirm the desktop was actually idle, and prefer probes that record
+where input landed over probes that only show whether it arrived.
+
+Two more traps from the same afternoon, both cheap to avoid:
+
+- A shell redirect into a **missing** fifo path silently creates a regular
+  file, so the next reader blocks forever on something that will never deliver.
+  Check `stat.S_ISFIFO`, not `os.path.exists` — and note `os.path.isfifo` does
+  not exist.
+- Two daemons reading one fifo is not an error: each command goes to whichever
+  reads first, so the popup ignores you at random and the log you are reading
+  belongs to the instance that didn't get the message. Refuse to start a second
+  instance.
 
 ## Merging the per-machine branches
 

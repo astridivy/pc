@@ -51,5 +51,8 @@ xset fp+ /usr/share/fonts/
 
 # start some nice programs
 
-wallpaper & dockapps & bbkeys & ${TRANSPROG} & blackbox
+# dotkeyd is resident on purpose: it pays gtk's ~1.6s import and the unicode
+# index build once, here, so that Mod4-Period is instant every time after.
+# `dotkey` would start it on demand anyway, but then the first press waits.
+wallpaper & dockapps & bbkeys & dotkeyd & ${TRANSPROG} & blackbox
 #xrandr > xrandr.log

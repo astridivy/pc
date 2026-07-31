@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# dotkey -- poke the dotkey daemon
+#
+# "win-key ." for linux. bound to Mod4-Period in ~/.bbkeysrc.
+#
+# this is deliberately a shell script and not python: bare python3 startup is
+# 200ms on this box and gtk is 1.6s, which is exactly the cost dotkeyd exists
+# to amortise. spending it again in the client would defeat the whole design.
+# a write to a fifo is a few milliseconds.
+#
+#   dotkey            open the popup
+#   dotkey heart      open it with a query already typed
+#   dotkey --quit     stop the daemon
+#   dotkey --restart  stop it and start it again (after editing custom.tsv)
+#
+# astrid + claude
+# 2026-07-31
+
+set -u
+
+RUN="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+FIFO="$RUN/dotkey.fifo"
+PIDF="$RUN/dotkey.pid"
+LOG="$RUN/dotkey.log"
+
+# Ask the pidfile, never `pgrep -f dotkeyd`: that pattern also matches the
+# shell running this very script if the string appears anywhere in its command
+# line, so pgrep answers yes about itself and pkill shoots the asker.
+daemon_running() {
+  local pid
+  [ -r "$PIDF" ] || return 1
+  read -r pid < "$PIDF" 2>/dev/null || return 1
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+stop_daemon() {
+  local pid
+  daemon_running || return 0
+  read -r pid < "$PIDF"
+  kill -TERM "$pid" 2>/dev/null
+  for _ in $(seq 1 40); do daemon_running || return 0; sleep 0.05; done
+  kill -KILL "$pid" 2>/dev/null
+}
+
+start_daemon() {
+  # setsid so the daemon outlives the shell that spawned it -- bbkeys reaps
+  # its children, and we want this one resident until X goes away.
+  setsid dotkeyd >>"$LOG" 2>&1 < /dev/null &
+  # first ever run builds the index (~2.2s here); afterwards it's cached.
+  for _ in $(seq 1 200); do
+    [ -p "$FIFO" ] && return 0
+    sleep 0.05
+  done
+  echo "dotkey: daemon did not come up; see $LOG" >&2
+  return 1
+}
+
+case "${1:-}" in
+  --quit)
+    stop_daemon
+    exit 0
+    ;;
+  --restart)
+    stop_daemon
+    rm -f "$FIFO"
+    start_daemon || exit 1
+    exit 0
+    ;;
+  --help|-h)
+    sed -n '3,17p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+esac
+
+if ! daemon_running; then
+  start_daemon || exit 1
+fi
+
+# A fifo with no reader would block forever, so never write blind: the daemon
+# holds the read end open for as long as it lives, and we checked.
+if ! printf 'show %s\n' "${*:-}" > "$FIFO" 2>/dev/null; then
+  echo "dotkey: could not reach the daemon on $FIFO" >&2
+  exit 1
+fi

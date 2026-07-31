@@ -8,78 +8,50 @@ outlived two computers.
 
 ---
 
-## 1. The lil popup — searchable Unicode
+## 1. dotkey — searchable Unicode popup — **BUILT 2026-07-31**
 
-**Status: to be designed in its own chat. This is the main event.**
+*"win-key dot, but mangled a bit."* Bound to **Mod4-period**, the same chord
+Windows uses. Works end to end: press it, type a name, hit enter, the glyph
+lands in whatever you were typing in.
 
-The ask, in Astrid's words: *"Unicode accessible by search in a lil popup."*
+- `bin/dotkeyd` — resident daemon: the index, the popup, the delivery
+- `bin/dotkey` — tiny shell client that pokes the daemon through a fifo
+- `.config/dotkey/custom.tsv` — own glyphs, ranked above all of Unicode
+- `.bbkeysrc` holds the binding (now tracked and symlinked out); `.xinitrc`
+  starts the daemon at login
 
-### What it needs to do
+Searches **all 148,875 named codepoints**, straight out of python's own
+`unicodedata` (16.0.0) — no `UnicodeData.txt` download, no curated subset. The
+open question about scope answered itself: with CJK and Hangul pushed down the
+ranking, the full set is *better* than a curated one, because nothing is
+missing and nothing is in the way. See `CLAUDE.md` for the design notes that
+matter.
 
-- Pop up instantly on a keybind, keyboard-driven, no mouse
-- Search Unicode **by name/description** — type `heart`, get `♡ ❤ 💖`; type
-  `arrow`, get `→ ⇒ ↦`
-- Insert the pick into whatever window has focus, or put it on the clipboard
-- Be fast on a 1.6GHz Braswell Pentium, which is the real constraint
+Answers to the questions this file asked before it was built:
 
-### What we already worked out
+1. **Scope** — the whole thing, ~149k. Bulk algorithmic names (CJK, Hangul,
+   Tangut...) rank last, so they never crowd a real answer.
+2. **Selector** — none of them. `rofi`, `dmenu` and `rofimoji` are all *not
+   installed*, and installing needs root. A resident GTK daemon needs nothing
+   new and is faster than any cold start could be.
+3. **Insert method** — **the assumption here was wrong.** Typing via `xdotool`
+   is the *un*reliable option on this box, not the safe one: 1 success in 8.
+   Clipboard + a per-app paste chord is the reliable path. Details in
+   `CLAUDE.md`.
+4. **Resident?** — yes, and measurably so. GTK's import alone is 1.64s here.
+5. **Recents** — done, frequency-ranked, in `~/.cache/dotkey/recent.json`.
+6. **Absorbs the five glyph scripts?** — the *content* does: `heart`, `supson`,
+   `endash`, `emdash` and the shrug are all in `custom.tsv` and rank first.
+   `bin/{heart,supson,endash,emdash,♡}` are still there and still work; deleting
+   them is a separate call, since `.blackbox/menu` may reference them.
 
-The original plan was a custom daemon holding a Qt widget. Two findings from
-this chat that change that:
+### Still open on dotkey
 
-- **Qt's cost is process startup, not rendering.** Loading Qt6 + fontconfig cold
-  is a few hundred ms here, which is too slow for something hit constantly.
-  A *resident* daemon that show/hides a prebuilt window avoids this — which is
-  why the daemon instinct was right. But `rofi`/`dmenu` are small C programs
-  that cold-start in tens of ms and need no daemon at all.
-- **The way to splash a window on X11 is an override-redirect window** — a flag
-  saying "WM, don't manage me". Instant, undecorated, exact coordinates, no
-  focus negotiation. It's what dmenu does; in Qt it's
-  `Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint`. This matters
-  *specifically* because blackbox predates many `_NET_WM_*` hints, so anything
-  relying on WM cooperation is a gamble. Override-redirect sidesteps the WM.
-
-**Emoji fonts are already solved** — `noto-fonts-emoji` is installed and
-`fc-match emoji` resolves to `NotoColorEmoji.ttf`. Not a blocker.
-
-### rofimoji is probably the substrate (`extra/rofimoji`, 2 pkgs, 3.4M)
-
-It is genuinely scriptable and does most of this already:
-
-- `--action` takes `type`, `copy`, `clipboard`, `type-numerical`, `unicode`,
-  `copy-unicode`, `print`, `menu` — **and they chain**. `print` goes to stdout,
-  so it composes with anything.
-- `--files` accepts **custom CSV** files: one character per line, then a space,
-  then the description. Full path. So our own sets are a supported feature, not
-  a hack.
-- Ships sets for emoji, math, Nerd Font, Font Awesome 6, Gitmoji, Kaomoji, HTML
-  named character references, CJK.
-- `--selector` on X.org: `rofi`, `bemenu`, `dmenu`. `--typer xdotool` and
-  `--clipboarder xclip` — **both already installed here.**
-- Also `--prompt`, `--selector-args`, `--max-recent` (0-10), `--skin-tone`.
-
-### Open design questions for the next chat
-
-1. **Scope of "Unicode".** rofimoji's sets are curated lists, not all ~150k
-   codepoints. Searching *all* of Unicode by name means building a set from
-   `UnicodeData.txt` (field 1 is the official name). Do we want the whole thing,
-   or curated sets that actually fit on screen? Probably: curated by default,
-   full set behind a flag.
-2. **Selector.** `rofi` (1.1M, 2 pkgs, richest features — custom keybinds and
-   multi-select only work with rofi) vs `dmenu` (51K, needs a patch for most
-   niceties). Given the CPU, both are fine cold; rofi is the better base.
-3. **Insert method.** Typing via `xdotool` avoids the clipboard entirely, which
-   dodges the X11 ownership race described in `CLAUDE.md`. Probably the default,
-   with copy as a fallback for apps that don't take synthetic keystrokes.
-4. **Does it need to be resident at all?** If rofi cold-start is genuinely
-   instant here, the whole daemon idea can be dropped. **Measure before
-   building** — this is a "is the slow thing actually slow" question, and the
-   answer is a `time` invocation away.
-5. **Recent/frequent tracking.** `--max-recent` gives a little of this for free.
-6. **Does it absorb `bin/{heart,supson,endash,emdash,♡}`?** Those are five
-   scripts that each echo one glyph into `xclip -f`, leaving a resident xclip
-   behind every time (see clipboard notes in `CLAUDE.md`). A custom CSV file
-   plus one keybind replaces all five.
+- No **skin-tone** or variation-selector handling.
+- The popup is fixed at 10 rows and does not scroll; more matches exist than
+  are shown. Fine in practice, but paging would be nice.
+- `--type` mode is kept as a fallback and is genuinely unreliable — see the
+  measurement in `CLAUDE.md` before trying to "fix" it.
 
 ---
 

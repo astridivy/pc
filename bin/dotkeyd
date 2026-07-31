@@ -1,0 +1,823 @@
+#!/usr/bin/env python3
+#
+# dotkeyd -- the dotkey daemon
+#
+# "win-key dot, but mangled a bit". a searchable unicode popup, bound to
+# Mod4-Period, same as the windows emoji panel -- except it searches all
+# 148k named codepoints by name instead of a curated emoji grid.
+#
+# WHY A DAEMON. measured on this box (1.6GHz Braswell Pentium, 2026-07-31):
+#
+#   import gi + Gtk 3.24 ......... 1.64 s     <- the entire problem
+#   build the unicode index ...... 2.21 s
+#   alacritty cold start ......... 0.61 s
+#   xterm cold start ............. 0.19 s
+#   bare python3 ................. 0.20 s
+#   filter 148k names ............ 33-110 ms
+#
+# so cold-starting anything gtk-shaped costs the better part of two seconds
+# before a single pixel lands. rendering was never the problem; process
+# startup was. a resident daemon pays all of it once at login and then just
+# maps a prebuilt window, which is why this is a daemon and not a script.
+#
+# the window is Gtk.WindowType.POPUP, i.e. override-redirect -- "WM, don't
+# manage me". that matters specifically because blackbox predates most
+# _NET_WM_* hints, so anything negotiating with the WM is a gamble here.
+# override-redirect sidesteps blackbox entirely: instant, undecorated, exact
+# coordinates, no focus handshake.
+#
+# and because we never take focus -- we take a keyboard *grab* -- the window
+# that had focus still has it. verified: focus stays on the target window the
+# whole time the popup is up. so once we ungrab and unmap, whatever we send
+# next lands where the user was already typing. no focus dance required.
+#
+# what we send is a PASTE, not the glyph itself. typing arbitrary unicode with
+# xdotool means remapping a scratch keycode and restoring it immediately, and
+# an app reading the event after the restore sees the wrong key -- measured
+# here at 1 success in 8, the other 7 arriving as BackSpace. ctrl+v and
+# ctrl+shift+v are ordinary mapped keys with no remap and no race, so dotkey
+# puts the glyph on the clipboard and sends the chord the focused window
+# actually understands. see TYPE_DELAY.
+#
+# astrid + claude
+# 2026-07-31
+
+import os
+import sys
+import stat
+import time
+import json
+import unicodedata
+
+CACHE_DIR = os.path.expanduser("~/.cache/dotkey")
+INDEX_PATH = os.path.join(CACHE_DIR, "index.tsv")
+RECENT_PATH = os.path.join(CACHE_DIR, "recent.json")
+CUSTOM_PATH = os.path.expanduser("~/.config/dotkey/custom.tsv")
+
+RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid()
+FIFO_PATH = os.path.join(RUNTIME_DIR, "dotkey.fifo")
+# A pidfile, not a pgrep. `pgrep -f dotkeyd` also matches any shell whose own
+# command line mentions dotkeyd -- including the one asking the question --
+# so a "is it running?" check can kill the asker or answer yes about itself.
+PID_PATH = os.path.join(RUNTIME_DIR, "dotkey.pid")
+
+MAX_ROWS = 10          # visible result rows; also the ranking cutoff
+MAX_RECENT = 40        # how many picks we remember
+
+# palette lifted from .config/alacritty/alacritty.toml so the popup looks like
+# it belongs to this desktop rather than to gtk.
+C_BG = "#010116"
+C_FG = "#ffb1f3"
+C_DIM = "#604070"
+C_SEL = "#fc74f4"
+C_ACCENT = "#69ffb0"
+C_QUERY = "#ffff66"
+
+UI_FONT = "Misc Tamsyn"
+
+DEBUG = bool(os.environ.get("DOTKEY_DEBUG"))
+
+# Paste is not one keystroke. ctrl+v in a terminal is the shell's literal-next,
+# not a paste, so sending it there does nothing useful; and the xterm family
+# pastes PRIMARY with shift+Insert rather than CLIPBOARD at all. Getting this
+# wrong fails silently -- the glyph is on the clipboard, the window just never
+# reads it -- so match on WM_CLASS and default to the GUI-app chord.
+PASTE_CHORDS = {
+    "Alacritty": "ctrl+shift+v",
+    "kitty": "ctrl+shift+v",
+    "Konsole": "ctrl+shift+v",
+    "Gnome-terminal": "ctrl+shift+v",
+    "Xfce4-terminal": "ctrl+shift+v",
+    "Terminator": "ctrl+shift+v",
+    "St": "ctrl+shift+v",
+    "XTerm": "shift+Insert",
+    "UXTerm": "shift+Insert",
+    "URxvt": "shift+Insert",
+}
+DEFAULT_CHORD = "ctrl+v"
+
+# Delay between synthetic keystrokes for --type. Typing an *unmapped* keysym
+# makes xdotool temporarily remap a scratch keycode and restore it straight
+# after, and an app that reads the event post-restore sees the wrong key.
+# Measured here 2026-07-31: typing a lone U+2661 landed correctly in 1 run out
+# of 8 -- the other 7 arrived as BackSpace. No delay value fixed it (20 and 60
+# both dropped characters that 40 got through), so this path is best-effort
+# and the clipboard is the default. Don't "fix" typing by tuning this number.
+TYPE_DELAY = 40
+
+# Names ending in a hex codepoint are algorithmic, not descriptive -- CJK
+# ideographs and hangul syllables alone are ~130k of the 148k named
+# codepoints. They stay searchable but must never outrank a real name, or
+# every query drowns.
+BULK_MARKERS = (
+    "CJK UNIFIED IDEOGRAPH-",
+    "CJK COMPATIBILITY IDEOGRAPH-",
+    "HANGUL SYLLABLE ",
+    "TANGUT IDEOGRAPH-",
+    "TANGUT COMPONENT-",
+    "NUSHU CHARACTER-",
+    "KHITAN SMALL SCRIPT CHARACTER-",
+    "EGYPTIAN HIEROGLYPH-",
+    "VARIATION SELECTOR-",
+    "PRIVATE USE",
+)
+
+
+# ---------------------------------------------------------------- the index
+
+def read_pidfile():
+    """PID of a live daemon, or None. Stale pidfiles are treated as absent."""
+    try:
+        with open(PID_PATH) as fh:
+            pid = int(fh.read().strip())
+    except (OSError, ValueError):
+        return None
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return None
+    return pid
+
+
+def cp_label(ch):
+    """U+XXXX for a single character, blank for a multi-char entry."""
+    return "U+%04X" % ord(ch) if len(ch) == 1 else ""
+
+
+def build_index():
+    """Walk every codepoint and keep the ones unicodedata can name."""
+    rows = []
+    for cp in range(0x110000):
+        ch = chr(cp)
+        try:
+            name = unicodedata.name(ch)
+        except ValueError:
+            continue
+        rows.append((ch, name, ""))
+    return rows
+
+
+def load_custom():
+    """Astrid's own glyphs: char <TAB> keywords.
+
+    This is what retires bin/{heart,supson,endash,emdash,heartglyph} -- five
+    scripts that each echoed one glyph into a lingering xclip. Custom rows are
+    boosted above everything, so `heart` lands on the heart Astrid actually
+    means rather than on SPARKLING HEART.
+    """
+    rows = []
+    try:
+        with open(CUSTOM_PATH, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.rstrip("\n")
+                if not line.strip() or line.lstrip().startswith("#"):
+                    continue
+                if "\t" not in line:
+                    continue
+                ch, kw = line.split("\t", 1)
+                if not ch:
+                    continue
+                rows.append((ch, kw.strip().upper(), "custom"))
+    except FileNotFoundError:
+        pass
+    return rows
+
+
+def write_cache(rows):
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    tmp = INDEX_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write("#dotkey\t%s\n" % unicodedata.unidata_version)
+        for ch, name, tag in rows:
+            if tag == "custom":
+                continue
+            fh.write("%s\t%s\n" % (ch, name))
+    os.replace(tmp, INDEX_PATH)
+
+
+def read_cache():
+    try:
+        with open(INDEX_PATH, encoding="utf-8") as fh:
+            head = fh.readline().rstrip("\n").split("\t")
+            if len(head) != 2 or head[0] != "#dotkey":
+                return None
+            if head[1] != unicodedata.unidata_version:
+                return None      # unicode got upgraded under us; rebuild
+            rows = []
+            for line in fh:
+                line = line.rstrip("\n")
+                tab = line.find("\t")
+                if tab < 1:
+                    continue
+                rows.append((line[:tab], line[tab + 1:], ""))
+            return rows or None
+    except (FileNotFoundError, UnicodeDecodeError):
+        return None
+
+
+class Index:
+    def __init__(self):
+        t0 = time.time()
+        rows = read_cache()
+        cached = rows is not None
+        if not cached:
+            rows = build_index()
+            write_cache(rows)
+        rows = load_custom() + rows
+
+        self.chars = [r[0] for r in rows]
+        self.names = [r[1] for r in rows]
+        self.lower = [n.lower() for n in self.names]
+        self.custom = [r[2] == "custom" for r in rows]
+        self.bulk = [n.startswith(BULK_MARKERS) for n in self.names]
+        # Custom entries may be several characters long -- kaomoji are the
+        # whole reason the custom set exists -- so nothing downstream may
+        # assume ord() applies. Precompute both, once.
+        self.cps = [ord(c) if len(c) == 1 else -1 for c in self.chars]
+        self.labels = [cp_label(c) for c in self.chars]
+
+        self.recent = self._load_recent()
+        # cache of the previous query, so typing narrows an existing result
+        # set instead of rescanning 148k names on every keystroke
+        self._last_q = None
+        self._last_hits = None
+
+        how = "cache" if cached else "built"
+        sys.stderr.write("dotkeyd: %d glyphs (%s) in %.2fs\n"
+                         % (len(self.chars), how, time.time() - t0))
+
+    # -- recents ---------------------------------------------------------
+
+    def _load_recent(self):
+        try:
+            with open(RECENT_PATH, encoding="utf-8") as fh:
+                data = json.load(fh)
+            return {k: float(v) for k, v in data.items()}
+        except (FileNotFoundError, ValueError, AttributeError):
+            return {}
+
+    def bump(self, ch):
+        self.recent[ch] = self.recent.get(ch, 0.0) + 1.0
+        if len(self.recent) > MAX_RECENT:
+            drop = sorted(self.recent, key=self.recent.get)[:-MAX_RECENT]
+            for k in drop:
+                del self.recent[k]
+        try:
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            tmp = RECENT_PATH + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(self.recent, fh)
+            os.replace(tmp, RECENT_PATH)
+        except OSError:
+            pass
+
+    # -- search ----------------------------------------------------------
+
+    def _candidates(self, q):
+        """Indices worth scoring for query q.
+
+        If q merely extends the last query, every hit must be a subset of the
+        last hit set -- substring matching is monotone that way. That turns
+        the expensive first keystroke into a cheap fourth one.
+        """
+        if self._last_q and q.startswith(self._last_q) and self._last_hits is not None:
+            return self._last_hits
+        return range(len(self.chars))
+
+    def search(self, q):
+        q = q.strip().lower()
+        if not q:
+            self._last_q, self._last_hits = None, None
+            return self._default_rows()
+
+        # a bare codepoint -- "2661", "u+2661", "U2661" -- is an exact lookup
+        direct = None
+        hexq = q[2:] if q.startswith(("u+", "0x")) else (q[1:] if q.startswith("u") else q)
+        if 2 <= len(hexq) <= 6 and all(c in "0123456789abcdef" for c in hexq):
+            try:
+                cp = int(hexq, 16)
+                if 0 <= cp < 0x110000:
+                    ch = chr(cp)
+                    unicodedata.name(ch)     # raises if unnamed
+                    direct = ch
+            except (ValueError, OverflowError):
+                pass
+
+        # pasting the glyph itself should identify it
+        if len(q) == 1 and ord(q) > 0x7F:
+            direct = q
+
+        toks = q.split()
+        lower, bulk, custom, recent = self.lower, self.bulk, self.custom, self.recent
+        hits = []
+        scored = []
+        for i in self._candidates(q):
+            name = lower[i]
+            total = 0
+            ok = True
+            for t in toks:
+                pos = name.find(t)
+                if pos < 0:
+                    ok = False
+                    break
+                if name == t:
+                    total += 0
+                elif pos == 0:
+                    total += 10
+                elif name[pos - 1] == " " or name[pos - 1] == "-":
+                    total += 20     # word-initial: "small alpha" for "alpha"
+                else:
+                    total += 40     # buried mid-word
+            if not ok:
+                continue
+            hits.append(i)
+            if bulk[i]:
+                total += 10000
+            if custom[i]:
+                total -= 500
+            total -= min(recent.get(self.chars[i], 0.0), 8.0) * 12
+            total += len(name) * 0.01                 # prefer the tersest name
+            total += max(self.cps[i], 0) * 1e-8       # prefer canonical codepoints
+            scored.append((total, i))
+
+        self._last_q, self._last_hits = q, hits
+
+        # A pure-hex query is asking for one codepoint. Without this, "2661"
+        # substring-matches CJK UNIFIED IDEOGRAPH-26610 and friends, and the
+        # nine rows under the answer are pure noise.
+        if direct is not None and hexq == q:
+            scored = [s for s in scored if not self.bulk[s[1]]]
+
+        scored.sort(key=lambda s: s[0])
+
+        out = []
+        seen = set()
+        if direct is not None:
+            out.append(self._describe(direct))
+            seen.add(direct)
+        for _, i in scored:
+            ch = self.chars[i]
+            if ch in seen:
+                continue          # custom rows shadow their unicode twins
+            seen.add(ch)
+            out.append(self._row(i))
+            if len(out) >= MAX_ROWS:
+                break
+        return out
+
+    def _row(self, i):
+        return (self.chars[i], self.names[i], self.labels[i])
+
+    def _describe(self, ch):
+        try:
+            name = unicodedata.name(ch) if len(ch) == 1 else "(custom)"
+        except ValueError:
+            name = "(unnamed)"
+        return (ch, name, cp_label(ch))
+
+    def _default_rows(self):
+        """Empty query shows recents most-used first, then the custom set."""
+        out = []
+        seen = set()
+        by_index = {c: i for i, c in enumerate(self.chars)}
+        for ch in sorted(self.recent, key=self.recent.get, reverse=True):
+            if ch in seen:
+                continue
+            seen.add(ch)
+            i = by_index.get(ch)
+            out.append(self._row(i) if i is not None else self._describe(ch))
+            if len(out) >= MAX_ROWS:
+                return out
+        for i, is_custom in enumerate(self.custom):
+            if not is_custom or self.chars[i] in seen:
+                continue
+            seen.add(self.chars[i])
+            out.append(self._row(i))
+            if len(out) >= MAX_ROWS:
+                break
+        return out
+
+
+# ------------------------------------------------------------ headless CLI
+
+def cli_search(index, query):
+    rows = index.search(query)
+    if not rows:
+        print("(no matches)")
+        return
+    for ch, name, cp in rows:
+        print("%-4s %-10s %s" % (ch, cp, name))
+
+
+def main():
+    args = sys.argv[1:]
+
+    if args and args[0] in ("-h", "--help"):
+        print(__doc__ or "dotkeyd -- see comments at the top of this file")
+        print("usage: dotkeyd [--search QUERY | --rebuild | --bench]")
+        return 0
+
+    if args and args[0] == "--rebuild":
+        rows = build_index()
+        write_cache(rows)
+        print("dotkey: rebuilt index, %d glyphs" % len(rows))
+        return 0
+
+    index = Index()
+
+    if args and args[0] == "--search":
+        cli_search(index, " ".join(args[1:]))
+        return 0
+
+    if args and args[0] == "--bench":
+        for q in ("heart", "arrow", "greek small alpha", "smiling", "2661", "a"):
+            t = time.time()
+            rows = index.search(q)
+            index._last_q = None      # measure cold, not narrowed
+            print("%-20s %6.1f ms  -> %s"
+                  % (q, (time.time() - t) * 1000,
+                     " ".join(r[0] for r in rows[:6])))
+        return 0
+
+    return run_daemon(index)
+
+
+# ------------------------------------------------------------------ the ui
+
+def run_daemon(index):
+    import gi
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk, Gdk, GLib, Pango
+
+    import subprocess
+
+    class Popup:
+        def __init__(self, index):
+            self.index = index
+            self.query = ""
+            self.rows = []
+            self.sel = 0
+            self.grabbed = False
+            self._kids = []
+
+            # POPUP is gtk's override-redirect window type. blackbox never
+            # sees it, so there is nothing to negotiate with.
+            self.win = Gtk.Window(type=Gtk.WindowType.POPUP)
+            self.win.set_default_size(620, 0)
+            self.win.set_app_paintable(True)
+
+            frame = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            frame.set_name("frame")
+            self.win.add(frame)
+
+            self.qlabel = Gtk.Label(xalign=0.0)
+            self.qlabel.set_name("query")
+            self.qlabel.set_ellipsize(Pango.EllipsizeMode.END)
+            frame.pack_start(self.qlabel, False, False, 0)
+
+            self.rowbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            frame.pack_start(self.rowbox, False, False, 0)
+
+            # Preallocate the rows. Rebuilding widgets on every keystroke is
+            # the one thing that would make this feel slow on this CPU.
+            self.widgets = []
+            for _ in range(MAX_ROWS):
+                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+                row.set_name("row")
+                glyph = Gtk.Label(xalign=0.5)
+                glyph.set_name("glyph")
+                glyph.set_size_request(52, -1)
+                name = Gtk.Label(xalign=0.0)
+                name.set_name("name")
+                name.set_ellipsize(Pango.EllipsizeMode.END)
+                cp = Gtk.Label(xalign=1.0)
+                cp.set_name("cp")
+                row.pack_start(glyph, False, False, 0)
+                row.pack_start(name, True, True, 0)
+                row.pack_start(cp, False, False, 0)
+                self.rowbox.pack_start(row, False, False, 0)
+                self.widgets.append((row, glyph, name, cp))
+
+            self.hint = Gtk.Label(xalign=0.0)
+            self.hint.set_name("hint")
+            frame.pack_start(self.hint, False, False, 0)
+
+            self._style()
+            self.win.connect("key-press-event", self.on_key)
+
+        def _style(self):
+            css = """
+            #frame  { background-color: %(bg)s;
+                      border: 1px solid %(sel)s; }
+            #query  { color: %(q)s; font-family: "%(font)s"; font-size: 15px;
+                      padding: 8px 10px 8px 10px; }
+            #row    { padding: 1px 8px 1px 0px; }
+            #row:selected { background-color: %(dim)s; }
+            #glyph  { color: %(fg)s; font-size: 21px; }
+            #name   { color: %(fg)s; font-family: "%(font)s"; font-size: 12px; }
+            #cp     { color: %(dim)s; font-family: "%(font)s"; font-size: 11px;
+                      padding-left: 10px; }
+            #hint   { color: %(dim)s; font-family: "%(font)s"; font-size: 10px;
+                      padding: 6px 10px 6px 10px; }
+            .sel    { background-color: %(dim)s; }
+            .sel #name  { color: %(acc)s; }
+            .sel #cp    { color: %(acc)s; }
+            """ % dict(bg=C_BG, fg=C_FG, dim=C_DIM, sel=C_SEL,
+                       acc=C_ACCENT, q=C_QUERY, font=UI_FONT)
+            prov = Gtk.CssProvider()
+            prov.load_from_data(css.encode())
+            Gtk.StyleContext.add_provider_for_screen(
+                Gdk.Screen.get_default(), prov,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        # -- painting ----------------------------------------------------
+
+        def refresh(self):
+            self.rows = self.index.search(self.query)
+            if self.sel >= len(self.rows):
+                self.sel = max(0, len(self.rows) - 1)
+
+            cursor = "█"
+            self.qlabel.set_text("." + self.query + cursor)
+
+            for i, (row, glyph, name, cp) in enumerate(self.widgets):
+                if i < len(self.rows):
+                    ch, nm, code = self.rows[i]
+                    glyph.set_text(ch)
+                    name.set_text(nm.title() if nm.isupper() else nm)
+                    cp.set_text(code)
+                    row.show_all()
+                    ctx = row.get_style_context()
+                    if i == self.sel:
+                        ctx.add_class("sel")
+                    else:
+                        ctx.remove_class("sel")
+                else:
+                    row.hide()
+
+            if self.rows:
+                self.hint.set_text("enter paste  ·  ctrl+enter copy only  "
+                                   "·  ctrl+u clear  ·  esc close")
+            else:
+                self.hint.set_text("no matches")
+            self.win.resize(620, 1)
+
+        # -- show / hide -------------------------------------------------
+
+        def show(self, initial=""):
+            if self.win.get_visible():
+                self.hide()
+                return
+            self.query = initial
+            self.sel = 0
+            self.index._last_q = None
+            self.refresh()
+
+            # Never hardcode an output name (CLAUDE.md); ask X where the
+            # pointer actually is and use that monitor.
+            display = Gdk.Display.get_default()
+            seat = display.get_default_seat()
+            ptr = seat.get_pointer()
+            screen, px, py = ptr.get_position()
+            mon = display.get_monitor_at_point(px, py)
+            geo = mon.get_geometry() if mon else None
+
+            self.win.show_all()
+            w, h = self.win.get_size()
+            if DEBUG:
+                sys.stderr.write("dotkeyd: show_all -> size %dx%d\n" % (w, h))
+            if geo:
+                x = geo.x + (geo.width - w) // 2
+                y = geo.y + int(geo.height * 0.22)
+            else:
+                x, y = px - w // 2, py
+            self.win.move(x, y)
+            self.refresh()
+
+            # A grab, deliberately not focus. The window underneath keeps X
+            # input focus, which is what lets xdotool type into it later.
+            #
+            # owner_events MUST be False. With True, X delivers key events to
+            # whichever window would normally have received them -- i.e. the
+            # still-focused window underneath -- and this popup never sees a
+            # keystroke while appearing to hold a perfectly good grab. False
+            # routes every key to the grab holder, which is the entire point.
+            st = seat.grab(self.win.get_window(),
+                           Gdk.SeatCapabilities.KEYBOARD,
+                           False, None, None, None, None)
+            self.grabbed = (st == Gdk.GrabStatus.SUCCESS)
+            if DEBUG:
+                sys.stderr.write("dotkeyd: placed %dx%d at %d,%d grab=%s\n"
+                                 % (self.win.get_size()[0], self.win.get_size()[1],
+                                    x, y, st))
+
+        def hide(self):
+            if self.grabbed:
+                Gdk.Display.get_default().get_default_seat().ungrab()
+                self.grabbed = False
+            self.win.hide()
+            Gdk.Display.get_default().sync()
+
+        # -- keys --------------------------------------------------------
+
+        def on_key(self, _w, ev):
+            key = Gdk.keyval_name(ev.keyval)
+            if DEBUG:
+                sys.stderr.write("dotkeyd: key %s\n" % key)
+            ctrl = bool(ev.state & Gdk.ModifierType.CONTROL_MASK)
+
+            if key == "Escape":
+                self.hide()
+                return True
+            if key in ("Return", "KP_Enter"):
+                shift = bool(ev.state & Gdk.ModifierType.SHIFT_MASK)
+                self.commit("type" if shift else "copy" if ctrl else "paste")
+                return True
+            if key == "BackSpace":
+                self.query = self.query[:-1]
+                self.sel = 0
+                self.refresh()
+                return True
+            if ctrl and key == "u":
+                self.query = ""
+                self.sel = 0
+                self.refresh()
+                return True
+            if ctrl and key == "w":
+                self.query = self.query.rstrip()
+                self.query = self.query[:self.query.rfind(" ") + 1] \
+                    if " " in self.query else ""
+                self.sel = 0
+                self.refresh()
+                return True
+            if key in ("Down", "Tab") or (ctrl and key == "n"):
+                if self.rows:
+                    self.sel = (self.sel + 1) % len(self.rows)
+                    self.refresh()
+                return True
+            if key in ("Up", "ISO_Left_Tab") or (ctrl and key == "p"):
+                if self.rows:
+                    self.sel = (self.sel - 1) % len(self.rows)
+                    self.refresh()
+                return True
+
+            ch = Gdk.keyval_to_unicode(ev.keyval)
+            if ch and not ctrl:
+                c = chr(ch)
+                if c.isprintable():
+                    self.query += c
+                    self.sel = 0
+                    self.refresh()
+            return True
+
+        # -- delivery ----------------------------------------------------
+
+        def commit(self, mode="paste"):
+            if not self.rows:
+                self.hide()
+                return
+            glyph = self.rows[self.sel][0]
+            self.index.bump(glyph)
+            self.hide()
+            # The ungrab has to actually land before any XTEST event is sent,
+            # or our own grab swallows it. One turn of the loop is enough.
+            GLib.timeout_add(40, self._deliver, glyph, mode)
+
+        def _reap(self):
+            self._kids = [p for p in getattr(self, "_kids", []) if p.poll() is None]
+
+        def _deliver(self, glyph, mode):
+            self._reap()
+            try:
+                if mode == "type":
+                    # Best effort only, and genuinely unreliable here -- see
+                    # the note above TYPE_DELAY. Kept because some apps take
+                    # no paste chord at all.
+                    self._kids.append(subprocess.Popen(
+                        ["xdotool", "type", "--clearmodifiers",
+                         "--delay", str(TYPE_DELAY), "--", glyph]))
+                    return False
+
+                # Clipboard is the reliable path. xclip must stay resident:
+                # X11 has no clipboard storage, the owning process serves the
+                # data on request, so exiting would drop the selection.
+                #
+                # Both selections, deliberately. CLIPBOARD is what ctrl+v and
+                # ctrl+shift+v read; PRIMARY is what shift+Insert and a middle
+                # click read. Owning both means the glyph pastes by any route
+                # the focused app happens to offer.
+                for sel in ("clipboard", "primary"):
+                    p = subprocess.Popen(["xclip", "-i", "-selection", sel],
+                                         stdin=subprocess.PIPE)
+                    p.stdin.write(glyph.encode("utf-8"))
+                    p.stdin.close()
+                    self._kids.append(p)
+
+                if mode == "paste":
+                    # Let xclip actually take ownership before asking anyone
+                    # to read the selection back.
+                    GLib.timeout_add(120, self._paste)
+            except OSError as e:
+                sys.stderr.write("dotkeyd: deliver failed: %s\n" % e)
+            return False
+
+        def _paste(self):
+            """Send the paste chord the focused window actually understands.
+
+            This is why pasting beats typing: ctrl+v and ctrl+shift+v are
+            ordinary mapped keys, so no keymap remapping happens and there is
+            no race to lose.
+            """
+            try:
+                cls = subprocess.run(
+                    ["xdotool", "getactivewindow", "getwindowclassname"],
+                    capture_output=True, text=True, timeout=1).stdout.strip()
+            except (OSError, subprocess.SubprocessError):
+                cls = ""
+            chord = PASTE_CHORDS.get(cls, DEFAULT_CHORD)
+            if DEBUG:
+                sys.stderr.write("dotkeyd: paste into %r with %s\n" % (cls, chord))
+            try:
+                self._kids.append(subprocess.Popen(
+                    ["xdotool", "key", "--clearmodifiers", chord]))
+            except OSError as e:
+                sys.stderr.write("dotkeyd: paste failed: %s\n" % e)
+            return False
+
+    popup = Popup(index)
+
+    # The FIFO is opened O_RDWR so the daemon is its own writer and therefore
+    # never sees EOF when a client disconnects. Without that, every `dotkey`
+    # invocation would HUP the watch and the daemon would answer exactly once.
+    # Refuse to be the second daemon. Two instances both hold the fifo open
+    # for reading, so each command goes to whichever happens to read first --
+    # which looks like the popup ignoring you at random, and makes any log you
+    # are reading belong to the instance that didn't get the message.
+    other = read_pidfile()
+    if other and other != os.getpid():
+        sys.stderr.write("dotkeyd: already running as pid %d; not starting "
+                         "a second one\n" % other)
+        return 1
+
+    # A previous crash can leave a plain file here -- a redirect into a missing
+    # fifo path just creates one -- so check the mode, don't assume.
+    try:
+        try:
+            st = os.stat(FIFO_PATH)
+        except FileNotFoundError:
+            st = None
+        if st is not None and not stat.S_ISFIFO(st.st_mode):
+            os.unlink(FIFO_PATH)
+            st = None
+        if st is None:
+            os.mkfifo(FIFO_PATH, 0o600)
+    except OSError as e:
+        sys.stderr.write("dotkeyd: cannot create %s: %s\n" % (FIFO_PATH, e))
+        return 1
+
+    fd = os.open(FIFO_PATH, os.O_RDWR | os.O_NONBLOCK)
+
+    def on_fifo(_src, _cond):
+        try:
+            data = os.read(fd, 4096).decode("utf-8", "replace")
+        except OSError:
+            return True
+        for line in data.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            cmd, _, rest = line.partition(" ")
+            if DEBUG:
+                sys.stderr.write("dotkeyd: cmd %r\n" % line)
+            if cmd == "show":
+                popup.show(rest.strip())
+            elif cmd == "hide":
+                popup.hide()
+            elif cmd == "quit":
+                Gtk.main_quit()
+        return True
+
+    GLib.io_add_watch(fd, GLib.PRIORITY_DEFAULT, GLib.IOCondition.IN, on_fifo)
+
+    try:
+        with open(PID_PATH, "w") as fh:
+            fh.write("%d\n" % os.getpid())
+    except OSError:
+        pass
+
+    sys.stderr.write("dotkeyd: ready on %s\n" % FIFO_PATH)
+    try:
+        Gtk.main()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for path in (FIFO_PATH, PID_PATH):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

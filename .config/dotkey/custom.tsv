@@ -1,0 +1,36 @@
+# dotkey custom glyphs -- char <TAB> keywords
+#
+# These rank above all 148k unicode names, so a keyword here wins the query.
+# That is the point: `heart` should land on the heart Astrid actually uses
+# (U+2661 WHITE HEART SUIT) rather than on SPARKLING HEART.
+#
+# This file is what retires bin/{heart,supson,endash,emdash,heart-glyph} --
+# five scripts that each echoed one glyph into an xclip that then had to stay
+# resident forever to own the selection. dotkey types instead of copying, so
+# nothing lingers.
+#
+# Multi-character entries are fine; kaomoji are the whole reason.
+# Reload after editing with: dotkey --restart
+
+♡	HEART WHITE HEART SUIT LOVE
+♥	HEART BLACK HEART SUIT LOVE SOLID
+–	ENDASH EN DASH
+—	EMDASH EM DASH
+¯\_(ツ)_/¯	SHRUG SUP SON KAOMOJI WHATEVER
+sup son ¯\_(ツ)_/¯	SUPSON SUP SON GREETING KAOMOJI
+…	ELLIPSIS DOTS
+·	MIDDOT INTERPUNCT BULLET
+→	ARROW RIGHT
+←	ARROW LEFT
+⇒	ARROW IMPLIES DOUBLE RIGHT
+✓	CHECK TICK YES DONE
+✗	CROSS NO FAIL X
+★	STAR FILLED
+☆	STAR HOLLOW OUTLINE
+∞	INFINITY FOREVER
+°	DEGREE
+±	PLUSMINUS
+≈	APPROX ALMOST
+≠	NOTEQUAL NE
+×	TIMES MULTIPLY
+÷	DIVIDE
