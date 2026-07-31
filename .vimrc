@@ -186,6 +186,9 @@ function! s:JumpToPrevWord()
 endfunction
 
 " Inserts semicolons at the end of constructs like Callback(function() {})
+"
+" (Heh . a relic of when we used semicolons and before Promises ♡ 2026-1-17)
+"
 "function! s:CallbackSemicolon()
 "  if strpart(getline('.'), col('.')-1) == '})'
 "    execute "normal! A;\<Esc>"
@@ -240,9 +243,9 @@ nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"}
 "actually : just use S
 
 "toggle semicolon at the end of a line;
-nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
+"nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
 "same deal but with commas (nice)
-nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
+"nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
 
 let &t_TI = "\<Esc>[>4;2m"
 let &t_TE = "\<Esc>[>4;m"
@@ -328,7 +331,7 @@ nnoremap - :lprevious<CR>
 
 "ridiculous maps
 command! Date read !date -I
-command! Sign execute "normal! a4strid (Astrid Ivy)\<CR>"
+command! Sign read !echo "Astrid Ivy "
 command! Heart read !heart
 
 "text decoration
@@ -402,6 +405,7 @@ vnoremap K k
 
 "easy motion
 " TODO: use this more, it's f***ing awesome
+" ♡ in 2026 , we use this SOMETIMES but not usually heh
 nmap <Space> <Plug>(easymotion-prefix)
 nmap <Space><Space> <Plug>(easymotion-bd-jk)
 
@@ -676,7 +680,7 @@ endfunction
 
 function! Recall ()
   source $HOME/.vim/restore.session
-  let g:remember_me = 1
+  RememberMe
 endfunction
 
 " seems weird to reset the airline theme but after much, much trial and error it's the
@@ -719,8 +723,6 @@ lnoremap [[A <Esc>
 cnoremap [[A <Esc>
 inoremap [[A <Esc>
 vnoremap [[A <Esc>
-
-nnoremap <C-S> :w<CR>
 
 " System Specifics
 if filereadable($HOME . "/.local.vimrc")

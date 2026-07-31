@@ -187,6 +187,39 @@ tree's **eslint 7**, which predates flat config and died with `No ESLint
 configuration found` -- while plain `eslint`, being the global binary, worked
 fine. If the two ever disagree again, suspect a local `node_modules` first.
 
+Reference the linters **by name** (`eslint_d`), never by absolute path. `$PATH`
+ordering is the entire mechanism that selects the npm-global toolchain over
+pacman's, so a hardcoded `/usr/bin/eslint_d` bypasses the choice — and on this
+box that path does not exist at all, which syntastic reports as zero errors
+rather than as a failure. Other machines' branches contain exactly that pin.
+
+## Merging the per-machine branches
+
+`origin/{serverside,baby,phone,remote,windoze,wsl}` are long-lived per-machine
+branches, merged into master **piecemeal and repeatedly** — master already
+carries earlier cherry-picks from them. Two rules follow from that:
+
+**Diff two-dot, not three-dot.** `git diff master...origin/serverside` shows the
+branch's changes since the merge base, which includes everything master has
+*already* independently taken — it will present settled files as if they were
+open questions. `git diff master origin/serverside` shows what actually still
+differs. Check `git log --oneline master -- <path>` for a prior cherry-pick
+before treating any hunk as new.
+
+**Run `git diff -w --stat` before reading anything.** These branches drift in
+indentation across machines, and the reformatting dominates: a recent `.vimrc`
+comparison was 200/209 lines changed, but only 52/61 ignoring whitespace — 23
+hunks collapsing to 12. Cherry-pick behaviour and leave master's whitespace
+alone, or the real changes are unreviewable.
+
+Per-machine files stay per-machine. `.local.vimrc` is sourced at the end of
+`.vimrc` precisely so machines can disagree, and `.tryhardrc` lists paths that
+exist on *that* box (`$HOME/www` on the server, `$HOME/doc` here). Verify a path
+exists locally before importing it.
+
+`git merge-tree --write-tree --name-only master origin/<branch>` lists the
+conflict set without touching the working tree or creating a worktree.
+
 ## Open work
 
 - `~/src/diet-vhost` and `~/src/maitre-d` declare dependencies but have no
