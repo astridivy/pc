@@ -10,6 +10,22 @@ Paths here mirror their destination (`bin/`, `.config/`, `.blackbox/`), and
 
 Nothing is copied. Editing `~/bin/google` *is* editing `bin/google` here.
 
+`link.sh` links **files, not directories**, unless the directory has no
+counterpart in `$HOME` yet. Its backup step is a plain `cp` and its link step is
+`ln -T`, so against an existing dotdir both refuse (`cp: -r not specified` /
+`ln: cannot overwrite directory`) and nothing happens — noisy and harmless, but
+it means `./link.sh .ssh` does not do what it looks like it does. That's the
+right behaviour to keep: a dotdir like `~/.ssh` holds live files the repo must
+never own (`id_rsa`, `authorized_keys`, `known_hosts`), and replacing the whole
+directory with a symlink would take them out of the only place their tools look
+for them. Link the individual file instead — `./link.sh .ssh/config` — which is
+how `~/.ssh/config` is wired up.
+
+Corollary for anything secret-adjacent: give it a deny-by-default rule in
+`.gitignore` and allowlist the one file that belongs (`.ssh/*` then
+`!.ssh/config`). This repo is `$HOME`, so an unignored key is one `git add .`
+from being committed.
+
 ## This machine is cursed. Read this before running anything.
 
 The interactive shell is heavily aliased. The aliases live in **`~/src/bashrc`**
