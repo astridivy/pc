@@ -805,6 +805,11 @@ def run_daemon(index):
     except OSError:
         pass
 
+    # Every paste leaves the *previous* pair of xclips defunct once they lose
+    # the selection. _deliver reaps them, but only on the next paste, so a
+    # daemon that runs for weeks would sit on zombies in between. Sweep them.
+    GLib.timeout_add_seconds(30, lambda: (popup._reap(), True)[1])
+
     sys.stderr.write("dotkeyd: ready on %s\n" % FIFO_PATH)
     try:
         Gtk.main()
