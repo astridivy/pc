@@ -412,6 +412,10 @@ conflict set without touching the working tree or creating a worktree.
 
 ## Open work
 
+**See `TODO.md`** for the current list — the searchable-Unicode popup, the
+clipboard manager, finishing the Razer keyboard, and the rest. Keep it updated
+as things land; this section is just the pointer.
+
 - `~/src/diet-vhost` and `~/src/maitre-d` declare dependencies but have no
   `node_modules` of their own -- they need an `npm install` before they'll run.
   (Unrelated to the orphan deleted above; their deps were never in it.)
