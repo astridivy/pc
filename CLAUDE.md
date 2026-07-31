@@ -73,6 +73,44 @@ sudo cp /boot/initramfs-linux.img /boot/initramfs-linux.img.known-good
 There is no separate `/boot` partition — it is on `/`, so boot images compete
 with everything else for the same thin 55G.
 
+**Building the fallback prints a wall of `Possibly missing firmware` warnings.
+That is the fallback working, not failing.** `-S autodetect` pulls in every
+module, so mkinitcpio checks firmware for drivers covering hardware nobody
+here owns — enterprise SAS/FibreChannel HBAs (`aic94xx`, `wd719x`, `bfa`,
+`qed`, `qla2xxx`). Those blobs are not in `linux-firmware` and are not packaged
+in Arch at all, so there is nothing to install and nothing to silence. The
+warnings are about the *image*, not about this computer.
+
+mkinitcpio cannot tell you whether firmware is missing for hardware you
+actually have. **`journalctl -k -b` can**, and it's the only source worth
+acting on (`dmesg` is restricted here — `kernel.dmesg_restrict=1`):
+
+```bash
+journalctl -k -b | grep -iE 'firmware|microcode'
+```
+
+A real failure looks like `Direct firmware load for X failed with error -2`,
+against a driver for hardware that exists. Successes are stated just as
+plainly (`Intel BT fw patch 0x27 completed & activated`), so absence of a
+failure line is a real answer.
+
+Installing microcode is two steps, and the second is easy to forget: pacman
+drops `/boot/intel-ucode.img`, but nothing loads it until grub is regenerated
+with `sudo grub-mkconfig -o /boot/grub/grub.cfg`. Until then the kernel keeps
+logging `x86/CPU: Running old microcode` and the package looks installed but
+does nothing. The same regeneration is what teaches grub about a newly built
+fallback image.
+
+**`grub-mkconfig` is not `grub-install`.** `grub-mkconfig -o /boot/grub/grub.cfg`
+rewrites the *menu* and is the one that's wanted after adding microcode, images,
+or kernel parameters — it cannot make the machine unbootable in any way a
+rebuild doesn't fix. `grub-install` rewrites the *boot sector*, is only needed
+when the boot device or firmware mode changes, and takes a target argument that
+must be the **disk** (`/dev/sda`) and never a partition. This box is legacy
+BIOS — no ESP, `i386-pc` modules, grub in the MBR of `/dev/sda` — and that MBR
+already survived the transplant, so `grub-install` has no reason to run here.
+Reach for it only if the machine stops booting entirely.
+
 `link.sh` links **files, not directories**, unless the directory has no
 counterpart in `$HOME` yet. Its backup step is a plain `cp` and its link step is
 `ln -T`, so against an existing dotdir both refuse (`cp: -r not specified` /
