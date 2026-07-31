@@ -277,6 +277,8 @@ and not evidence of anything.
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop
   environment; X starts from a tty via the `desktop` alias.
+- `bin/palette` — the colour-scheme editor. Sixteen ansi colours in, the
+  console / xterm / alacritty files out. See the colour section below.
 - `.config/alacritty/` — `alacritty.toml` is the base (colours, font, bell,
   keybinds) and is found automatically; `tall/medium/bitsy/eensy/xlarge.toml`
   each `import` it and override only window geometry. Edit colours in the base
@@ -381,6 +383,38 @@ The same non-recursion is a trap in the other direction: an `<expr>` map that
 testing, `:normal` vs `:normal!` is the difference between measuring the map
 and measuring raw keystrokes — pick deliberately, and run the plain-`A` control
 alongside, or a plugin's interference looks like your map's behaviour.
+
+## Verifying a TUI change
+
+Same principle as the vim section above, and the same failure: the code loads,
+the batch path passes, and the thing only breaks when a key is pressed.
+
+**A tool's `--export`-style batch path is not a test of its interactive path.**
+The two normally hold the same data in different shapes — freshly parsed
+values on one side, the editor's mutable working copy on the other — so a
+shared helper can be perfectly exercised by the batch path and still crash the
+moment the interactive one reaches it. (Concretely: `%` formatting unpacks
+tuples and refuses lists, which is invisible until the copy someone can edit
+arrives.) Drive the real keystrokes.
+
+Headlessly, that means a pty — `pty.fork()`, then set the window size
+explicitly with `TIOCSWINSZ` or the child inherits nothing and lays itself out
+for an 80×24 that isn't there:
+
+```python
+pid, fd = pty.fork()
+if pid == 0:
+    os.environ.update(TERM='alacritty', COLORTERM='truecolor')
+    os.execv('/usr/bin/python3', ['python3', 'bin/palette'])
+fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
+os.write(fd, b'#ff44cc\rw\r\r')          # keys, then read fd back
+```
+
+Assert on what the program *emitted*, not only on what it drew: escape
+sequences sent to the terminal (`OSC 4`, `OSC P`) and files written are the
+parts that outlive the process, and stripping the escapes to eyeball the
+screen hides exactly those. Vary `TERM` and the width across runs — folding
+and console-vs-emulator branches are where the layout bugs live.
 
 ## The clipboard, and why `:XClip` exists
 
@@ -550,6 +584,75 @@ Two more traps from the same afternoon, both cheap to avoid:
   reads first, so the popup ignores you at random and the log you are reading
   belongs to the instance that didn't get the message. Refuse to start a second
   instance.
+
+## The colour scheme lives in three files and drifts
+
+The same sixteen ansi colours are written out three times — `bin/*.color` for
+the linux console, `.Xresources` for xterm, `.config/alacritty/alacritty.toml`
+for alacritty — and nothing kept them in step. **`bin/palette` is now the
+editor and the single source**: it loads any of the three formats, edits the
+sixteen colours in a tui, and writes all three back out.
+
+```bash
+palette bin/Tomorrow-Night-Nineties.color        # edit
+palette --export alacritty                       # one format to stdout
+palette FILE -d OTHER -d OTHER                   # which files disagree, and where
+```
+
+**A colour that differs between the three files is stale, not mis-mapped.**
+All three dialects are plain ansi order 0–15 — console `OSC P<nibble>`,
+`XTerm*colorN`, and alacritty's `[colors.normal]`/`[colors.bright]` (0–7 then
+8–15) index identically. There is no ordering quirk to compensate for, so when
+xterm's red does not match the console's red the answer is always that one
+file was edited and another wasn't. The 2019 mismatch here was one line missed
+in a bulk paste, and the *comment* left next to it recorded the wrong
+hypothesis ("why does it have to be so inconsistent with linux terminal"),
+which then kept the correct value commented out for seven years. `git blame`
+settles it in one command: the stale line is the one whose blame is much older
+than its neighbours.
+
+### Colours past 15 are not equally available
+
+| where | 0–15 | 16–255 |
+|---|---|---|
+| linux console | `OSC P<nibble><rrggbb>` | **impossible** — the console has 16 slots |
+| xterm resources | `XTerm*colorN` ✓ | **silently ignored** |
+| alacritty config | `[colors.normal]`/`[colors.bright]` | `[colors.indexed_colors]` ✓ |
+| escape sequences | `OSC 4;<n>;rgb:rr/gg/bb` ✓ | `OSC 4` ✓, xterm and alacritty both |
+
+`color16` through `color255` are in `man xterm`, but the page also says they
+are "omitted when wide-character support and luit are enabled" — which is the
+Arch build, so **they do nothing here.** The strings are still in the binary,
+so grepping it will tell you they exist. Measured on xterm(410):
+`-xrm 'XTerm*color1: rgb:11/22/33'` takes, `-xrm 'XTerm*color16: …'` leaves
+index 16 at its cube default. An ignored resource looks exactly like a
+resource that had no effect. Anything past 15 has to be set with `OSC 4` at
+runtime, or from alacritty's config.
+
+Bear in mind 16–231 are the standard 6×6×6 cube and 232–255 the grey ramp, and
+every 256-colour app computes its indices from those values — vim's own
+colorschemes included. Overriding cube slots makes those computations point at
+the wrong colour. In alacritty the honest fix for vim is `set termguicolors`,
+which uses the scheme's exact `gui` hex and needs no palette slots at all.
+
+### Testing colours without touching the live session
+
+`Xvfb` is installed, and both xterm and alacritty run on it, so colour
+behaviour can be measured off-screen instead of popping windows onto the
+human's desktop (see the GUI-testing warning above). Query what a terminal
+actually holds by asking it — `OSC 4;<n>;?` and read the reply back off the
+tty — rather than by looking at a screenshot.
+
+Two rig-specific traps, neither of which is true of the real display:
+
+- **`xrdb` silently loads nothing under Xvfb.** `xrdb -merge` exits 0, and
+  `RESOURCE_MANAGER` is never set on the root window, so every resource reads
+  as its default and any conclusion drawn is backwards. Inject resources with
+  `xterm -xrm 'XTerm*color1: …'` instead, which works. On the real `:0` xrdb
+  is fine.
+- A terminal that ignores the resource and a terminal that never received it
+  look the same. Always run a control — a resource you know works, like
+  `color1` — in the same invocation as the one you are testing.
 
 ## Merging the per-machine branches
 

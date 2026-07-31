@@ -118,7 +118,33 @@ references — and `wireless-regdb` installed.)*
 
 ---
 
-## 5. Repo hygiene
+## 5. Colours
+
+`bin/palette` is built: edit the sixteen, write the console `.color`, the
+`XTerm*colorN` block and the alacritty toml from one place. See `CLAUDE.md`.
+
+Still open:
+
+- **Nothing has been converted yet.** The three live files still hold two
+  stale disagreements (`palette bin/Tomorrow-Night-Nineties.color -d
+  .Xresources -d .config/alacritty/alacritty.toml` prints them): colour 1,
+  where `.Xresources` kept `ea9cc3` from the 90s scheme and has the right
+  value sitting commented out, and colour 8, `442244` vs `604070`. Deciding
+  which of the two is right is a taste call, not a merge.
+- **Red → hot pink / bold magenta**, the thing that started this.
+- **The vim colorscheme is a fourth copy and has extra colours** —
+  `orange ff9800`, `window 4d5057`, `line`/`comment 442244`, plus a
+  `background 222244` and `foreground ffa5de` that both disagree with the
+  terminal palette (the foreground is the pre-`875f783` colour 15). Its names
+  are shuffled relative to the ansi slots as well — its `yellow` is ansi 10
+  and its `green` is ansi 11 — so nothing can be mapped across by name.
+  Whether `palette` grows a vim export, and whether the extras get real
+  palette slots or just `termguicolors`, is undecided; the constraints are
+  written up in `CLAUDE.md`.
+
+---
+
+## 6. Repo hygiene
 
 - **`origin/serverside` is nearly exhausted.** Two passes are merged. What's
   left is mostly serverside being *older* than master. Genuinely un-reviewed:

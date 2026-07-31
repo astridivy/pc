@@ -1,0 +1,687 @@
+#!/usr/bin/env python3
+"""palette -- edit the sixteen ansi colours, export them three ways.
+
+    palette                          # start from the built-in scheme
+    palette bin/Tomorrow-Night-Nineties.color
+    palette .Xresources              # any of the three formats loads
+    palette x.toml --export all -o . # no tui, just convert
+
+The tui draws one cell per colour --
+
+    ██ r [232] g [ 86] b [120]
+
+-- folded into as many columns as the terminal fits, up to eight.  The
+blocks, the labels and the brackets are all drawn *in* the colour they
+describe, so editing a channel repaints its own row.
+
+Live-apply is on by default: every edit is pushed to the real terminal
+with OSC 4 (OSC P on the linux console), so the whole screen -- this
+program included -- changes with you.  The palette you loaded is put
+back on exit, so quitting always leaves the terminal as it was found.
+
+The three exports all come out of the same sixteen colours:
+
+    ansi       a /bin/sh script of escape sequences, console and otherwise
+    xterm      XTerm*colorN resources, for xrdb / ~/.Xresources
+    alacritty  a [colors] toml fragment to import
+
+background is colour 0 and foreground is colour 15, which is what the
+hand-written files here already did.
+"""
+
+import os
+import re
+import select
+import signal
+import subprocess
+import sys
+import termios
+import tty
+from datetime import date
+
+try:
+    import tomllib
+except ImportError:                                     # pragma: no cover
+    tomllib = None
+
+NAMES = ("black", "red", "green", "yellow", "blue", "magenta", "cyan", "white")
+
+
+def name_of(i):
+    return ("bright " if i >= 8 else "") + NAMES[i % 8]
+
+
+# tomorrow night nineties, from bin/Tomorrow-Night-Nineties.color.
+DEFAULT = [
+    "010116", "e85678", "89e079", "ffff66", "5577d0", "e975b5", "45ffff", "d889aa",
+    "604070", "f25678", "67c967", "ff9965", "7a67ac", "fc74f4", "69ffb0", "ffb1f3",
+]
+
+BLOCK = "██"
+CELLW = 26          # "██ r [255] g [255] b [255]"
+GUTTER = 2
+MAXCOLS = 8
+
+
+# ---------------------------------------------------------------- loading
+
+def _hex3(s):
+    s = s.strip().lstrip("#")
+    return (int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16))
+
+
+def _rgbspec(s):
+    """rgb:rr/gg/bb, #rrggbb, or bare rrggbb."""
+    s = s.strip()
+    m = re.fullmatch(r"rgb:([0-9a-f]{2})/([0-9a-f]{2})/([0-9a-f]{2})", s, re.I)
+    if m:
+        return tuple(int(g, 16) for g in m.groups())
+    m = re.fullmatch(r"#?([0-9a-f]{6})", s, re.I)
+    if m:
+        return _hex3(m.group(1))
+    raise ValueError(f"not a colour: {s!r}")
+
+
+def parse_ansi(text):
+    """OSC P<n><rrggbb> (linux console) and OSC 4;<n>;<spec> (everything else)."""
+    out = {}
+    for m in re.finditer(r"\]P([0-9a-f])([0-9a-f]{6})", text, re.I):
+        out[int(m.group(1), 16)] = _hex3(m.group(2))
+    for m in re.finditer(r"\]4;(\d+);(rgb:[0-9a-f/]+|#[0-9a-f]{6})", text, re.I):
+        i = int(m.group(1))
+        if i < 16:
+            out[i] = _rgbspec(m.group(2))
+    return out
+
+
+def parse_xresources(text):
+    out = {}
+    for line in text.splitlines():
+        line = line.split("!", 1)[0]                    # ! starts a comment
+        m = re.search(r"\bcolor(\d+)\s*:\s*(\S+)", line)
+        if m and int(m.group(1)) < 16:
+            out[int(m.group(1))] = _rgbspec(m.group(2))
+    return out
+
+
+def parse_alacritty(text):
+    if tomllib is None:                                 # pragma: no cover
+        raise SystemExit("palette: need python 3.11+ to read toml")
+    doc = tomllib.loads(text)
+    colors = doc.get("colors", doc)
+    out = {}
+    for base, section in ((0, "normal"), (8, "bright")):
+        for i, n in enumerate(NAMES):
+            v = colors.get(section, {}).get(n)
+            if v:
+                out[base + i] = _rgbspec(v)
+    return out
+
+
+def load(path):
+    """Read any of the three formats.  Returns a list of sixteen (r, g, b)."""
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        text = fh.read()
+    if path.endswith(".toml") or "[colors" in text:
+        found = parse_alacritty(text)
+    elif re.search(r"^\s*[\w*.]*color\d+\s*:", text, re.M):
+        found = parse_xresources(text)
+    elif "]P" in text or "]4;" in text:
+        found = parse_ansi(text)
+    else:
+        found = {i: _hex3(h) for i, h in
+                 enumerate(re.findall(r"#?\b([0-9a-f]{6})\b", text, re.I)[:16])}
+    if not found:
+        raise SystemExit(f"palette: found no colours in {path}")
+    colors = [_hex3(h) for h in DEFAULT]
+    for i, rgb in found.items():
+        colors[i] = rgb
+    missing = [i for i in range(16) if i not in found]
+    if missing:
+        print(f"palette: {path} defined {16 - len(missing)}/16; kept defaults for "
+              + ", ".join(str(i) for i in missing), file=sys.stderr)
+    return colors
+
+
+# ---------------------------------------------------------------- exports
+
+def hexes(colors):
+    # tuple() on purpose: the editor holds mutable [r, g, b] lists and % only
+    # unpacks tuples, so taking a list here is a crash that only shows up on
+    # the interactive path.
+    return ["%02x%02x%02x" % tuple(c) for c in colors]
+
+
+def _stamp(name, what):
+    return (f"# {name} -- {what}\n"
+            f"#\n"
+            f"# generated by bin/palette on {date.today()}.  to change it, edit\n"
+            f"# the palette rather than this file:\n"
+            f"#\n")
+
+
+def export_ansi(colors, name):
+    """A /bin/sh script of nothing but escape sequences."""
+    h = hexes(colors)
+    out = ["#!/bin/sh\n",
+           _stamp(name, "the sixteen ansi colours, as escape sequences"),
+           "#     palette <this file>\n",
+           "#\n",
+           "# the linux console takes OSC P<nibble><rrggbb> with no terminator and\n",
+           "# understands nothing else; xterm and alacritty take OSC 4 and ignore\n",
+           "# OSC P.  so the two get separate branches -- feeding either one to the\n",
+           "# wrong terminal fails quietly, which is how the old version of this\n",
+           "# file came to do nothing outside the console.\n",
+           "\n",
+           'if [ "$TERM" = linux ]; then\n']
+    for i, hx in enumerate(h):
+        out.append(f"  printf '\\033]P{i:X}{hx}'".ljust(30)
+                   + f"# {i:<2} {name_of(i)}\n")
+    out.append("else\n")
+    for i, hx in enumerate(h):
+        spec = f"{hx[0:2]}/{hx[2:4]}/{hx[4:6]}"
+        out.append(f"  printf '\\033]4;{i};rgb:{spec}\\033\\\\'".ljust(38)
+                   + f"# {i:<2} {name_of(i)}\n")
+    out.append("fi\n")
+    return "".join(out)
+
+
+def export_xterm(colors, name):
+    """XTerm*colorN resources.  A fragment: no font, no geometry."""
+    h = hexes(colors)
+
+    def spec(hx):
+        return f"rgb:{hx[0:2]}/{hx[2:4]}/{hx[4:6]}"
+
+    out = [_stamp(name, "the sixteen ansi colours, as X resources").replace("#", "!"),
+           "!     palette <this file>\n",
+           "!\n",
+           "! colours only -- font and behaviour resources are not touched.  either\n",
+           "! #include this from ~/.Xresources or paste the block in, then:\n",
+           "!\n",
+           "!     xrdb -merge ~/.Xresources     # running xterms keep their old\n",
+           "!                                   # colours; new ones pick these up\n",
+           "\n",
+           f"XTerm*background: {spec(h[0])}\n",
+           f"XTerm*foreground: {spec(h[15])}\n",
+           "\n"]
+    for i, hx in enumerate(h):
+        if i == 8:
+            out.append("\n")
+        out.append(f"XTerm*color{i}: {spec(hx)}".ljust(30)
+                   + f"! {name_of(i)}\n")
+    out.append("\n"
+               "! xterm's colour resources stop at colour15.  color16 through\n"
+               "! color255 exist in the manual but are compiled out of the arch\n"
+               "! build (the man page's 'omitted when wide-character support and\n"
+               "! luit are enabled'), and an ignored resource looks exactly like\n"
+               "! a resource that had no effect.  measured on xterm(410) here:\n"
+               "! -xrm XTerm*color1 takes, -xrm XTerm*color16 does nothing.\n"
+               "! anything past 15 has to be set with OSC 4 at runtime instead.\n")
+    return "".join(out)
+
+
+def export_alacritty(colors, name):
+    h = hexes(colors)
+    out = [_stamp(name, "the sixteen ansi colours, as an alacritty fragment"),
+           "#     palette <this file>\n",
+           "#\n",
+           "# wire it up from ~/.config/alacritty/alacritty.toml:\n",
+           "#\n",
+           "#     [general]\n",
+           f'#     import = ["~/.config/alacritty/{name}.toml"]\n',
+           "#\n",
+           "# and delete the [colors...] tables from that file.  imports load\n",
+           "# *first* and the importing file wins, so a leftover [colors.normal]\n",
+           "# there silently overrides everything below and the import looks\n",
+           "# broken when it is only outranked.\n",
+           "\n",
+           "[colors]\n",
+           "draw_bold_text_with_bright_colors = true\n",
+           "\n",
+           "[colors.primary]\n",
+           f'background = "#{h[0]}"    # colour 0\n',
+           f'foreground = "#{h[15]}"    # colour 15\n']
+    for base, section in ((0, "normal"), (8, "bright")):
+        out.append(f"\n[colors.{section}]\n")
+        for i, n in enumerate(NAMES):
+            out.append(f'{n:<7} = "#{h[base + i]}"\n')
+    return "".join(out)
+
+
+EXPORTS = {
+    "ansi": (export_ansi, "{}.color", 0o755),
+    "xterm": (export_xterm, "{}.Xresources", 0o644),
+    "alacritty": (export_alacritty, "{}.toml", 0o644),
+}
+
+
+def write_exports(colors, name, outdir):
+    # render all three first: opening a file truncates it, so a formatter that
+    # throws halfway would otherwise leave an empty scheme behind.
+    rendered = [(os.path.join(outdir, pattern.format(name)), fn(colors, name), mode)
+                for fn, pattern, mode in EXPORTS.values()]
+    for path, text, mode in rendered:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.chmod(path, mode)
+    return [path for path, _, _ in rendered]
+
+
+# ---------------------------------------------------------------- terminal
+
+CONSOLE = os.environ.get("TERM") == "linux"
+TRUECOLOR = os.environ.get("COLORTERM", "") in ("truecolor", "24bit")
+
+
+def apply_seq(colors):
+    """Escape sequences that set the terminal's own palette."""
+    parts = []
+    for i, (r, g, b) in enumerate(colors):
+        if CONSOLE:
+            parts.append(f"\x1b]P{i:X}{r:02x}{g:02x}{b:02x}")
+        else:
+            parts.append(f"\x1b]4;{i};rgb:{r:02x}/{g:02x}/{b:02x}\x1b\\")
+    return "".join(parts)
+
+
+def fg(i, rgb):
+    """Foreground escape: true colour if we have it, else the palette slot."""
+    if TRUECOLOR:
+        return "\x1b[38;2;%d;%d;%dm" % rgb
+    return f"\x1b[{(30 + i) if i < 8 else (82 + i)}m"
+
+
+RESET = "\x1b[0m"
+
+
+class Keys:
+    """Raw stdin, one logical key at a time, plus SIGWINCH as 'RESIZE'."""
+
+    def __init__(self):
+        self.buf = b""
+        self.rfd, wfd = os.pipe()
+        os.set_blocking(wfd, False)
+        os.set_blocking(self.rfd, False)
+        signal.signal(signal.SIGWINCH, lambda *a: None)
+        signal.set_wakeup_fd(wfd)
+
+    NAMED = {"A": "up", "B": "down", "C": "right", "D": "left",
+             "H": "home", "F": "end", "Z": "btab",
+             "5~": "pgup", "6~": "pgdn", "3~": "del"}
+
+    def _token(self):
+        b = self.buf
+        if not b:
+            return None
+        if b[:1] != b"\x1b":
+            self.buf = b[1:]
+            c = b[0]
+            return chr(c) if c >= 32 or c in (9, 10, 13, 127) else f"^{chr(c + 64)}"
+        m = re.match(rb"\x1b\[([0-9;]*)([A-Za-z~])", b)
+        if m:
+            self.buf = b[m.end():]
+            key = (m.group(1) + m.group(2)).decode()
+            return self.NAMED.get(key, self.NAMED.get(m.group(2).decode(), "?"))
+        m = re.match(rb"\x1bO([A-Z])", b)
+        if m:
+            self.buf = b[m.end():]
+            return self.NAMED.get(m.group(1).decode(), "?")
+        if len(b) > 1 and not re.match(rb"\x1b[\[O][0-9;]*$", b):
+            self.buf = b[1:]
+            return "esc"
+        return None                                     # incomplete, wait
+
+    def get(self):
+        while True:
+            tok = self._token()
+            if tok is not None:
+                return tok
+            timeout = 0.05 if self.buf else None
+            r, _, _ = select.select([0, self.rfd], [], [], timeout)
+            if self.rfd in r:
+                try:
+                    os.read(self.rfd, 64)
+                except BlockingIOError:
+                    pass
+                return "RESIZE"
+            if 0 in r:
+                data = os.read(0, 1024)
+                if not data:
+                    return "EOF"
+                self.buf += data
+            elif self.buf:                              # lone esc, no sequence
+                self.buf = self.buf[1:]
+                return "esc"
+
+
+# ---------------------------------------------------------------- the editor
+
+HELP = [
+    "hjkl ←↓↑→ move   0-9 type   +/- ±1   [/] ±16   "
+    "#/x hex   y yank",
+    "u undo   R revert colour   p live-apply   w write   q quit",
+]
+
+
+class Editor:
+    def __init__(self, colors, name, outdir):
+        self.colors = [list(c) for c in colors]
+        self.orig = [list(c) for c in colors]
+        self.name = name
+        self.outdir = outdir
+        self.ci = 1                                     # red, the usual suspect
+        self.ch = 0
+        self.digits = ""
+        self.undo = []
+        self.live = True
+        self.status = f"{len(self.colors)} colours from {name}"
+        self.keys = Keys()
+        self.size = os.get_terminal_size()
+
+    # -- state -------------------------------------------------------
+
+    def push_undo(self):
+        self.undo.append((self.ci, list(self.colors[self.ci])))
+        del self.undo[:-200]
+
+    def set_channel(self, value):
+        self.colors[self.ci][self.ch] = max(0, min(255, value))
+        self.sync()
+
+    def sync(self):
+        if self.live:
+            sys.stdout.write(apply_seq(self.colors))
+
+    def move(self, dci, dch=0):
+        self.digits = ""
+        if dch:
+            n = self.ci * 3 + self.ch + dch
+            n %= 48
+            self.ci, self.ch = divmod(n, 3)
+        if dci:
+            self.ci = (self.ci + dci) % 16
+
+    # -- drawing -----------------------------------------------------
+
+    def ncols(self):
+        avail = max(CELLW, self.size.columns - 1)
+        return max(1, min(MAXCOLS, 16, (avail + GUTTER) // (CELLW + GUTTER)))
+
+    def cell(self, i):
+        rgb = tuple(self.colors[i])
+        colour = fg(i, rgb)
+        s = colour + BLOCK
+        for ch, label in enumerate("rgb"):
+            v = rgb[ch]
+            if i == self.ci and ch == self.ch:
+                num = (self.digits or str(v)).rjust(3)
+                num = "\x1b[7m" + num + "\x1b[27m"
+            else:
+                num = str(v).rjust(3)
+            s += f" {label} [{num}{colour}]"
+        return s + RESET
+
+    def draw(self):
+        cols = self.ncols()
+        rows = -(-16 // cols)
+        w = self.size.columns
+        out = ["\x1b[H"]
+
+        def line(s=""):
+            out.append(s + "\x1b[K\r\n")
+
+        changed = sum(a != b for a, b in zip(self.colors, self.orig))
+        head = f"palette — {self.name}"
+        tail = f"{changed} changed" if changed else "unchanged"
+        line(head + " " * max(1, w - len(head) - len(tail) - 1) + tail)
+        line()
+        for r in range(rows):
+            cells = [self.cell(i) for i in range(r * cols, min(16, (r + 1) * cols))]
+            line((" " * GUTTER).join(cells))
+        line()
+        if self.size.lines >= rows + 8:
+            swatch = "".join(f"\x1b[{(30 + i) if i < 8 else (82 + i)}m{BLOCK}"
+                             for i in range(16))
+            line(f"terminal   {swatch}{RESET}   "
+                 f"{'live' if self.live else 'not applied (p)'}")
+            line()
+        i = self.ci
+        line(f"{i:>2}  {name_of(i):<14}#%02x%02x%02x" % tuple(self.colors[i])
+             + ("" if self.colors[i] == self.orig[i]
+                else "   was #%02x%02x%02x" % tuple(self.orig[i])))
+        line(self.status[:w - 1])
+        line()
+        for h in HELP:
+            line(h[:w - 1])
+        out.append("\x1b[J")
+        sys.stdout.write("".join(out))
+        sys.stdout.flush()
+
+    # -- prompts -----------------------------------------------------
+
+    def prompt(self, label, initial=""):
+        """One line of input at the bottom of the screen.  esc cancels."""
+        buf = initial
+        while True:
+            sys.stdout.write(f"\x1b[{self.size.lines};1H\x1b[K\x1b[7m{label}\x1b[27m "
+                             f"{buf}\x1b[?25h")
+            sys.stdout.flush()
+            k = self.keys.get()
+            if k in ("\r", "\n"):
+                sys.stdout.write("\x1b[?25l")
+                return buf
+            if k in ("esc", "EOF", "^C"):
+                sys.stdout.write("\x1b[?25l")
+                return None
+            if k == "\x7f":
+                buf = buf[:-1]
+            elif k == "RESIZE":
+                self.size = os.get_terminal_size()
+            elif len(k) == 1 and k >= " ":
+                buf += k
+
+    # -- keys --------------------------------------------------------
+
+    def handle(self, k):
+        colour = self.colors[self.ci]
+        if k in ("q", "^C", "EOF"):
+            if self.colors != self.orig:
+                a = self.prompt("discard changes? (y/N)")
+                if not a or a.lower() not in ("y", "yes"):
+                    self.status = "not quitting"
+                    return True
+            return False
+        if k == "RESIZE":
+            self.size = os.get_terminal_size()
+        elif k in ("left", "h", "btab"):
+            self.move(0, -1)
+        elif k in ("right", "l", "\t"):
+            self.move(0, +1)
+        elif k in ("up", "k"):
+            self.move(-self.ncols())
+        elif k in ("down", "j"):
+            self.move(+self.ncols())
+        elif k in ("home", "end"):
+            self.move(0)
+            self.ci = 0 if k == "home" else 15
+        elif k.isdigit():
+            new = self.digits + k
+            if len(new) > 3 or int(new) > 255:
+                new = k
+            self.digits = new
+            self.push_undo()
+            self.set_channel(int(new))
+        elif k in ("+", "=", "-", "_", "]", "[", "pgup", "pgdn"):
+            step = {"+": 1, "=": 1, "-": -1, "_": -1,
+                    "]": 16, "[": -16, "pgup": 16, "pgdn": -16}[k]
+            self.digits = ""
+            self.push_undo()
+            self.set_channel(colour[self.ch] + step)
+        elif k in ("#", "x"):
+            a = self.prompt("colour %d hex (now %02x%02x%02x):"
+                            % (self.ci, *colour))
+            if a:
+                try:
+                    rgb = _rgbspec(a)
+                except ValueError:
+                    self.status = f"not a colour: {a}"
+                else:
+                    self.push_undo()
+                    self.colors[self.ci] = list(rgb)
+                    self.sync()
+                    self.status = f"colour {self.ci} = #{a.lstrip('#')}"
+        elif k == "y":
+            hx = "#%02x%02x%02x" % tuple(colour)
+            # x11 keeps no clipboard of its own: whoever copied has to stay
+            # alive owning the selection, so these xclips are left running.
+            try:
+                for sel in ("clipboard", "primary"):
+                    p = subprocess.Popen(["xclip", "-selection", sel],
+                                         stdin=subprocess.PIPE,
+                                         stderr=subprocess.DEVNULL)
+                    p.stdin.write(hx.encode())
+                    p.stdin.close()
+                self.status = f"{hx} on the clipboard"
+            except OSError:
+                self.status = f"{hx} -- no xclip on $PATH"
+        elif k == "u":
+            if self.undo:
+                ci, old = self.undo.pop()
+                self.ci, self.colors[ci] = ci, old
+                self.digits = ""
+                self.sync()
+                self.status = f"undo -- colour {ci}"
+            else:
+                self.status = "nothing to undo"
+        elif k == "R":
+            self.push_undo()
+            self.colors[self.ci] = list(self.orig[self.ci])
+            self.digits = ""
+            self.sync()
+            self.status = (f"colour {self.ci} back to "
+                           "#%02x%02x%02x" % tuple(self.colors[self.ci]))
+        elif k == "p":
+            self.live = not self.live
+            sys.stdout.write(apply_seq(self.colors if self.live else self.orig))
+            self.status = ("applied to this terminal" if self.live
+                           else "terminal put back")
+        elif k == "w":
+            self.write()
+        elif k == "?":
+            self.status = "  |  ".join(HELP)
+        return True
+
+    def write(self):
+        d = self.prompt("write to directory:", self.outdir)
+        if d is None:
+            self.status = "not written"
+            return
+        d = os.path.expanduser(d or ".")
+        n = self.prompt("scheme name:", self.name)
+        if n is None:
+            self.status = "not written"
+            return
+        try:
+            paths = write_exports(self.colors, n or self.name, d)
+        except Exception as e:                          # never die mid-edit
+            self.status = f"could not write: {e}"
+            return
+        self.outdir, self.name = d, n or self.name
+        self.orig = [list(c) for c in self.colors]
+        self.status = "wrote " + ", ".join(os.path.basename(p) for p in paths) \
+                      + f" to {d}"
+
+    # -- loop --------------------------------------------------------
+
+    def run(self):
+        fd = sys.stdin.fileno()
+        saved = termios.tcgetattr(fd)
+        sys.stdout.write("\x1b[?1049h\x1b[?25l")
+        try:
+            tty.setraw(fd)
+            self.sync()
+            while True:
+                self.size = os.get_terminal_size()
+                self.draw()
+                if not self.handle(self.keys.get()):
+                    break
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+            sys.stdout.write(apply_seq(self.orig) + "\x1b[?25h\x1b[?1049l" + RESET)
+            sys.stdout.flush()
+
+
+# ---------------------------------------------------------------- main
+
+def show_diff(paths):
+    """Which of these files disagree, and where.  The three formats here have
+    drifted apart twice, and both times it was one stale line rather than
+    anything structural -- so print the whole grid and let it be obvious."""
+    loaded = [(p, load(p)) for p in paths]
+    width = max(len(os.path.basename(p)) for p, _ in loaded)
+    print(" " * 21 + "  ".join(os.path.basename(p).ljust(6)[:6] for p, _ in loaded))
+    disagree = 0
+    for i in range(16):
+        vals = ["%02x%02x%02x" % tuple(c[i]) for _, c in loaded]
+        odd = len(set(vals)) > 1
+        disagree += odd
+        print(f"{i:>3}  {name_of(i):<14} "
+              + "  ".join(vals) + ("   <-- differ" if odd else ""))
+    print()
+    for p, _ in loaded:
+        print(f"      {os.path.basename(p).ljust(width)}  {p}")
+    print(f"\n{disagree} of 16 disagree." if disagree else "\nall sixteen agree.")
+    return 1 if disagree else 0
+
+
+def main(argv):
+    args, path, outdir, name, export = list(argv[1:]), None, ".", None, None
+    diff = []
+    while args:
+        a = args.pop(0)
+        if a in ("-h", "--help"):
+            print(__doc__.strip())
+            return 0
+        if a in ("-d", "--diff"):
+            diff.append(args.pop(0))
+        elif a in ("-o", "--out"):
+            outdir = args.pop(0)
+        elif a in ("-n", "--name"):
+            name = args.pop(0)
+        elif a in ("-e", "--export"):
+            export = args.pop(0)
+        elif a.startswith("-"):
+            sys.exit(f"palette: unknown option {a} (try --help)")
+        else:
+            path = a
+    if diff:
+        return show_diff(([path] if path else []) + diff)
+    if path is None and os.path.exists("bin/Tomorrow-Night-Nineties.color"):
+        path = "bin/Tomorrow-Night-Nineties.color"
+    colors = load(path) if path else [_hex3(h) for h in DEFAULT]
+    if name is None:
+        name = re.sub(r"\.(color|toml|Xresources)$", "",
+                      os.path.basename(path)) if path else "palette"
+
+    if export:
+        if export == "all":
+            for p in write_exports(colors, name, outdir):
+                print(p)
+        elif export in EXPORTS:
+            sys.stdout.write(EXPORTS[export][0](colors, name))
+        else:
+            sys.exit(f"palette: --export wants one of all, {', '.join(EXPORTS)}")
+        return 0
+
+    if not sys.stdout.isatty() or not sys.stdin.isatty():
+        sys.exit("palette: the editor needs a terminal (try --export)")
+    Editor(colors, name, outdir).run()
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv))
+    except KeyboardInterrupt:
+        sys.exit(130)

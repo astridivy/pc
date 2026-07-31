@@ -11,3 +11,6 @@ yay/yay/
 # file that belongs; add new entries deliberately, never the whole dir.
 .ssh/*
 !.ssh/config
+
+# python leaves these next to any script in bin/
+__pycache__/
