@@ -14,11 +14,18 @@
 #   xterm cold start ............. 0.19 s
 #   bare python3 ................. 0.20 s
 #   filter 148k names ............ 33-110 ms
+#   empty query, the default view  0.1 ms   <- was 128 ms, see by_index
 #
 # so cold-starting anything gtk-shaped costs the better part of two seconds
 # before a single pixel lands. rendering was never the problem; process
 # startup was. a resident daemon pays all of it once at login and then just
 # maps a prebuilt window, which is why this is a daemon and not a script.
+#
+# being a daemon only amortises *startup*, though. what's left is whatever
+# each popup redoes, and the empty query is the one every popup runs -- it
+# was rebuilding a 148k dict twice per open for the sake of ~10 lookups.
+# that's 264ms nobody measured, because the timing table above only ever
+# benchmarked the interesting query and never the default one.
 #
 # the window is Gtk.WindowType.POPUP, i.e. override-redirect -- "WM, don't
 # manage me". that matters specifically because blackbox predates most
@@ -235,6 +242,11 @@ class Index:
         # assume ord() applies. Precompute both, once.
         self.cps = [ord(c) if len(c) == 1 else -1 for c in self.chars]
         self.labels = [cp_label(c) for c in self.chars]
+        # char -> row index, for the handful of recents _default_rows looks up.
+        # chars never changes after init, so this is built once here rather
+        # than per call: rebuilding it cost 128ms on *every* empty query, i.e.
+        # on every single popup, which was the entire visible open latency.
+        self.by_index = {c: i for i, c in enumerate(self.chars)}
 
         self.recent = self._load_recent()
         # cache of the previous query, so typing narrows an existing result
@@ -379,7 +391,7 @@ class Index:
         """Empty query shows recents most-used first, then the custom set."""
         out = []
         seen = set()
-        by_index = {c: i for i, c in enumerate(self.chars)}
+        by_index = self.by_index
         for ch in sorted(self.recent, key=self.recent.get, reverse=True):
             if ch in seen:
                 continue

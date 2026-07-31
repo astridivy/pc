@@ -425,6 +425,22 @@ cold-started is too slow for a key you hit constantly, so the daemon pays it
 once at login and afterwards only maps a prebuilt window. This generalises: on
 this CPU, *measure import cost before designing around render cost.*
 
+**A daemon amortises startup and nothing else.** Once the resident-process win
+is banked it stops being the interesting number, and the remaining latency is
+whatever each request *redoes*. The usual culprit is a structure derived from
+state that never changes after init — an index, a reverse map, a sorted copy —
+rebuilt inside the hot path because that's where it's used. It never shows up
+in a cold-start profile, because cold start is the thing you already fixed.
+When something resident still feels slow, profile one request, not one launch.
+
+**Benchmark the empty input, not just the interesting one.** The default view —
+empty query, no filter, first paint — is the path *every* invocation takes, and
+it's the one most likely to skip the fast paths that exist for real queries: a
+narrowing cache keyed on the previous query does nothing for a query that isn't
+narrowing anything. A timing table that only lists the expensive-looking
+operation will happily sit next to a default case costing an order of magnitude
+more. Time the boring case first; it's the one the human actually feels.
+
 The whole unicode database is already local — `python3 -c "import unicodedata"`
 knows every name, so there is nothing to download and no `UnicodeData.txt` to
 parse. ~149k codepoints enumerate in about 2s.
