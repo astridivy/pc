@@ -354,6 +354,35 @@ testing, `:normal` vs `:normal!` is the difference between measuring the map
 and measuring raw keystrokes — pick deliberately, and run the plain-`A` control
 alongside, or a plugin's interference looks like your map's behaviour.
 
+## The clipboard, and why `:XClip` exists
+
+`set clipboard=unnamedplus` in `.vimrc` **does nothing here.** Arch's `vim` is
+built `-clipboard -X11 -xterm_clipboard`, so it cannot own an X selection at
+all — `has('clipboard_working')` returns 0 while the option still reads back as
+`unnamedplus`, which is exactly the shape of failure that looks like success.
+That is the reason `command! XClip` shells out to `xclip`, and why the visual
+`Y`/`D`/`X` maps route through it. Don't "simplify" them into plain yanks.
+
+Vim 9.2 does have `+clipboard_provider`, so a `g:clipboard` dict wiring copy and
+paste to `xclip` would make `"+y` work natively. It is not configured yet.
+
+X11 has no clipboard *storage*: the copying process must stay alive and own the
+selection, which is why `xclip -i` lingers rather than exiting, and why
+`bin/{heart,supson,endash,emdash,♡}` all leave a resident `xclip` behind. Two
+consequences worth knowing before debugging anything clipboard-shaped:
+
+- Copied text dies when the owning program exits, unless a clipboard manager
+  holds it. **None is installed** — no `autocutsel`, `clipmenu`, `copyq`,
+  `parcellite`.
+- Only one process may own a selection, so a copy has to *take* ownership from
+  whoever holds it. Alacritty (0.17, via `x11-clipboard`) reports a lost race
+  as `Unable to store text in clipboard: …` and the copy silently doesn't
+  happen. Intermittent clipboard failures are usually this, not a bug in the
+  app doing the copying.
+
+`xclip -o -selection {clipboard,primary}` shows what is actually held, and
+`pgrep -a xclip` shows who is holding it.
+
 ## Merging the per-machine branches
 
 `origin/{serverside,baby,phone,remote,windoze,wsl}` are long-lived per-machine
