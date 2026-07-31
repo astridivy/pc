@@ -193,6 +193,23 @@ pacman's, so a hardcoded `/usr/bin/eslint_d` bypasses the choice — and on this
 box that path does not exist at all, which syntastic reports as zero errors
 rather than as a failure. Other machines' branches contain exactly that pin.
 
+## Verifying a vim change
+
+Sourcing `.vimrc` proves almost nothing. A mapping is stored as an unparsed
+string, so a syntax error in an `<expr>` map or a typo'd `` ` `` mark only
+fails when the key is actually pressed — the file loads clean and the breakage
+waits months. Exercise the mapping instead:
+
+```bash
+printf 'let foo = bar\n' > /tmp/t.txt
+vim -Nes -u .vimrc /tmp/t.txt -c 'normal ;}' -c 'wq'   # then check the file
+```
+
+`:normal` (no bang) honours mappings, and `-Nes` runs headless without a TTY.
+Run it twice for anything that toggles, and assert the *undo* half too — half
+of these maps are `mm…`m` cursor-restore dances or `"_x` black-hole deletes
+whose whole point is what they leave untouched, which a one-way test misses.
+
 ## Merging the per-machine branches
 
 `origin/{serverside,baby,phone,remote,windoze,wsl}` are long-lived per-machine

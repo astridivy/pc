@@ -206,6 +206,21 @@ function! s:TrailingChar(check)
 	return strpart(l:line, strlen(l:line) - 1) == a:check
 endfunction
 
+" toggle any one character at the end of the line: append it if it's missing,
+" delete it if it's already there. the mm/`m dance puts the cursor back where
+" it started, and "_x deletes into the black hole so the unnamed register
+" survives. returns keys rather than acting, so bind it with <expr>:
+"
+"   nnoremap <expr><leader>; <SID>ToggleTrailing(';')
+"
+" any single character works -- ; , ) } ] whatever comes up next.
+function! s:ToggleTrailing(char)
+  if s:TrailingChar(a:char)
+    return 'mm$"_x`m'
+  endif
+  return 'mmA' . a:char . "\<Esc>`m"
+endfunction
+
 
 " KEY MAPPINGS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -236,16 +251,18 @@ nnoremap ! :!$SHELL<CR>
 nnoremap <leader>i i <Esc>r
 nnoremap <leader>a a <Esc>r
 "heck why not just do braces
-nnoremap <expr><leader>} <SID>TrailingChar('}') ? 'mm$"_x`m' : "mmA}\<Esc>`m"
-nnoremap <expr><leader>) <SID>TrailingChar(')') ? 'mm$"_x`m' : "mmA)\<Esc>`m"}
+nnoremap <expr><leader>} <SID>ToggleTrailing('}')
+nnoremap <expr><leader>) <SID>ToggleTrailing(')')
 
 "todo???? : make i autotab the way o does
 "actually : just use S
 
-"toggle semicolon at the end of a line;
-"nnoremap <expr>;; <SID>TrailingChar(';') ? 'mm$"_x`m' : "mmA;\<Esc>`m"
-"same deal but with commas (nice)
-"nnoremap <expr>,, <SID>TrailingChar(',') ? 'mm$"_x`m' : "mmA,\<Esc>`"
+" s:ToggleTrailing does the semicolon/comma job now, it just isn't bound to
+" anything -- ;; and ,, were in the way and we don't miss them. if you want
+" them back it's one line each, and the old broken `" on the comma one is
+" already fixed inside the function:
+"nnoremap <expr>;; <SID>ToggleTrailing(';')
+"nnoremap <expr>,, <SID>ToggleTrailing(',')
 
 let &t_TI = "\<Esc>[>4;2m"
 let &t_TE = "\<Esc>[>4;m"
