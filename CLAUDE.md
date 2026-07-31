@@ -154,6 +154,27 @@ Check `df -h /` before anything that writes a lot. A `du -x` sweep of `/` on
 this hardware takes minutes and is usually the wrong tool — `df` first, and
 only then `du` on the one directory that looks suspicious.
 
+### Confirm the running kernel before building a module
+
+Upgrades here are deferred for years at a time (kernel jumps: 2021, 2022, 2024,
+2026), so "did I reboot after that?" is a live question every time. It matters
+before anything DKMS: a kernel upgrade **deletes the previous version's**
+`/usr/lib/modules` tree, so an un-rebooted system can no longer `modprobe`
+anything not already resident, and DKMS builds against the installed kernel
+rather than the running one.
+
+One check settles it — the module tree for the *running* kernel either exists
+or it doesn't:
+
+```bash
+uname -r; ls /usr/lib/modules/; [ -d "/usr/lib/modules/$(uname -r)" ] && echo ok
+```
+
+`uptime -s` against `grep 'upgraded linux (' /var/log/pacman.log` confirms the
+ordering. Note `uname -r` and pacman's version differ in punctuation for the
+same kernel (`7.1.5-arch1-2` vs `7.1.5.arch1-2`) — that mismatch is cosmetic
+and not evidence of anything.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
