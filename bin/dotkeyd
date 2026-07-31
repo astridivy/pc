@@ -517,6 +517,21 @@ def run_daemon(index):
             self._style()
             self.win.connect("key-press-event", self.on_key)
 
+            # Mouse. The grab below is owner_events=False, which means X
+            # reports every pointer event to the *grab window* -- this
+            # toplevel -- and never to a child. So per-row Gtk.EventBoxes
+            # would never fire, and hit-testing here against each row's
+            # allocation is the approach that actually works. It also gets
+            # click-outside for free: those events arrive too, with
+            # coordinates outside the window, which is the only way the
+            # popup can learn it should dismiss.
+            self.win.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                                | Gdk.EventMask.SCROLL_MASK
+                                | Gdk.EventMask.POINTER_MOTION_MASK)
+            self.win.connect("button-press-event", self.on_click)
+            self.win.connect("scroll-event", self.on_scroll)
+            self.win.connect("motion-notify-event", self.on_motion)
+
         def _style(self):
             css = """
             #frame  { background-color: %(bg)s;
@@ -614,10 +629,24 @@ def run_daemon(index):
             # still-focused window underneath -- and this popup never sees a
             # keystroke while appearing to hold a perfectly good grab. False
             # routes every key to the grab holder, which is the entire point.
+            # ALL, not KEYBOARD. A keyboard-only grab leaves the pointer
+            # free, so a click hands focus to another window while this popup
+            # goes on silently swallowing every keystroke on the desktop --
+            # indistinguishable from the whole machine locking up, and only
+            # killable. Grabbing the pointer too means clicks arrive here and
+            # can dismiss us. It also pins the paste target: focus-follows-
+            # mouse would otherwise let a stray pointer move retarget the
+            # paste between opening the popup and picking a glyph.
             st = seat.grab(self.win.get_window(),
-                           Gdk.SeatCapabilities.KEYBOARD,
+                           Gdk.SeatCapabilities.ALL,
                            False, None, None, None, None)
             self.grabbed = (st == Gdk.GrabStatus.SUCCESS)
+            if not self.grabbed:
+                # Never sit there ungrabbed-but-visible, and never hold a
+                # partial grab: without input we cannot be dismissed.
+                sys.stderr.write("dotkeyd: grab failed (%s), closing\n" % st)
+                self.hide()
+                return
             if DEBUG:
                 sys.stderr.write("dotkeyd: placed %dx%d at %d,%d grab=%s\n"
                                  % (self.win.get_size()[0], self.win.get_size()[1],
@@ -680,6 +709,68 @@ def run_daemon(index):
                     self.query += c
                     self.sel = 0
                     self.refresh()
+            return True
+
+        # -- mouse -------------------------------------------------------
+
+        def _row_at(self, x, y):
+            """Which visible row is under (x, y), in toplevel coordinates."""
+            for i, (row, _g, _n, _c) in enumerate(self.widgets):
+                if i >= len(self.rows):
+                    break
+                a = row.get_allocation()
+                if a.x <= x < a.x + a.width and a.y <= y < a.y + a.height:
+                    return i
+            return None
+
+        def on_click(self, _w, ev):
+            # A double click also emits 2BUTTON_PRESS; we already committed on
+            # the first press, so only ever act on the plain one.
+            if ev.type != Gdk.EventType.BUTTON_PRESS:
+                return True
+            w, h = self.win.get_size()
+            if not (0 <= ev.x < w and 0 <= ev.y < h):
+                self.hide()          # clicked away -- the dismissal that the
+                return True          # keyboard-only grab could never see
+            i = self._row_at(ev.x, ev.y)
+            if i is None:
+                return True          # a click on the query line or the hint
+            self.sel = i
+            ctrl = bool(ev.state & Gdk.ModifierType.CONTROL_MASK)
+            shift = bool(ev.state & Gdk.ModifierType.SHIFT_MASK)
+            if ev.button == 3:
+                mode = "copy"        # right click copies without pasting
+            else:
+                mode = "type" if shift else "copy" if ctrl else "paste"
+            self.commit(mode)
+            return True
+
+        def on_scroll(self, _w, ev):
+            if not self.rows:
+                return True
+            d = ev.direction
+            if d == Gdk.ScrollDirection.UP:
+                step = -1
+            elif d == Gdk.ScrollDirection.DOWN:
+                step = 1
+            elif d == Gdk.ScrollDirection.SMOOTH:
+                ok, _dx, dy = ev.get_scroll_deltas()
+                if not ok or not dy:
+                    return True
+                step = 1 if dy > 0 else -1
+            else:
+                return True
+            self.sel = (self.sel + step) % len(self.rows)
+            self.refresh()
+            return True
+
+        def on_motion(self, _w, ev):
+            # Only repaint when the highlight actually moves. Motion floods,
+            # and with the pointer grabbed it keeps arriving off-window too.
+            i = self._row_at(ev.x, ev.y)
+            if i is not None and i != self.sel:
+                self.sel = i
+                self.refresh()
             return True
 
         # -- delivery ----------------------------------------------------

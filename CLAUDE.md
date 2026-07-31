@@ -460,6 +460,31 @@ cooperation is a gamble. And because a grab is not focus, the window underneath
 keeps X input focus the entire time — which is what makes delivery possible at
 all.
 
+**Grab every device that could dismiss you, or the grab becomes a hang.** A
+keyboard-only grab leaves the pointer free, so a click gives focus to some
+other window while the grabbing popup — which has no pointer events to learn
+from — goes on swallowing every keystroke on the desktop. Nothing looks
+broken; the machine simply stops accepting input, and the only cure is killing
+the process. Grab `SeatCapabilities.ALL`, and make click-outside an explicit
+dismissal path. The same pointer grab also pins the paste target, since
+focus-follows-mouse would otherwise let a stray pointer drift retarget the
+delivery between opening the popup and choosing something.
+
+Corollary for the failure branch: if the grab does *not* return `SUCCESS`,
+tear the window down instead of leaving it mapped. A visible popup that holds
+no input grab cannot be typed at or dismissed, which is the same hang wearing
+a different hat.
+
+**`owner_events=False` means child widgets never see pointer events.** X
+reports them to the *grab window* only, so per-row `Gtk.EventBox` handlers
+silently never fire — the familiar shape of GTK click handling is simply not
+available under a grab. Hit-test on the toplevel instead, comparing the event
+coordinates against each child's `get_allocation()`. This is not a workaround:
+it is also what makes click-outside detectable, since those events arrive at
+the grab window too, carrying coordinates outside its bounds. Note that
+`Gtk.Box` and `Gtk.Label` are no-window widgets and cannot receive events
+under any circumstances, grab or not.
+
 ### 2. `xdotool type` cannot reliably type characters your keymap lacks
 
 To type an unmapped keysym, xdotool temporarily remaps a spare keycode, sends
