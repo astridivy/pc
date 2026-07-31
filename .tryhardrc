@@ -1,1 +1,10 @@
 _TRY_COMMON=("." "lib" "src" ".." "$HOME" "/" "$HOME/src" "$HOME/doc" "$HOME/mnt" "mnt")
+
+# what `tryhard -r' (so, tryfind) refuses to walk into. globs, matched against
+# the directory name wherever it turns up.
+# += and not =, so the built-in .git and node_modules stay -- node_modules is
+# the one that matters, it's the difference between tryfind taking five
+# seconds and taking none.
+# no point listing dot-directories: the subdirectory glob is `*/', which
+# skips them already unless dotglob is on, and it isn't
+_TRY_IGNORE+=("__pycache__")
