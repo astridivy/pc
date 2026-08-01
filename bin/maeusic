@@ -12,7 +12,7 @@ jack &
 pavucontrol &
 #lmms &
 xdotool set_desktop 1 &
-ardour8 & xdotool search --sync --classname Ardour set_desktop_for_window 1 &
+ardour9 & xdotool search --sync --classname Ardour set_desktop_for_window 1 &
 #carla-jack-single ~/doc/carla/LABS.carxp &
 #(sleep 6 ; calfjackhost) &
 (sleep 6 ; meters111 )

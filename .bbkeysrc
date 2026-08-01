@@ -28,6 +28,7 @@
       #[execute] (Mod4-Down)  { xdotool getactivewindow windowmove --relative x  4 }
       # begin WORKSPACE SHORTCUT CHAINS
       [Chain] (Mod4-W)
+        [cancelChain] (Escape)
         [NextWorkspace] (W)
         [PrevWorkspace] (S)
         [execute] (J) { xdotool search --name "Wine System Tray" windowfocus }
@@ -54,6 +55,7 @@
         [execute] (M)                 { xdotool getactivewindow windowminimize }
         [execute] (Shift-S)         { xdotool getactivewindow windowstate --toggle SHADED }
         [Chain] (T)
+          [cancelChain] (Escape)
           [execute] (H) {xdotool getactivewindow set_desktop_for_window 0}
           [execute] (W) {xdotool getactivewindow set_desktop_for_window 1}
           [execute] (X) {xdotool getactivewindow set_desktop_for_window 2}
@@ -64,6 +66,7 @@
           [execute] (E) {xdotool getactivewindow set_desktop_for_window 7}
         [end]
         [Chain] (Control-T)
+          [cancelChain] (Escape)
           [execute] (H)         { xdotool getactivewindow set_desktop_for_window 0 set_desktop 0 windowactivate }
           [execute] (W)         { xdotool getactivewindow set_desktop_for_window 1 set_desktop 1 windowactivate }
           [execute] (X)         { xdotool getactivewindow set_desktop_for_window 2 set_desktop 2 windowactivate }
@@ -77,12 +80,16 @@
       [end]
       # begin FILE SHORTCUT CHAINS
       [Chain] (Mod4-F)
+        [cancelChain] (Escape)
         [execute] (Shift-A) { thunar ~/mus/Astrid\ Ivy\ \* }
         [execute] (slash) { thunar / }
         [execute] (a) { thunar ~ }
         [chain] (d)
+          [cancelChain] (Escape)
           [chain] (o)
+            [cancelChain] (Escape)
             [chain] (w)
+              [cancelChain] (Escape)
               [execute] (n) {thunar ~/doc/download}
             [end]
             [execute] (c) {thunar ~/doc}
@@ -91,12 +98,16 @@
           [execute]  (a) {thunar /mnt/datao }
         [end]
         [chain] (p)
+          [cancelChain] (Escape)
           [execute]  (c) {thunar ~/.pc}
         [end]
         [chain] (s)
+          [cancelChain] (Escape)
           [chain] (e)
+            [cancelChain] (Escape)
             [execute] (x) { thunar ~/doc/download/.pr0n }
             [chain] (l)
+              [cancelChain] (Escape)
               [execute] (f) { thunar ~/doc/download/iCloud\ Photos }
             [end]
           [end]
@@ -105,6 +116,7 @@
       [end]
       # begin QUICK-To CHAIN
       [chain] (Mod4-Q)
+        [cancelChain] (Escape)
         [execute] (Shift-A) { xdotool search --class Ardour$ windowactivate }
         [execute] (Control-A) { xdotool search --class Alacritty windowactivate }
         [execute] (C) { xdotool search --classname "Google-chrome" windowactivate %@ }
@@ -120,17 +132,21 @@
         [execute] (V) { xdotool search --name vim windowactivate }
         [execute] (Shift-V) { xdotool search --name vim windowactivate }
         [execute] (Control-V) { xdotool search --name ^volume windowactivate }
+        [execute] (W) { xdotool search --classname "Google-chrome" windowactivate %@ }
         [execute] (X) { xdotool search --onlyvisible --name astrid.ivy windowactivate }
         [execute] (Shift-X) { xdotool search --name astrid.ivy windowactivate }
       # end QUICK CHAIN
       [end]
       # begin e-X-ECUTE CHAIN
       [chain] (Mod4-X)
-        [execute] (A) { ardour7 }
+        [cancelChain] (Escape)
+        [execute] (A) { ardour9 }
         [execute] (B) { xterm -geometry 18x1 -e watch -n 1 -w -t -c -d -x batt }
         [execute] (Control-C) { xterm -geometry 60x11 -e tty-clock -s -t -c -C 6  }
         [chain] (Control-E)
+          [cancelChain] (Escape)
           [chain] (B)
+            [cancelChain] (Escape)
             [execute] (B) { vimtim ~/.blackboxrc }
             [execute] (K) { vimtim ~/.bbkeysrc }
             [execute] (M) { vimtim ~/.blackbox/menu }
@@ -142,6 +158,7 @@
         [execute] (Control-J) { maeusic }
         [execute] (Mod4-K) { keyleds_toggle }
         [chain] (M)
+          [cancelChain] (Escape)
           [execute] (2) { meters111 }
           [execute] (s) { meters }
           [execute] (o) { cadence-jackmeter }
@@ -155,7 +172,7 @@
         [execute] (W) { google-chrome-stable }
         [execute] (X) { xterm }
         [execute] (Y) { alacritty }
-        [execute] (Z) { alacritty --config-file ~/.alacritty.xlarge.yml  }
+        [execute] (Z) { alacritty --config-file ~/.config/alacritty/xlarge.toml  }
       # end e-X-ECUTE CHAIN
       [end]
    [end]

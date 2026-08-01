@@ -563,7 +563,45 @@ poll still notices edits, so `touch` reloads as before.
 Swapping a live config file for a symlink wants a **rename**, not
 `rm && ln -s`: build the link under a temp name and `mv -T` it over the
 original. bbkeys re-reads on a 1s timer, and the delete-then-create window is
-long enough for a poll to land on a missing file.
+long enough for a poll to land on a missing file. The same applies to
+*rewriting* it: write a temp file and `os.replace`/`mv -T` it into place, or
+the poll can read a half-written config and silently drop every binding after
+the truncation point.
+
+### 4. A bbkeys chain parks silently, then eats the next hotkey
+
+Chains (`[chain] (Mod4-X)`) are modal, and the mode is left **only when bbkeys
+receives a grabbed key**. Inside a chain bbkeys grabs that chain's children and
+nothing else, so pressing a key which is *not* in the chain is never delivered
+to bbkeys at all: the chain pointer stays parked on that node indefinitely,
+with no timeout. The next hotkey is then matched against the chain's children
+instead of the top level, fails to match, and is consumed resetting to the top.
+
+So one mistyped chain key costs *two* later presses, and the symptom surfaces
+on a completely unrelated binding — "the unicode popup stopped working" is
+usually "I pressed a key that isn't in the execute chain a minute ago".
+Interleaving a wrong key with a right one fails forever, which reads as the
+whole keyboard config being broken.
+
+**Give every chain a cancel, nested ones included** — `[cancelChain] (Escape)`
+resets to the top from any depth. A chain without one can only be left by
+spending a hotkey on it. Bracket tags are lowercased by the tokenizer, so
+`[cancelChain]` and `[cancelchain]` both parse; the keysym in the parens is
+**not** lowercased, so it is `Escape` and never `escape` (`NoSymbol`, binding
+dropped). Same trap as the section above, one line further right.
+
+Two corollaries when a binding "does nothing":
+
+- **Check it is actually bound before debugging anything else.** The same
+  mnemonic tends to live on different keys in different chains, and the chains
+  here do not agree with each other — a remembered shortcut is a hypothesis,
+  not evidence.
+- bbkeys is started from `.xinitrc`, so its stderr is the tty that ran
+  `startx`. Every `invalid key`, `could not activate keybinding` and
+  reconfigure message lands on tty1, where nobody will ever see it from inside
+  X. Don't wait to be told a config is broken; validate it yourself — balance
+  the brackets and resolve every keysym through `XKeysymToKeycode`, since
+  keycode 0 is exactly what makes a binding vanish without a trace.
 
 ### Testing anything GUI on the live session
 
@@ -573,6 +611,22 @@ window you just opened — which looks exactly like your synthetic input going
 astray, and produced two false diagnoses here. Before concluding a GUI bug is
 real, confirm the desktop was actually idle, and prefer probes that record
 where input landed over probes that only show whether it arrived.
+
+**Ask X about grabs instead of typing at the desktop.** Two questions that
+otherwise need synthetic input have direct, side-effect-free answers:
+
+- *Is this hotkey actually live?* `XGrabKey` the same keycode+modifier from a
+  throwaway client. `BadAccess` means someone already holds it (the daemon is
+  alive and bound); success means the binding is dead — ungrab immediately.
+- *Is something holding the keyboard right now?* `XGrabKeyboard` /
+  `XGrabPointer` return `AlreadyGrabbed` if another client owns it, which is
+  the difference between "my popup is broken" and "a menu somewhere never let
+  go". A popup that reports a failed grab is usually the victim, not the bug.
+
+Both need an error handler plus `XSync`, because grab errors arrive
+asynchronously. Always include a **control** — a combination known to be
+unbound, a grab known to be free — since a probe reporting everything as held
+is indistinguishable from a probe that is simply broken.
 
 Two more traps from the same afternoon, both cheap to avoid:
 
