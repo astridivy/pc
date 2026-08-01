@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# da - data annotation technology
+#
+# Usage:
+#   da ls
+#   da complete
+#   da complete ranking
+#   da rm ranking
+#
+#   da today
+#   da today "Reviewer Feedback" They preferred concise reasoning.
+#   da rules Never infer unstated requirements.
+#   da projects/ranking
+#   da projects/ranking "Tie-breaking" Only tie when genuinely equivalent.
+#
+
+set -euo pipefail
+
+ROOT="${DA_ROOT:-$HOME/doc/datonotato}"
+
+mkdir -p "$ROOT/projects" "$ROOT/completed"
+
+usage() {
+cat <<EOF
+usage:
+  da ls
+  da complete [query]
+  da rm <query>
+
+  da <document>
+  da <document> [subtitle] [note...]
+
+examples:
+  da today
+  da today "Morning"
+  da today "Morning" Read reviewer comments.
+
+  da rules Never infer user intent.
+
+  da projects/ranking
+  da projects/ranking "Tie-breaking" Avoid ties unless necessary.
+EOF
+}
+
+find_doc() {
+    local q="$1"
+
+    find "$ROOT" -name '*.md' \
+    | grep -vi '/completed/' \
+    | grep -i "$q" \
+    | head -n1
+}
+
+list_docs() {
+
+    find "$ROOT" -name '*.md' | sort | while read -r file
+    do
+        rel="${file#$ROOT/}"
+        rel="${rel%.md}"
+
+        title="$(grep -m1 '^# ' "$file" | sed 's/^# //')"
+        subtitle="$(grep -m1 '^## ' "$file" | sed 's/^## //')"
+
+        [[ -z "$title" ]] && title="$(basename "$rel")"
+
+        printf "%-32s %s\n" "$rel" "$subtitle"
+    done
+}
+
+list_completed() {
+
+    find "$ROOT/completed" -name '*.md' | sort | while read -r file
+    do
+        rel="${file#$ROOT/completed/}"
+        rel="${rel%.md}"
+
+        subtitle="$(grep -m1 '^## ' "$file" | sed 's/^## //')"
+
+        printf "%-32s %s\n" "$rel" "$subtitle"
+    done
+}
+
+case "${1:-}" in
+
+""|-h|--help)
+    usage
+    exit
+    ;;
+
+ls)
+    list_docs
+    exit
+    ;;
+
+complete)
+
+    if [[ $# -eq 1 ]]; then
+        list_completed
+        exit
+    fi
+
+    shift
+
+    src="$(find_doc "$1")"
+
+    [[ -z "$src" ]] && {
+        echo "Not found."
+        exit 1
+    }
+
+    mv "$src" "$ROOT/completed/$(basename "$src")"
+
+    echo "Archived $(basename "$src" .md)"
+    exit
+    ;;
+
+rm)
+
+    shift
+
+    [[ $# -eq 0 ]] && {
+        echo "rm requires a search string."
+        exit 1
+    }
+
+    file="$(find_doc "$1")"
+
+    [[ -z "$file" ]] && {
+        echo "Not found."
+        exit 1
+    }
+
+    read -rp "Delete $(basename "$file")? [y/N] " yn
+
+    [[ "$yn" =~ ^[Yy]$ ]] || exit
+
+    rm "$file"
+
+    echo "Deleted."
+    exit
+    ;;
+
+esac
+
+doc="$1"
+shift || true
+
+file="$ROOT/$doc.md"
+
+mkdir -p "$(dirname "$file")"
+
+if [[ ! -f "$file" ]]; then
+
+    cat >"$file" <<EOF
+# $(basename "$doc")
+
+##
+
+EOF
+
+fi
+
+if [[ $# -eq 0 ]]; then
+    "${EDITOR:-nano}" "$file"
+    exit
+fi
+
+subtitle=""
+body=""
+
+if [[ $# -ge 2 ]]; then
+    subtitle="$1"
+    shift
+fi
+
+body="$*"
+
+{
+    echo
+
+    if [[ -n "$subtitle" ]]; then
+        printf "### %s — %s\n\n" "$(date '+%F %H:%M')" "$subtitle"
+    else
+        printf "### %s\n\n" "$(date '+%F %H:%M')"
+    fi
+
+    printf "%s\n" "$body"
+
+} >> "$file"
+
+echo "✓ ${doc}"
