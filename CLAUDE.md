@@ -551,6 +551,15 @@ end. Modifiers and named keys are capitalised (`Mod4`, `Tab`, `Prior`) but
 letter and punctuation keysyms are not, so don't infer the case from
 neighbouring lines.
 
+**Name a key by its unmodified keysym, whatever the modifier does to it.**
+bbkeys resolves the keysym to a *keycode* once and then grabs keycode + modmask,
+so the shifted meaning of that key is irrelevant: `Shift-Print` is correct even
+though shift on keycode 107 actually produces `Sys_Req`. Reading a shifted
+keysym out of `xmodmap -pke` and binding *that* is a detour at best. The same
+`xmodmap -pke` output is the fastest way to confirm a named key exists and how
+it is spelled — `xmodmap -pke | grep -iw Print` settles the case question in
+one command, before writing anything.
+
 Verify a binding by having it leave a trace (a log line, `date >> /tmp/x`)
 rather than by watching for its effect — and note `autoConfig` is on with a 1s
 poll, so `touch ~/.bbkeysrc` is enough to reload, no restart needed.
