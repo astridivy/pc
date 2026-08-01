@@ -139,6 +139,7 @@
       [end]
       # begin e-X-ECUTE CHAIN
       [chain] (Mod4-X)
+        [execute] (period) { dotkey }
         [cancelChain] (Escape)
         [execute] (A) { ardour9 }
         [execute] (B) { xterm -geometry 18x1 -e watch -n 1 -w -t -c -d -x batt }

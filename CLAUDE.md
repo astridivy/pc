@@ -603,6 +603,31 @@ Two corollaries when a binding "does nothing":
   the brackets and resolve every keysym through `XKeysymToKeycode`, since
   keycode 0 is exactly what makes a binding vanish without a trace.
 
+### 5. A hotkey's own modifier holds the grab you are about to ask for
+
+Anything launched *from* a hotkey that then needs an input grab must **retry**
+the grab rather than trust the first answer. `XGrabKey` is a passive grab: the
+instant the combo matches, X promotes it to an *active* grab owned by the
+hotkey daemon, and holds it until every modifier comes back up. A resident
+process maps its window in milliseconds — far faster than a finger leaves the
+Win key — so attempt one reliably returns `ALREADY_GRABBED` (Gdk status **1**;
+0 is success, so a bare `grab failed (1)` in a log means exactly this).
+
+The symptom points away from the cause: **works from a shell, fails from the
+hotkey.** Typing the command by hand holds no modifier, so every manual test
+passes and only real usage fails — which reads as "the keybinding is broken"
+when the keybinding is the only part that works. So when a hotkey-launched
+thing does nothing, read the target's *own* log before touching the keymap or
+the keysym case: a `grab failed` line is proof the binding fired correctly and
+moves the whole investigation downstream.
+
+Retry on a short interval (10ms) against a ~1s deadline, and measure that
+deadline with **`time.monotonic()`, never `time.time()`** — the wall clock can
+step under NTP, and a timeout measured on it can expire instantly or never.
+Reproduce the whole thing headlessly by installing a passive grab from a
+throwaway client, `xdotool keydown`-ing the modifier, and grabbing while it is
+held; assert the released case too, or a broken probe looks like a pass.
+
 ### Testing anything GUI on the live session
 
 The human is using this computer. Their clicking changes which window has

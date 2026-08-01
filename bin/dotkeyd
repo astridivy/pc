@@ -71,6 +71,13 @@ PID_PATH = os.path.join(RUNTIME_DIR, "dotkey.pid")
 MAX_ROWS = 10          # visible result rows; also the ranking cutoff
 MAX_RECENT = 40        # how many picks we remember
 
+# How long to keep asking for the input grab before giving up, and how often.
+# We are launched from a hotkey, so the modifier that launched us is still
+# down when we try to grab -- see the retry loop in show() for why that makes
+# the first attempt fail. A second is far longer than anyone holds a key.
+GRAB_TIMEOUT = 1.0
+GRAB_RETRY = 0.01
+
 # palette lifted from .config/alacritty/alacritty.toml so the popup looks like
 # it belongs to this desktop rather than to gtk.
 C_BG = "#010116"
@@ -637,16 +644,42 @@ def run_daemon(index):
             # can dismiss us. It also pins the paste target: focus-follows-
             # mouse would otherwise let a stray pointer move retarget the
             # paste between opening the popup and picking a glyph.
-            st = seat.grab(self.win.get_window(),
-                           Gdk.SeatCapabilities.ALL,
-                           False, None, None, None, None)
+            #
+            # Retry rather than believing the first refusal. The hotkey that
+            # launched us is a passive XGrabKey in bbkeys, and X promotes that
+            # to an *active* grab the instant the combo matches, held until
+            # every modifier comes back up. A resident daemon maps this window
+            # in milliseconds -- far faster than a finger leaves the Win key --
+            # so attempt one reliably returns ALREADY_GRABBED. Run the same
+            # command from a shell, where no modifier is down, and it succeeds
+            # first try. That asymmetry is the trap: it reads as "the keybind
+            # is broken" when the keybind is the only part that works.
+            # monotonic, not time(): the wall clock on this box steps around,
+            # and a backwards step would leave this loop spinning long past
+            # its deadline while a forwards one would abandon the grab on the
+            # first try. monotonic cannot step, which is the only property a
+            # timeout actually needs.
+            deadline = time.monotonic() + GRAB_TIMEOUT
+            tries = 0
+            while True:
+                tries += 1
+                st = seat.grab(self.win.get_window(),
+                               Gdk.SeatCapabilities.ALL,
+                               False, None, None, None, None)
+                if st == Gdk.GrabStatus.SUCCESS or time.monotonic() >= deadline:
+                    break
+                time.sleep(GRAB_RETRY)
             self.grabbed = (st == Gdk.GrabStatus.SUCCESS)
             if not self.grabbed:
                 # Never sit there ungrabbed-but-visible, and never hold a
                 # partial grab: without input we cannot be dismissed.
-                sys.stderr.write("dotkeyd: grab failed (%s), closing\n" % st)
+                sys.stderr.write("dotkeyd: grab failed (%s) after %d tries in "
+                                 "%.2fs, closing\n"
+                                 % (st, tries, GRAB_TIMEOUT))
                 self.hide()
                 return
+            if DEBUG and tries > 1:
+                sys.stderr.write("dotkeyd: grab took %d tries\n" % tries)
             if DEBUG:
                 sys.stderr.write("dotkeyd: placed %dx%d at %d,%d grab=%s\n"
                                  % (self.win.get_size()[0], self.win.get_size()[1],
