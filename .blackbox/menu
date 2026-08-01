@@ -5,7 +5,6 @@
   [submenu] (Terminal) {xterm and its frends}
     [exec] (Xterm) { xterm -ls -sl 1000}
     [exec] (Alacritty) { alacritty --config-file ~/.config/alacritty/tall.toml }
-    [end]
     [submenu] (Applications) {C-L-I love the terminal}
       [exec] (Vim) { vimtim }
       [exec] (Musikcube) { alacritty --title "music kube" -e musikcube}
@@ -22,7 +21,7 @@
     [end]
     [submenu] (Connect to) {SSH || wifi}
       [exec] (Venusaur) {xterm -e "ssh astrid.computer -l ai"}
-      [exec] (Peace&Love) {xterm -e "nmcli con up wifi"}
+      [exec] (Peace+Love) {xterm -e "nmcli con up wifi"}
     [end]
   [end]
   [submenu] (Gaming) {make play gaem}

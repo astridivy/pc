@@ -174,7 +174,7 @@
         [execute] (X) { xterm }
         [execute] (Y) { alacritty }
         [execute] (Z) { alacritty --config-file ~/.config/alacritty/xlarge.toml  }
-      # end e-X-ECUTE CHAIN
+        # end e-X-ECUTE CHAIN
       [end]
    [end]
  [end] (END OF CONFIGURATION)
