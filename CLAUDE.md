@@ -599,6 +599,15 @@ spending a hotkey on it. Bracket tags are lowercased by the tokenizer, so
 **not** lowercased, so it is `Escape` and never `escape` (`NoSymbol`, binding
 dropped). Same trap as the section above, one line further right.
 
+**Press Escape and retry before investigating anything.** A parked chain is
+indistinguishable from a binding that was never installed, and it masquerades
+best as a *newly added* one — the freshly edited config is the obvious suspect,
+so the search starts there and never reaches the modal state that is actually
+eating the key. The retry costs one keystroke and settles it; every other
+diagnostic here costs orders of magnitude more. Make it step one for any
+binding that "does nothing", especially one you just wrote and are confident
+about.
+
 Two corollaries when a binding "does nothing":
 
 - **Check it is actually bound before debugging anything else.** The same
@@ -661,6 +670,19 @@ Both need an error handler plus `XSync`, because grab errors arrive
 asynchronously. Always include a **control** — a combination known to be
 unbound, a grab known to be free — since a probe reporting everything as held
 is indistinguishable from a probe that is simply broken.
+
+A grab probe only proves *someone* holds the key, though — not that it is who
+you think, and not that the command behind it runs. To prove the rest without
+the human, **deliver the keycode yourself with `xdotool key <keycode>` and
+watch for the side effect** (a new file, a log line). That splits the failure
+cleanly in two: a side effect means the whole chain from grab to exec is
+healthy and the fault is upstream, in what the physical key actually emits or
+in the daemon's modal state; no side effect means it is downstream, in the
+binding or the command. Send the bare keycode rather than a keysym name, since
+a keysym can map to several keycodes (`Print` is both 107 and 218 here) and
+`XKeysymToKeycode` silently picks the first. Note `--clearmodifiers` suppresses
+lock modifiers for the duration, so a synthetic press can succeed where a real
+one fails — run it both ways before concluding locks are innocent.
 
 Two more traps from the same afternoon, both cheap to avoid:
 
