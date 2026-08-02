@@ -6,8 +6,13 @@
 # absurdly large numbers first, so you have time to go and focus the
 # window you actually wanted a picture of.
 #
-#   countdown screenshot -1        # in five
-#   countdown -t 10 'screenshot -1'
+#   countdown screenshot           # in five
+#   countdown -t 10 'screenshot'   # in ten
+#
+# in a terminal it fills whatever terminal it is given. launched from a
+# keybinding or the blackbox menu, where there is no terminal at all, it
+# pops its own -- and closes it again *before* running the command, so the
+# countdown is never in the screenshot.
 #
 # like `eventually`, but you can see it coming.
 #
@@ -16,6 +21,10 @@
 
 SECS=5
 FILL='█'
+
+# terminal cells are about twice as tall as they are wide, so the glyphs
+# get stretched horizontally by this much to come out looking square.
+ASPECT=2
 
 # 0-9, seven rows each, six columns wide. '#' is ink, everything else is
 # paper; the whole thing gets blown up by an integer scale at render time.
@@ -72,10 +81,48 @@ if [[ ! $SECS =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-# the display is a courtesy; if nobody is watching, skip all of it and
-# keep stdout clean for whatever we were asked to run.
 TTY=0
 [[ -t 1 ]] && TTY=1
+
+# ---------------------------------------------------------------- no terminal
+
+# Launched from a keybinding or a menu there is nowhere to draw, so go and
+# get a window. The inner countdown only counts -- the command runs back
+# here, after that window has closed, so it can't end up in the picture.
+#
+# Neither alacritty nor xterm passes its child's exit status back to us
+# (measured: both return 0 regardless), so the inner one touches a marker
+# file to say it finished. No marker means it was cancelled, and cancelling
+# a countdown has to mean the command does not run.
+if (( ! TTY )) && [[ -z $COUNTDOWN_INNER && -n $DISPLAY ]]; then
+  SELF=$(readlink -f "$0")
+  export COUNTDOWN_INNER=1
+  export COUNTDOWN_DONE
+  COUNTDOWN_DONE=$(mktemp -t countdown.XXXXXX)
+
+  if command -v alacritty >/dev/null; then
+    alacritty --config-file ~/.config/alacritty/countdown.toml \
+      --title 'countdown' -e "$SELF" -t "$SECS" -c "$FILL"
+  elif command -v xterm >/dev/null; then
+    xterm -geometry 40x21 -title 'countdown' -e "$SELF" -t "$SECS" -c "$FILL"
+  else
+    sleep "$SECS"
+    : > "$COUNTDOWN_DONE"
+  fi
+
+  if [[ -s $COUNTDOWN_DONE ]]; then
+    rm -f "$COUNTDOWN_DONE"
+    if [[ -n $CMD ]]; then
+      eval "$CMD"
+    fi
+    exit
+  fi
+
+  rm -f "$COUNTDOWN_DONE"
+  exit 130
+fi
+
+# ------------------------------------------------------------------ the show
 
 restore () {
   (( TTY )) && printf '\033[?25h\033[?1049l'
@@ -90,7 +137,7 @@ fi
 # draw one number as big as it will go in the terminal we have
 render () {
   local NUM="$1"
-  local COLS LINES NDIG W SX SY S PADX PADY PAD INK PAPER ROW OUT COLOUR
+  local COLS LINES NDIG W VS HS PADX PADY PAD INK PAPER ROW OUT COLOUR
   local D R C I
 
   COLS=$(tput cols)
@@ -98,19 +145,27 @@ render () {
   NDIG=${#NUM}
   W=$((NDIG * 7 - 1))               # six columns per digit, one space between
 
-  SX=$(( (COLS - 2) / W ))
-  SY=$(( (LINES - 2) / 7 ))
-  S=$((SX < SY ? SX : SY))
-  (( S > 8 )) && S=8
-  (( S < 1 )) && S=1
+  # biggest vertical scale that still fits both ways, remembering that each
+  # step of it costs ASPECT columns and only one line
+  VS=$(( (LINES - 2) / 7 ))
+  C=$(( (COLS - 2) / (W * ASPECT) ))
+  (( C < VS )) && VS=$C
+  (( VS > 8 )) && VS=8
+  (( VS < 1 )) && VS=1
 
-  PADX=$(( (COLS - W * S) / 2 ))
-  PADY=$(( (LINES - 7 * S) / 2 ))
+  # ...and give up the squareness rather than wrap, in a very narrow one
+  HS=$((VS * ASPECT))
+  while (( W * HS > COLS && HS > 1 )); do
+    HS=$((HS - 1))
+  done
+
+  PADX=$(( (COLS - W * HS) / 2 ))
+  PADY=$(( (LINES - 7 * VS) / 2 ))
   (( PADX < 0 )) && PADX=0
   (( PADY < 0 )) && PADY=0
 
   printf -v PAD '%*s' "$PADX" ''
-  printf -v PAPER '%*s' "$S" ''     # one glyph cell of paper...
+  printf -v PAPER '%*s' "$HS" ''    # one glyph cell of paper...
   INK=${PAPER// /$FILL}             # ...and one of ink
 
   # green while there is time, yellow when there isn't much, red at the end
@@ -144,7 +199,7 @@ render () {
       fi
     done
 
-    for (( I = 0; I < S; I++ )); do
+    for (( I = 0; I < VS; I++ )); do
       printf '%s%s\n' "$PAD" "$OUT"
     done
   done
@@ -171,6 +226,11 @@ fi
 restore
 trap - EXIT INT TERM
 TTY=0
+
+# tell the outer copy, if there is one, that we got all the way to zero
+if [[ -n $COUNTDOWN_DONE ]]; then
+  echo done > "$COUNTDOWN_DONE"
+fi
 
 if [[ -n $CMD ]]; then
   eval "$CMD"

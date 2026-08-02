@@ -1,0 +1,17 @@
+# small popup for `countdown` when it is launched with no terminal to draw
+# in -- from a keybinding, or the blackbox menu. sized so that both one- and
+# two-digit counts scale up to nearly fill it, and no larger than that, since
+# the whole point is to leave the thing you are photographing visible.
+#
+# deliberately not positioned: blackbox can place it, and a hardcoded x/y
+# would be wrong on the other machine.
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 56
+lines = 23
+
+[font]
+size = 16

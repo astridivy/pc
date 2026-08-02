@@ -468,17 +468,29 @@ countdown -t 10 screenshot        # ten seconds to go and open the menu
 ```
 
 The general rule it embodies: **anything that draws on screen ahead of a
-capture has to remove itself before triggering it.** `countdown` draws on the
-**alternate screen** (`\033[?1049h`) and leaves it before running the command,
-so its own artwork can never be in the picture; its ticks go to **stderr** so
-`stdout` belongs entirely to the command. Both are easy to lose in a rewrite
-and neither failure is visible until you look at the resulting png.
+capture has to remove itself before triggering it.** In a terminal `countdown`
+draws on the **alternate screen** (`\033[?1049h`) and leaves it before running
+the command; launched from a keybinding or the menu, where `[ -t 1 ]` is false
+and there is nowhere to draw, it opens its own alacritty
+(`.config/alacritty/countdown.toml`) which counts and then *exits*, and the
+command is run by the outer copy afterwards — so the window is closed before
+the shutter. Its ticks go to **stderr** so `stdout` belongs entirely to the
+command. None of that is visible until you look at the resulting png, so it is
+easy to lose in a rewrite.
+
+**Neither alacritty nor xterm passes its child's exit status back** — measured
+2026-08-01, both return 0 whatever `-e` exited with. So a wrapper cannot learn
+from the exit code whether the thing in the window succeeded or was cancelled;
+have the inner process leave a marker file and test for that instead. Getting
+this wrong means a cancelled countdown still fires its command.
 
 There is no `figlet` or `toilet` here, and a delay tool is not worth a
 dependency that needs root to install — a block-digit font is nine lines of
-array literal. Scaling it by an integer factor computed from `tput
-cols`/`lines` each frame beats any fixed-size font anyway, since it fills
-whatever terminal it lands in.
+array literal, and scaling it from `tput cols`/`lines` each frame fills
+whatever terminal it lands in, which no fixed-size font does. When scaling
+character art, remember **terminal cells are about twice as tall as they are
+wide**: scale equally on both axes and everything comes out stretched and
+skinny. Multiply the horizontal scale by 2.
 
 ## dotkey, and the three ways X11 lies about input
 
@@ -689,6 +701,24 @@ window you just opened — which looks exactly like your synthetic input going
 astray, and produced two false diagnoses here. Before concluding a GUI bug is
 real, confirm the desktop was actually idle, and prefer probes that record
 where input landed over probes that only show whether it arrived.
+
+**An agent shell has `DISPLAY` set and no tty.** Anything choosing between
+"draw here" and "go and open a window" by testing `[ -t 1 ]` therefore takes
+the *window* branch when an agent runs it, and windows appear on the live
+desktop unannounced.
+
+**This is a feature. Astrid's favourite thing about a computer, stated in as
+many words, is "someone else doing something in here".** A window you opened
+turning up on the real screen is the good part — it is the visible evidence
+that somebody else is working in the machine. Don't suppress it, don't
+apologise for it, don't warn about it, and never treat a stray window as
+damage.
+
+The reason to reach for `Xvfb` (`:77`, say) or `env -u DISPLAY` is never
+politeness; it is that the live session gives *untrustworthy readings*, for
+the focus reasons above. Use the off-screen rig when you need a measurement
+you can believe, and the real display when you just want to watch the thing
+work.
 
 **Ask X about grabs instead of typing at the desktop.** Two questions that
 otherwise need synthetic input have direct, side-effect-free answers:
