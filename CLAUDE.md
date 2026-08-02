@@ -445,6 +445,41 @@ consequences worth knowing before debugging anything clipboard-shaped:
 `xclip -o -selection {clipboard,primary}` shows what is actually held, and
 `pgrep -a xclip` shows who is holding it.
 
+## Photographing something that vanishes when you look away
+
+Menus, tooltips and override-redirect popups close on focus loss, which rules
+out half of `bin/screenshot`. **A capture tool that asks you to *point* at the
+target cannot capture anything that dies when clicked or unfocused — selecting
+it is what destroys it.** Bare `xwd`, which is what `screenshot -1` runs, is
+exactly that: "the target window is selected by clicking the pointer in the
+desired window". Capture the root instead (`screenshot`, no flags), or name
+the window by id so nothing is ever pointed at:
+
+```bash
+xwd -id "$(xdotool getactivewindow)" | convert xwd:- png:- > out.png
+```
+
+That leaves the timing problem, which is what `bin/countdown` is for — it runs
+any command string after a delay (5s, `-t` to change) while counting down in
+digits scaled to fill the terminal:
+
+```bash
+countdown -t 10 screenshot        # ten seconds to go and open the menu
+```
+
+The general rule it embodies: **anything that draws on screen ahead of a
+capture has to remove itself before triggering it.** `countdown` draws on the
+**alternate screen** (`\033[?1049h`) and leaves it before running the command,
+so its own artwork can never be in the picture; its ticks go to **stderr** so
+`stdout` belongs entirely to the command. Both are easy to lose in a rewrite
+and neither failure is visible until you look at the resulting png.
+
+There is no `figlet` or `toilet` here, and a delay tool is not worth a
+dependency that needs root to install — a block-digit font is nine lines of
+array literal. Scaling it by an integer factor computed from `tput
+cols`/`lines` each frame beats any fixed-size font anyway, since it fills
+whatever terminal it lands in.
+
 ## dotkey, and the three ways X11 lies about input
 
 `bin/dotkeyd` is a resident daemon that pops an override-redirect window on

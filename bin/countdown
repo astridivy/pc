@@ -1,0 +1,177 @@
+#!/bin/bash
+#
+# countdown
+#
+# run a command, but not right this second. counts down at you in
+# absurdly large numbers first, so you have time to go and focus the
+# window you actually wanted a picture of.
+#
+#   countdown screenshot -1        # in five
+#   countdown -t 10 'screenshot -1'
+#
+# like `eventually`, but you can see it coming.
+#
+# astrid
+# 2026-08-01
+
+SECS=5
+FILL='█'
+
+# 0-9, seven rows each, six columns wide. '#' is ink, everything else is
+# paper; the whole thing gets blown up by an integer scale at render time.
+FONT=(
+  ' #### ' '##  ##' '##  ##' '##  ##' '##  ##' '##  ##' ' #### '
+  '  ##  ' ' ###  ' '  ##  ' '  ##  ' '  ##  ' '  ##  ' '######'
+  ' #### ' '##  ##' '    ##' '   ## ' '  ##  ' ' ##   ' '######'
+  ' #### ' '##  ##' '    ##' '  ### ' '    ##' '##  ##' ' #### '
+  '##  ##' '##  ##' '##  ##' '######' '    ##' '    ##' '    ##'
+  '######' '##    ' '##    ' '##### ' '    ##' '##  ##' ' #### '
+  ' #### ' '##  ##' '##    ' '##### ' '##  ##' '##  ##' ' #### '
+  '######' '    ##' '   ## ' '  ##  ' ' ##   ' ' ##   ' ' ##   '
+  ' #### ' '##  ##' '##  ##' ' #### ' '##  ##' '##  ##' ' #### '
+  ' #### ' '##  ##' '##  ##' ' #####' '    ##' '##  ##' ' #### '
+)
+
+usage () {
+  cat <<EOF
+usage: countdown [-t seconds] [-c char] [command ...]
+
+  -t  how long to wait, in whole seconds (default $SECS)
+  -c  the character to draw the numbers with (default $FILL)
+
+the command is run through the shell, so pipes and semicolons are fine.
+with no command it is just a very large egg timer.
+EOF
+}
+
+OPTIND=0
+while getopts "t:c:h" OPT; do
+  case $OPT in
+  t)
+    SECS="$OPTARG"
+    ;;
+  c)
+    FILL="$OPTARG"
+    ;;
+  h)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+CMD="$*"
+
+if [[ ! $SECS =~ ^[0-9]+$ ]]; then
+  echo "countdown: -t wants whole seconds, not '$SECS'" >&2
+  exit 2
+fi
+
+# the display is a courtesy; if nobody is watching, skip all of it and
+# keep stdout clean for whatever we were asked to run.
+TTY=0
+[[ -t 1 ]] && TTY=1
+
+restore () {
+  (( TTY )) && printf '\033[?25h\033[?1049l'
+}
+
+if (( TTY )); then
+  trap 'restore; exit 130' INT TERM
+  trap restore EXIT
+  printf '\033[?1049h\033[?25l'    # alternate screen, hide the cursor
+fi
+
+# draw one number as big as it will go in the terminal we have
+render () {
+  local NUM="$1"
+  local COLS LINES NDIG W SX SY S PADX PADY PAD INK PAPER ROW OUT COLOUR
+  local D R C I
+
+  COLS=$(tput cols)
+  LINES=$(tput lines)
+  NDIG=${#NUM}
+  W=$((NDIG * 7 - 1))               # six columns per digit, one space between
+
+  SX=$(( (COLS - 2) / W ))
+  SY=$(( (LINES - 2) / 7 ))
+  S=$((SX < SY ? SX : SY))
+  (( S > 8 )) && S=8
+  (( S < 1 )) && S=1
+
+  PADX=$(( (COLS - W * S) / 2 ))
+  PADY=$(( (LINES - 7 * S) / 2 ))
+  (( PADX < 0 )) && PADX=0
+  (( PADY < 0 )) && PADY=0
+
+  printf -v PAD '%*s' "$PADX" ''
+  printf -v PAPER '%*s' "$S" ''     # one glyph cell of paper...
+  INK=${PAPER// /$FILL}             # ...and one of ink
+
+  # green while there is time, yellow when there isn't much, red at the end
+  if (( NUM > 3 )); then
+    COLOUR=32
+  elif (( NUM > 1 )); then
+    COLOUR=33
+  else
+    COLOUR=31
+  fi
+
+  printf '\033[H\033[2J\033[1;%dm' "$COLOUR"
+
+  for (( I = 0; I < PADY; I++ )); do
+    printf '\n'
+  done
+
+  for (( R = 0; R < 7; R++ )); do
+    ROW=''
+    for (( D = 0; D < NDIG; D++ )); do
+      (( D )) && ROW+=' '
+      ROW+="${FONT[${NUM:D:1} * 7 + R]}"
+    done
+
+    OUT=''
+    for (( C = 0; C < ${#ROW}; C++ )); do
+      if [[ ${ROW:C:1} == '#' ]]; then
+        OUT+="$INK"
+      else
+        OUT+="$PAPER"
+      fi
+    done
+
+    for (( I = 0; I < S; I++ )); do
+      printf '%s%s\n' "$PAD" "$OUT"
+    done
+  done
+
+  printf '\033[0m'
+}
+
+N=$SECS
+while (( N > 0 )); do
+  if (( TTY )); then
+    render "$N"
+  else
+    printf '%d ' "$N" >&2
+  fi
+  sleep 1
+  N=$((N - 1))
+done
+
+if (( ! TTY && SECS )); then
+  printf '\n' >&2
+fi
+
+# get our own artwork off the screen before anything takes a picture of it
+restore
+trap - EXIT INT TERM
+TTY=0
+
+if [[ -n $CMD ]]; then
+  eval "$CMD"
+fi
