@@ -9,7 +9,6 @@
 
 ONE=0
 DIR=$HOME/doc/screenshots
-FILE="${DIR}/`date +%F-%I.%M.%S-%P`.png"
 
 OPTIND=0
 while getopts "1D:" OPT; do
@@ -26,10 +25,13 @@ while getopts "1D:" OPT; do
   esac
 done
 
+# after getopts, so that -D actually reaches it
+FILE="${DIR}/`date +%F-%I.%M.%S-%P`.png"
+
 [[ ! -d $DIR ]] && mkdir -p "$DIR"
 
 if (( $ONE )); then
-  xwd | convert xwd:- png:- > "$FILE"
+  xwd | magick xwd:- png:- > "$FILE"
 else
-  xwd -root -display :0 | convert xwd:- png:- > "$FILE"
+  xwd -root -display :0 | magick xwd:- png:- > "$FILE"
 fi
