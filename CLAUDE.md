@@ -873,6 +873,28 @@ as things land; this section is just the pointer.
   normalize author identity.** It was true when written.
 - `.claude/` is gitignored.
 
+## Fix what you find
+
+**Nobody else is going to fix these bugs.** This is one person's `$HOME`, not
+a shared codebase with a backlog and a triage rotation, so a bug you notice
+and merely *report* is a bug that stays for years — the 2019 colour mismatch
+above sat for seven. Chasing a side quest you stumble into is therefore not
+scope creep here. It is the optimal move, and the default.
+
+The bar is that the fix be **straightforward, obvious and incontrovertible**:
+an option parsed after the variable it sets, a deprecated command still
+printing warnings on every run, a path that cannot exist, a typo'd keysym. If
+you can state the bug in one sentence and nobody could reasonably prefer the
+current behaviour, just fix it.
+
+Where it stops: if the fix needs a judgement call about how the thing *ought*
+to behave, or would change output something else might depend on, or grows
+past a few lines, then it is not one of these. Say what you found, and let
+Astrid decide.
+
+Give side quests their own commit, separate from the task that turned them
+up, so the history reads honestly and either can be reverted alone.
+
 ## All tasks
 
 Getting the thing working is the middle of a task, not the end. Close every
