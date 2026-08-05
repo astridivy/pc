@@ -323,6 +323,38 @@ could still play AV1, Vorbis and Theora — the codecs whose plugins happened to
 be dependencies — while every ffmpeg-backed format was gone. A partial-looking
 codec list is the signature of this, not of a corrupt install.
 
+### Two audio servers running is not automatically a conflict
+
+`pulseaudio` and `pipewire` are both resident here, which reads as a
+misconfiguration and is not one. **Ask which process holds the device before
+concluding anything:**
+
+```bash
+fuser -v /dev/snd/*        # who actually owns the card
+pactl info | grep 'Server Name'
+```
+
+PulseAudio owns `/dev/snd/controlC0` and serves the desktop. Production audio
+is **JACK** — `jack2`, `qjackctl`, `ardour`, `carla` and a pile of `jack-*`
+tools are installed, with `pulseaudio-jack` bridging the two. `jackd` is not
+resident because qjackctl starts it on demand, so its absence from `ps` means
+nothing.
+
+PipeWire is running but **inert**: no `wireplumber` and no
+`pipewire-media-session`, so it has no session manager, never enumerates
+devices, and claims nothing. An empty graph still reports a handful of nodes
+(`pw-cli ls Node` counts the core dummy/freewheel drivers), so a nonzero node
+count is not evidence it is doing work. That inertness is exactly why there is
+no fight over the card.
+
+The trap is that PipeWire is a *replacement* for PulseAudio and JACK, not a
+third layer beside them — so "they're for different things" is never a real
+topology, and the instinct on seeing both is to migrate. **Don't.** The
+JACK-for-production / Pulse-for-desktop split is deliberate and working, and
+`pipewire-jack` has latency behaviour Ardour users deliberately avoid.
+Installing a session manager is what would turn this from harmless into a
+device-ownership fight.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
