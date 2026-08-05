@@ -270,6 +270,34 @@ ordering. Note `uname -r` and pacman's version differ in punctuation for the
 same kernel (`7.1.5-arch1-2` vs `7.1.5.arch1-2`) — that mismatch is cosmetic
 and not evidence of anything.
 
+### A package split during a deferred upgrade silently loses features
+
+Deferring upgrades for years means crossing whole *repackagings*, not just
+version bumps. When Arch splits a monolithic package into a base plus a family
+of `foo-plugin-*`, the upgrade installs the base and whichever pieces became
+hard dependencies — and **pacman never installs optdepends**, so every feature
+that landed in an optional one just disappears. Nothing errors; `pacman -Q foo`
+reports the newest version and the install looks complete.
+
+The tell is an application reporting a capability as *unsupported* rather than
+missing — it started, it read the file, it simply has no plugin for that job.
+Two commands settle it, and neither needs root:
+
+```bash
+pacman -Qi foo | sed -n '/Optional Deps/,/^[A-Z]/p'   # what could be there
+pacman -Qq | grep ^foo                                # what is
+```
+
+Diff those, and check the plugin directory (`/usr/lib/foo/plugins/…`) for the
+one that would do the work. An absent `.so` is proof; a present one moves the
+search elsewhere.
+
+Concretely, this is why VLC refused h264 (2026-08-05): `vlc-plugin-ffmpeg`
+carries `libavcodec_plugin.so` and is *optional*, so the split left a VLC that
+could still play AV1, Vorbis and Theora — the codecs whose plugins happened to
+be dependencies — while every ffmpeg-backed format was gone. A partial-looking
+codec list is the signature of this, not of a corrupt install.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
