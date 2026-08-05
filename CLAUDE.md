@@ -45,6 +45,31 @@ The `~/bin` terminal launchers are sized for the machine too (`watbat` is 18x1,
 screen. The grub cmdline carries `video=LVDS-1:d` for the same reason — it
 blanked the Acer's panel and is inert on the Dell. Another keeper, not a bug.
 
+### Installed packages follow the same two-machines rule as config
+
+The disk carries drivers for **both** boards, so a package matching no hardware
+present is the normal case, not cruft. `vulkan-radeon`, `xf86-video-ati`,
+`xf86-video-amdgpu` and their `lib32-` twins serve the Acer's Radeon; the
+`linux-firmware-{amdgpu,radeon,nvidia,broadcom,mediatek,atheros}` splits are
+dependencies of the `linux-firmware` metapackage and are not optional anyway.
+**Don't propose removing a driver package because `lspci` on the current box
+doesn't list its vendor** — that reasoning deletes exactly the half of the
+install that makes the transplant work.
+
+The inverse is the actual bug to look for: hardware that *is* present with no
+userspace driver installed, because it arrived with the second machine and
+nobody added anything for it. `lspci -nnk` answers this directly — it prints
+`Kernel driver in use` per device, so a device with a kernel driver bound can
+still be missing the userspace half (VA-API, Vulkan, a protocol daemon), which
+`lspci` will not tell you about. Check those by capability, not by device.
+
+The Dell is Braswell (Pentium J3710, Cherryview, HD Graphics 405, Gen8) with
+Intel Wireless 3160, Realtek RTL8111 ethernet, ALC662 HDA audio, a Weida
+`hid_multitouch` touchscreen and an Intel 8087:07dc bluetooth radio. Kernel-side
+that is all bound and firmware-clean; `libva-intel-driver` (i965 is the driver
+for this generation, not iHD) and the `bluez` daemon are the userspace pieces
+that were missing as of 2026-08-05.
+
 ### The initramfs has to survive the transplant
 
 The disk moves between machines, so **the boot image must not be
