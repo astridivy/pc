@@ -495,6 +495,18 @@ fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
 os.write(fd, b'#ff44cc\rw\r\r')          # keys, then read fd back
 ```
 
+**One write is not one keypress.** That single-write form is fine for a program
+reading a byte at a time, but a readline-style line editor (go-prompt, and
+anything else matching escape sequences) calls `read()` once and matches the
+*whole* returned buffer against its key table. A chunk holding `text` + `\r`
+matches no key, so it is taken as a paste and inserted literally — the text
+appears on screen, perfectly, and the Enter is swallowed. Two prompts sent that
+way concatenate into one line that is never submitted, which reads as "the
+program ignores Enter" rather than as a driver bug. Write the text, pause, then
+write `\r` on its own. The same thing bites real humans pasting multi-line text
+into such a prompt, so a separate multi-line mode existing is a hint that the
+reader works this way.
+
 Assert on what the program *emitted*, not only on what it drew: escape
 sequences sent to the terminal (`OSC 4`, `OSC P`) and files written are the
 parts that outlive the process, and stripping the escapes to eyeball the
