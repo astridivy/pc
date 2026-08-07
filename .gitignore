@@ -23,3 +23,5 @@ yay/yay/
 
 # python leaves these next to any script in bin/
 __pycache__/
+
+bell/.sequence
