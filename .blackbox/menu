@@ -82,7 +82,7 @@
         [stylesdir] (/usr/share/blackbox/styles)
       [end]
       [config] (Configuration)
-      [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
+      [exec] (Redraw Desktop) {feh --bg-center $HOME/doc/galaxy.jpg}
       [restart] (Restart Blackbox) {}
       [exit] (Exit Blackbox)
     [end]

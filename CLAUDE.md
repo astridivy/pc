@@ -391,6 +391,44 @@ exec alacritty … -e bash -c 'source "$1"/functions; source "$1"/screen
 
 `bin/vvim` and `bin/cclod` are the worked examples.
 
+### The root window is painted from three places, and `~/.fehbg` names the culprit
+
+Changing the wallpaper in the obvious place is not enough, because the obvious
+place is one of three writers and not the last one to run:
+
+| where | when it runs |
+|---|---|
+| `bin/wallpaper`, from `.xinitrc` | login, after its deliberate `sleep 1.61` |
+| `rootCommand:` in the blackbox **style** | every style load — startup, Restart Blackbox, any style change |
+| `[exec] (Redraw Desktop)` in `.blackbox/menu` | when clicked |
+
+The style is the one that hides, because it lives **outside both repos** —
+`session.styleFile` in `.blackboxrc` points at
+`/usr/share/blackbox/styles/NAME`, which is a symlink into
+`/usr/local/share/blackbox/styles/`. Grepping `~/src/pc` and `~/src/bashrc`
+for the old filename finds two of the three and reads like a complete answer.
+Every stock style in that directory carries a `rootCommand` too, so switching
+styles changes the wallpaper as a side effect.
+
+**`feh` rewrites `~/.fehbg` on every `--bg-*` with the exact command it ran**,
+so that file is a receipt naming whichever writer went last — read it first,
+before instrumenting anything. It settles "who set my wallpaper" in one `cat`.
+
+`.xinitrc` backgrounds its whole startup line with `&`, so these writers race,
+and `bin/wallpaper`'s `sleep` is a **participant in that race**, not just
+flavour — it is tuned to land after blackbox has loaded its style. A sleep
+tuned that way rots silently as startup gets slower or busier: nothing errors,
+the wrong image simply wins. Don't re-tune it and don't delete it. **Make every
+writer draw the same thing**, so whoever wins is invisible, and keep the sleep
+out of `rootCommand` — a Restart Blackbox that pauses before repainting is not
+what that hook is for.
+
+Match the `--bg-*` **flag** across all three as well, not just the path. The
+flag is invisible while the image happens to be exactly screen-sized —
+`--bg-scale`, `--bg-max` and `--bg-fill` all agree on a 1920x1080 file — and
+starts mattering the moment it isn't. Check `identify` against `xrandr` before
+assuming a flag is inert.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
@@ -439,6 +477,15 @@ exec alacritty … -e bash -c 'source "$1"/functions; source "$1"/screen
   upgrading, copy the *live* `~/.config/ardourN/` files in; don't `cp -r` the
   previous version's directory, which silently enshrines stale keybindings.
 - `etc/`, `usr/` — files destined for system paths, staged for manual install.
+  These are **copies**, deliberately: their live counterparts are root-owned or
+  package-managed, so nothing here can link them and a snapshot is all it is.
+
+  `usr/local/share/blackbox/styles/AstridIvy` is the exception and is a real
+  symlink target — the live file is owned by `astrid`, so the repo copy *is*
+  the live file and the two cannot drift. Blackbox reaches it through two hops
+  (`/usr/share/blackbox/styles/AstridIvy` → `/usr/local/…` → here), which it
+  follows fine. Swap a live config for a symlink with a **rename** (`mv -T`
+  over a temp name), never `rm && ln -s`.
 
 ## Linting
 
@@ -1131,6 +1178,15 @@ one with this sequence:
 a dirty tree and report the job done. Note that work here often spans two
 repos: `~/src/pc` and `~/src/bashrc` each need their own commit. Push only if
 asked.
+
+Agent-specific, since that two-repo split has a sharp edge: **a Claude Code
+session applies the `.claude/settings.json` of the directory it was *launched*
+in, not the one it is currently in.** `/cd` moves the shell without moving the
+settings, so a session started in `~/src/bashrc` and moved here ignores this
+repo's `"worktree": {"bgIsolation": "none"}` and refuses to edit the checkout,
+demanding a worktree — which is the wrong shape for a repo that *is* `$HOME`
+and whose files are symlinked into place from the main checkout. Start the
+session in the repo you mean to edit, or expect to hand the edit back.
 
 **2. Post-mortem, then write it down.** Ask one question: *was there a step in
 this task I would not have needed to take — or a wrong turn I would not have
