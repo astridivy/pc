@@ -24,6 +24,7 @@
       [exec] (Peace+Love) {xterm -e "nmcli con up wifi"}
     [end]
   [end]
+  [exec] (Claude) { claude-desktop }
   [submenu] (Gaming) {make play gaem}
     [exec] (Minecraft >=1.17) { xterm -e "MESA_GL_VERSION_OVERRIDE=4.3 minecraft-launcher"}
     [exec] (Discord) { discord}
