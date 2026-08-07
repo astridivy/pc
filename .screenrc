@@ -1,20 +1,29 @@
 # ~/.screenrc
 #
-# vim motions for the window list: C-a h goes left, C-a l goes right, which
-# is what the fingers are already doing everywhere else.
+# vim motions for moving between split regions -- C-a h/j/k/l walks left,
+# down, up, right, the way the hands already do it everywhere else. this
+# is the binding screen's own man page suggests, under `focus'.
 #
-# both letters were already spoken for, so each one's ctrl-twin takes in
-# whatever got evicted:
+# regions, not windows. C-a S and C-a | make the splits; C-a n/p still
+# cycle windows *inside* whichever region has focus, untouched.
 #
-#   C-a h    was hardcopy   -> prev.  hardcopy moves down to C-a C-h
-#   C-a l    was redisplay  -> next.  redisplay was already on C-a C-l too,
-#                                     so that one needed no help
+# all four are for real splits only: moving left from the leftmost region
+# does nothing rather than wrapping, so on an unsplit screen every one of
+# these is a no-op. that's screen's behaviour, not a broken binding.
 #
-# C-a C-h was a third way to say prev (screen 5 lists backspace, C-h, p and
-# C-p for it), which is exactly why it was cheap to give away -- prev still
-# answers to p, C-p and backspace, and next still answers to n, C-n and
-# space. nothing here is the only route to anything.
+# h/j/l cost nothing -- j was unbound, and l's old job (redisplay) already
+# had C-a C-l. the two that were somebody's only key:
+#
+#   C-a h    was hardcopy -> moves down to C-a C-h, which was only ever a
+#                            fourth way to say prev (backspace, p and C-p
+#                            all still do that)
+#   C-a k    was kill     -> stays on C-a C-k, which was always its twin.
+#                            no loss, and one fewer way to destroy a
+#                            window by fumbling a motion key
 
-bind h prev
+bind h focus left
+bind j focus down
+bind k focus up
+bind l focus right
+
 bind ^h hardcopy
-bind l next

@@ -481,14 +481,37 @@ assuming a flag is inert.
   functions, all of it — so grepping the bashrc repo for a key never finds one.
   Keys live here; sessions and windows live there.
 
+  What's in it: `C-a h/j/k/l` move between **split regions** (`focus left` and
+  friends), the binding screen's own man page suggests under `focus`.
+
+  **"Window" and "region" are different things in screen, and the words are
+  easy to swap by accident.** A *window* is a shell; a *region* is a pane that
+  a window is displayed in. `next`/`prev` cycle windows, `focus` moves between
+  regions, and a binding pointed at the wrong one of those still works
+  perfectly — it just does something nobody asked for. Worth saying back which
+  one is meant before writing the `bind` line.
+
+  Region motions are also no-ops on an unsplit screen, and no-ops at the edges
+  (`focus left` from the leftmost region does nothing rather than wrapping, and
+  that is deliberate on screen's part). So "the key does nothing" is the
+  expected result of testing one without splitting first, and reads exactly
+  like a binding that failed to load.
+
+  Bind all four or none, too: `C-a S` splits into regions stacked *vertically*
+  and `C-a |` splits them side by side, so `h`/`l` alone leave the commoner
+  split unreachable.
+
   Three things bite when editing it, and two of them do it silently:
 
   **Every letter is already bound.** `C-a ?` lists the lot, and `bind` will
   overwrite any of them without a word — there is no warning and no error, the
   old command simply stops having a key. Check `man screen`'s table before
   claiming a letter, and give whatever you evicted somewhere to live (or write
-  down that you didn't). Most defaults have a spare binding already — `prev`
-  answers to four keys — so look for the one that's cheap to take.
+  down that you didn't). Most defaults answer to a `C-a x` *and* a `C-a C-x`,
+  so taking the plain letter usually costs nothing — that is how `k` was freed
+  (`kill` kept `C-a C-k`) and `l` (`redisplay` kept `C-a C-l`). `C-a h` was the
+  one real eviction: `hardcopy` had no twin, so it took `C-a C-h`, which was
+  only a fourth spelling of `prev`.
 
   **A running session never re-reads this file.** `.screenrc` is read at session
   *creation*, so an edit does nothing at all to the screen you are sitting in,
@@ -498,20 +521,31 @@ assuming a flag is inert.
 
   **Testing one needs a pty**, which an agent shell hasn't got — `screen`
   detached refuses anything that wants a display. The rig that works is a fifo
-  into `script`, then `screen -Q title` to read back which window you landed in:
+  into `script` for the keystrokes, `screen -X` to build the splits, and
+  `screen -Q title` to read back where the focus ended up.
+
+  Focus has no query of its own, which is the only awkward part. Give each
+  region a *different window* and the window title names the focused region:
 
   ```bash
-  mkfifo in; script -qfc "screen -c ./.screenrc -S t -t one bash --norc" \
+  mkfifo in; script -qfc "screen -c ./.screenrc -S t -t LEFT bash --norc" \
       /dev/null < in >/dev/null 2>&1 &
   exec 3> in; sleep 1.5
-  screen -S t -X screen -t two bash --norc     # a window to move to
-  printf '\001l' >&3; sleep 0.5                # C-a l
-  screen -S t -Q title; screen -S t -X quit
+  screen -S t -X screen -t RIGHT bash --norc   # window 1
+  screen -S t -X select 0
+  screen -S t -X split -v                      # two regions, side by side
+  screen -S t -X focus right; screen -S t -X select 1
+  screen -S t -X focus left                    # start on the left
+  printf '\001l' >&3; sleep 0.6                # C-a l
+  screen -S t -Q title                         # want: RIGHT
+  screen -S t -X quit
   ```
 
   Always run it a second time with `-c /dev/null` as a control. Half of screen's
   letters do *something* by default, so a binding that appears to work may just
-  be the default doing its own thing.
+  be the default doing its own thing — and a region binding fails *silently*
+  into no movement at all, which is indistinguishable from a key that isn't
+  bound. The control is what tells those two apart.
 - `etc/`, `usr/` — files destined for system paths, staged for manual install.
   These are **copies**, deliberately: their live counterparts are root-owned or
   package-managed, so nothing here can link them and a snapshot is all it is.
