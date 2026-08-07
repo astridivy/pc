@@ -51,6 +51,7 @@
 
 import os
 import sys
+import math
 import stat
 import time
 import json
@@ -68,7 +69,20 @@ FIFO_PATH = os.path.join(RUNTIME_DIR, "dotkey.fifo")
 # so a "is it running?" check can kill the asker or answer yes about itself.
 PID_PATH = os.path.join(RUNTIME_DIR, "dotkey.pid")
 
-MAX_ROWS = 10          # visible result rows; also the ranking cutoff
+# The results are a grid of glyphs, not a list of named rows, because a list
+# long enough to be useful is longer than anyone will read: the thing you
+# wanted was rank 14 and you never saw it. Names don't fit in a cell, so the
+# selected cell's name goes on its own line underneath -- one name, always the
+# one you're looking at.
+GRID_COLS = 9
+GRID_ROWS = 7
+MAX_HITS = GRID_COLS * GRID_ROWS   # results kept; also the ranking cutoff
+CELL_W = 64
+CELL_H = 46
+# Fixed, so the popup never jumps sideways as the result count changes: the
+# grid inside is centre-aligned and shrinks within it instead. show() centres
+# the window once, and cannot re-centre on every keystroke without flicker.
+WIN_W = GRID_COLS * CELL_W + 44
 MAX_RECENT = 40        # how many picks we remember
 
 # How long to keep asking for the input grab before giving up, and how often.
@@ -254,6 +268,13 @@ class Index:
         # than per call: rebuilding it cost 128ms on *every* empty query, i.e.
         # on every single popup, which was the entire visible open latency.
         self.by_index = {c: i for i, c in enumerate(self.chars)}
+        # Same reasoning, same trap: _default_rows fills the grid from the
+        # custom set, and scanning self.custom for it walks all 148k rows to
+        # find ~30. That was invisible while the cutoff was 10 -- recents
+        # alone reached it and the loop broke early -- and became 40ms on
+        # every popup the moment the grid asked for more than the set can
+        # supply. A derived list that never changes after init belongs here.
+        self.custom_ix = [i for i, c in enumerate(self.custom) if c]
 
         self.recent = self._load_recent()
         # cache of the previous query, so typing narrows an existing result
@@ -380,7 +401,7 @@ class Index:
                 continue          # custom rows shadow their unicode twins
             seen.add(ch)
             out.append(self._row(i))
-            if len(out) >= MAX_ROWS:
+            if len(out) >= MAX_HITS:
                 break
         return out
 
@@ -405,14 +426,14 @@ class Index:
             seen.add(ch)
             i = by_index.get(ch)
             out.append(self._row(i) if i is not None else self._describe(ch))
-            if len(out) >= MAX_ROWS:
+            if len(out) >= MAX_HITS:
                 return out
-        for i, is_custom in enumerate(self.custom):
-            if not is_custom or self.chars[i] in seen:
+        for i in self.custom_ix:
+            if self.chars[i] in seen:
                 continue
             seen.add(self.chars[i])
             out.append(self._row(i))
-            if len(out) >= MAX_ROWS:
+            if len(out) >= MAX_HITS:
                 break
         return out
 
@@ -463,6 +484,32 @@ def main():
 
 # ------------------------------------------------------------------ the ui
 
+def spiral_cells(cols, rows):
+    """(col, row) for every cell, ordered outward from the centre.
+
+    Rank 0 lands in the middle, where the eye already is, and each further
+    result is one ring further out. Two things fall out of that for free.
+    Ranking stays *legible* -- distance from the centre is the ranking, so a
+    near-miss is visibly near -- and because the grid is a fixed size that
+    fills from the middle, a short result list leaves whole outer rows and
+    columns empty. GTK gives those zero size, so the block shrinks to fit
+    while staying centred, with no repositioning of the window.
+
+    Rings are measured in *pixels*, not cells, or a grid of non-square cells
+    comes out elliptical; within a ring, clockwise from north.
+    """
+    cx, cy = cols // 2, rows // 2
+    cells = [(c, r) for r in range(rows) for c in range(cols)]
+
+    def key(cr):
+        c, r = cr
+        dx, dy = (c - cx) * CELL_W, (r - cy) * CELL_H
+        return (round(math.hypot(dx, dy), 3),
+                math.atan2(dx, -dy) % (2 * math.pi))
+
+    return sorted(cells, key=key)
+
+
 def run_daemon(index):
     import gi
     gi.require_version("Gtk", "3.0")
@@ -482,7 +529,7 @@ def run_daemon(index):
             # POPUP is gtk's override-redirect window type. blackbox never
             # sees it, so there is nothing to negotiate with.
             self.win = Gtk.Window(type=Gtk.WindowType.POPUP)
-            self.win.set_default_size(620, 0)
+            self.win.set_default_size(WIN_W, 0)
             self.win.set_app_paintable(True)
 
             frame = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -494,28 +541,40 @@ def run_daemon(index):
             self.qlabel.set_ellipsize(Pango.EllipsizeMode.END)
             frame.pack_start(self.qlabel, False, False, 0)
 
-            self.rowbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            frame.pack_start(self.rowbox, False, False, 0)
+            self.grid = Gtk.Grid()
+            self.grid.set_halign(Gtk.Align.CENTER)
+            frame.pack_start(self.grid, False, False, 0)
 
-            # Preallocate the rows. Rebuilding widgets on every keystroke is
-            # the one thing that would make this feel slow on this CPU.
-            self.widgets = []
-            for _ in range(MAX_ROWS):
-                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-                row.set_name("row")
-                glyph = Gtk.Label(xalign=0.5)
-                glyph.set_name("glyph")
-                glyph.set_size_request(52, -1)
-                name = Gtk.Label(xalign=0.0)
-                name.set_name("name")
-                name.set_ellipsize(Pango.EllipsizeMode.END)
-                cp = Gtk.Label(xalign=1.0)
-                cp.set_name("cp")
-                row.pack_start(glyph, False, False, 0)
-                row.pack_start(name, True, True, 0)
-                row.pack_start(cp, False, False, 0)
-                self.rowbox.pack_start(row, False, False, 0)
-                self.widgets.append((row, glyph, name, cp))
+            # Preallocate every cell. Rebuilding widgets on every keystroke is
+            # the one thing that would make this feel slow on this CPU -- and
+            # re-*attaching* them is just as bad, so a cell's position is
+            # fixed for the life of the daemon. Only its text and visibility
+            # change. self.cells[k] is the cell holding rank k; self.at maps
+            # the other way, which is what 2D arrow-key movement needs.
+            self.order = spiral_cells(GRID_COLS, GRID_ROWS)
+            self.at = {cr: k for k, cr in enumerate(self.order)}
+            self.cells = []
+            for c, r in self.order:
+                cell = Gtk.Label(xalign=0.5)
+                cell.set_name("cell")
+                cell.set_size_request(CELL_W, CELL_H)
+                # A cell is one column wide whatever is in it. Custom entries
+                # can be whole words or kaomoji, and without this one of them
+                # widens its entire column, shoves the grid past the window
+                # and silently clips the far edge off the screen. The full
+                # text is on the detail line, so truncating here loses
+                # nothing.
+                cell.set_ellipsize(Pango.EllipsizeMode.END)
+                cell.set_max_width_chars(1)
+                self.grid.attach(cell, c, r, 1, 1)
+                self.cells.append(cell)
+
+            # One name, for the cell you are actually on. 63 of them would not
+            # fit and would not be read.
+            self.detail = Gtk.Label(xalign=0.5)
+            self.detail.set_name("detail")
+            self.detail.set_ellipsize(Pango.EllipsizeMode.END)
+            frame.pack_start(self.detail, False, False, 0)
 
             self.hint = Gtk.Label(xalign=0.0)
             self.hint.set_name("hint")
@@ -545,17 +604,15 @@ def run_daemon(index):
                       border: 1px solid %(sel)s; }
             #query  { color: %(q)s; font-family: "%(font)s"; font-size: 15px;
                       padding: 8px 10px 8px 10px; }
-            #row    { padding: 1px 8px 1px 0px; }
-            #row:selected { background-color: %(dim)s; }
-            #glyph  { color: %(fg)s; font-size: 21px; }
-            #name   { color: %(fg)s; font-family: "%(font)s"; font-size: 12px; }
-            #cp     { color: %(dim)s; font-family: "%(font)s"; font-size: 11px;
-                      padding-left: 10px; }
+            #cell   { color: %(fg)s; font-size: 25px; }
+            /* a word or a kaomoji, not a glyph -- shrink it so more of it
+               survives the one-column budget before ellipsis takes over */
+            #cell.multi { font-family: "%(font)s"; font-size: 11px; }
+            #cell.sel { background-color: %(dim)s; color: %(acc)s; }
+            #detail { color: %(fg)s; font-family: "%(font)s"; font-size: 12px;
+                      padding: 8px 10px 2px 10px; }
             #hint   { color: %(dim)s; font-family: "%(font)s"; font-size: 10px;
                       padding: 6px 10px 6px 10px; }
-            .sel    { background-color: %(dim)s; }
-            .sel #name  { color: %(acc)s; }
-            .sel #cp    { color: %(acc)s; }
             """ % dict(bg=C_BG, fg=C_FG, dim=C_DIM, sel=C_SEL,
                        acc=C_ACCENT, q=C_QUERY, font=UI_FONT)
             prov = Gtk.CssProvider()
@@ -574,27 +631,37 @@ def run_daemon(index):
             cursor = "█"
             self.qlabel.set_text("." + self.query + cursor)
 
-            for i, (row, glyph, name, cp) in enumerate(self.widgets):
-                if i < len(self.rows):
-                    ch, nm, code = self.rows[i]
-                    glyph.set_text(ch)
-                    name.set_text(nm.title() if nm.isupper() else nm)
-                    cp.set_text(code)
-                    row.show_all()
-                    ctx = row.get_style_context()
-                    if i == self.sel:
+            for k, cell in enumerate(self.cells):
+                if k < len(self.rows):
+                    ch = self.rows[k][0]
+                    cell.set_text(ch)
+                    cell.show()
+                    ctx = cell.get_style_context()
+                    if k == self.sel:
                         ctx.add_class("sel")
                     else:
                         ctx.remove_class("sel")
+                    if len(ch) > 1:
+                        ctx.add_class("multi")
+                    else:
+                        ctx.remove_class("multi")
                 else:
-                    row.hide()
+                    cell.hide()
 
             if self.rows:
+                ch, nm, code = self.rows[self.sel]
+                nm = nm.title() if nm.isupper() else nm
+                # Lead with the glyph itself when it is more than one
+                # character: that is exactly the case where the cell had to
+                # truncate it, so this is the only place it can be read whole.
+                self.detail.set_text("%s   %s" % (code, nm) if code
+                                     else "%s   %s" % (ch, nm))
                 self.hint.set_text("enter paste  ·  ctrl+enter copy only  "
-                                   "·  ctrl+u clear  ·  esc close")
+                                   "·  arrows move  ·  esc close")
             else:
+                self.detail.set_text("")
                 self.hint.set_text("no matches")
-            self.win.resize(620, 1)
+            self.win.resize(WIN_W, 1)
 
         # -- show / hide -------------------------------------------------
 
@@ -724,16 +791,22 @@ def run_daemon(index):
                 self.sel = 0
                 self.refresh()
                 return True
-            if key in ("Down", "Tab") or (ctrl and key == "n"):
-                if self.rows:
-                    self.sel = (self.sel + 1) % len(self.rows)
-                    self.refresh()
-                return True
-            if key in ("Up", "ISO_Left_Tab") or (ctrl and key == "p"):
-                if self.rows:
-                    self.sel = (self.sel - 1) % len(self.rows)
-                    self.refresh()
-                return True
+            # Arrows move through the grid, Tab walks the ranking. Both are
+            # wanted: the layout is spatial, but "next best match" is still a
+            # question worth asking, and after a spiral placement the answer
+            # is not in any one direction.
+            if key == "Down":
+                return self._move(0, 1)
+            if key == "Up":
+                return self._move(0, -1)
+            if key == "Right":
+                return self._move(1, 0)
+            if key == "Left":
+                return self._move(-1, 0)
+            if key == "Tab" or (ctrl and key == "n"):
+                return self._step(1)
+            if key == "ISO_Left_Tab" or (ctrl and key == "p"):
+                return self._step(-1)
 
             ch = Gdk.keyval_to_unicode(ev.keyval)
             if ch and not ctrl:
@@ -746,14 +819,40 @@ def run_daemon(index):
 
         # -- mouse -------------------------------------------------------
 
-        def _row_at(self, x, y):
-            """Which visible row is under (x, y), in toplevel coordinates."""
-            for i, (row, _g, _n, _c) in enumerate(self.widgets):
-                if i >= len(self.rows):
-                    break
-                a = row.get_allocation()
+        def _step(self, d):
+            """Move in ranking order -- next or previous best match."""
+            if self.rows:
+                self.sel = (self.sel + d) % len(self.rows)
+                self.refresh()
+            return True
+
+        def _move(self, dc, dr):
+            """Move one cell in a direction, skipping empties and wrapping.
+
+            Empty cells must be skipped rather than landed on: a partly filled
+            grid is a disc, so the corners of its bounding box hold nothing
+            and a plain step would select a cell that isn't there.
+            """
+            if not self.rows:
+                return True
+            c, r = self.order[self.sel]
+            for _ in range(max(GRID_COLS, GRID_ROWS)):
+                c, r = (c + dc) % GRID_COLS, (r + dr) % GRID_ROWS
+                k = self.at.get((c, r))
+                if k is not None and k < len(self.rows):
+                    self.sel = k
+                    self.refresh()
+                    return True
+            return True
+
+        def _cell_at(self, x, y):
+            """Which visible cell is under (x, y), in toplevel coordinates."""
+            for k, cell in enumerate(self.cells):
+                if k >= len(self.rows):
+                    break        # cells fill in spiral order, so this is the end
+                a = cell.get_allocation()
                 if a.x <= x < a.x + a.width and a.y <= y < a.y + a.height:
-                    return i
+                    return k
             return None
 
         def on_click(self, _w, ev):
@@ -765,7 +864,7 @@ def run_daemon(index):
             if not (0 <= ev.x < w and 0 <= ev.y < h):
                 self.hide()          # clicked away -- the dismissal that the
                 return True          # keyboard-only grab could never see
-            i = self._row_at(ev.x, ev.y)
+            i = self._cell_at(ev.x, ev.y)
             if i is None:
                 return True          # a click on the query line or the hint
             self.sel = i
@@ -800,7 +899,7 @@ def run_daemon(index):
         def on_motion(self, _w, ev):
             # Only repaint when the highlight actually moves. Motion floods,
             # and with the pointer grabbed it keeps arriving off-window too.
-            i = self._row_at(ev.x, ev.y)
+            i = self._cell_at(ev.x, ev.y)
             if i is not None and i != self.sel:
                 self.sel = i
                 self.refresh()

@@ -657,6 +657,17 @@ narrowing anything. A timing table that only lists the expensive-looking
 operation will happily sit next to a default case costing an order of magnitude
 more. Time the boring case first; it's the one the human actually feels.
 
+**A small cap hides linear scans, so raising one is a performance change.** A
+loop that walks everything but `break`s at a limit costs the limit, not the
+collection — until the limit goes up, or the collection runs short and the
+break never fires. Then the full scan appears, in a path that was fast for
+years and whose code did not change. Raising `MAX_HITS` from 10 to 63 did
+exactly this: filling the default view from the ~30 custom entries never
+reached the new cutoff, so the loop ran to the end of all 148k rows and put
+40ms on every popup. **Re-benchmark the default view after changing any cap**,
+and treat a `break`-at-limit over a large collection as a scan wearing a
+disguise — the fix is the same precomputed list as `by_index`.
+
 The whole unicode database is already local — `python3 -c "import unicodedata"`
 knows every name, so there is nothing to download and no `UnicodeData.txt` to
 parse. ~149k codepoints enumerate in about 2s.
@@ -854,6 +865,23 @@ politeness; it is that the live session gives *untrustworthy readings*, for
 the focus reasons above. Use the off-screen rig when you need a measurement
 you can believe, and the real display when you just want to watch the thing
 work.
+
+**A singleton daemon gets its own `XDG_RUNTIME_DIR`, not its own machine.**
+`dotkeyd` refuses to start twice and keys its fifo, pidfile and log off that
+variable, so pointing it at a scratch directory is the whole trick for running
+a test instance beside the live one — no fighting over the fifo, no stopping
+the daemon the human is using, and the pidfile still works for shutting the
+test copy down. Combined with `DISPLAY=:77` on an Xvfb, a full
+daemon-plus-popup rig costs two environment variables.
+
+**Capture a popup by window id, and don't trust `-trim` to tell you it
+rendered.** `xwd -root | magick -trim` against this desktop's near-black
+background can trim a perfectly good window down to `1x1` and report
+`geometry does not contain image`, which reads exactly like "nothing was
+drawn" — when `xdotool getwindowgeometry` says the window is there at the
+right size. `xwd -id "$(xdotool search --name . | tail -1)"` captures the
+window itself and sidesteps the question. Check the geometry before believing
+a blank screenshot.
 
 **Ask X about grabs instead of typing at the desktop.** Two questions that
 otherwise need synthetic input have direct, side-effect-free answers:
