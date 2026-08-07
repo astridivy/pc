@@ -361,7 +361,20 @@ device-ownership fight.
 - `.config/keyledsd.conf` — per-application RGB keyboard profiles (Logitech, via
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop
-  environment; X starts from a tty via the `desktop` alias.
+  environment; X starts from a tty via the `desktop` alias. The menu is re-read
+  whenever it is opened, so an edit is live on the next right-click — no
+  restart, no reconfigure, don't tell Astrid to do either.
+
+  Restructuring that file wants a real check, because a broken menu is a menu
+  that silently comes up short rather than an error. Two things to know before
+  writing a validator: **`[end]` takes no `(label)`**, so a parser keyed on
+  `\[(\w+)\]\s*\((...)\)` matches every *opening* tag and no closing one, and
+  therefore reports any file whatsoever as unbalanced-but-nested — the shape of
+  a checker that is measuring nothing. Match the tag first and read the label
+  separately. And a nesting check proves only nesting: diff the sorted set of
+  leaf lines (`[exec]`, `[config]`, `[restart]`, `[exit]`, `[stylesdir]`,
+  `[workspaces]`) against `git show HEAD:.blackbox/menu` too, which is what
+  catches an entry dropped while moving subtrees around.
 - `bin/palette` — the colour-scheme editor. Sixteen ansi colours in, the
   console / xterm / alacritty files out. See the colour section below.
 - `.config/alacritty/` — `alacritty.toml` is the base (colours, font, bell,
