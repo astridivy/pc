@@ -162,3 +162,135 @@ Still open:
   `.gitignore` line.
 - **`~/src/diet-vhost` and `~/src/maitre-d`** declare dependencies but have no
   `node_modules` — they need an `npm install` before they'll run.
+
+---
+
+## 7. Splash command runner
+
+Written 2026-08-01. Replaces the reflexive `xterm -e` scratch terminal — the
+click menu already covers launching named apps; this is for "run one
+throwaway thing," which currently costs a whole terminal window and a cleanup
+pass every few hours.
+
+- Popup, `dotkey`-shaped: override-redirect GTK window on a hotkey, single-line
+  entry that grows into a multi-line box as input wraps, Enter runs it
+  (`sh -c`), Escape cancels. Reuse dotkeyd's grab lessons wholesale — same
+  shape of problem. Before writing the grab code, re-read CLAUDE.md's dotkey
+  section for all five traps: `owner_events=False`, grab `SeatCapabilities.ALL`
+  (not keyboard-only), tear the window down on a failed grab, and retry the
+  grab on a hotkey-launched popup (`ALREADY_GRABBED` is expected on attempt
+  one — see "a hotkey's own modifier holds the grab").
+- Open question: run-and-forget vs. show output. Bare `sh -c cmd &` covers most
+  of what a scratch xterm is for; anything that wants to watch output scroll
+  still wants a real terminal. Decide the scope up front rather than
+  half-building a terminal emulator.
+- History (up-arrow through past one-liners, system-wide rather than tied to
+  whichever terminal had focus) is the obvious win over the status quo and
+  worth having from v1, not bolted on later — `dotkey`'s
+  `~/.cache/dotkey/recent.json` is a reasonable pattern to copy.
+- Naming bikeshed: **"Command Presence"** is the front-runner — a real pun,
+  reads as royal bearing and does exactly what it says. Other candidates:
+  Regnum, Dominion, Sovereign, Royal Command.
+
+---
+
+## 8. Reorganize the blackbox click menu
+
+Written 2026-08-01. No concrete plan yet — just years of organic growth and
+the sense that item 7 landing will change what the menu is even for. Revisit
+*after* the command runner exists: some entries here today are single-shot
+launches that may be better served as recent-history entries there than as
+permanent menu real estate. Reorganizing first risks redoing it once that
+shape is clearer.
+
+---
+
+## 9. Dockapps
+
+Written 2026-08-01. Lower lift than it sounds: **the infra already exists.**
+`.blackboxrc` has a Slit configured (`BottomRight`, vertical, always on top),
+and `bin/dockapps` already launches three withdrawn-state dockapps
+(`wmcpuload`, `wmmemload`, `wmclockmon`) with a matching `dockapps kill`. New
+ones join that script, not a new subsystem.
+
+`wmcpuload` and `wmclockmon` are AUR packages (`pacman -Qm`); `wmmemload` is
+hand-built into `/usr/local/bin` — the AUR version was busted on the last Arch
+reinstall, so its source was fetched and compiled by hand (`./configure` and
+all). That source is **already saved**: `~/doc/download/wmmemload-0.1.8.tar.gz`
+(matches the installed version exactly) plus an old `-0.1.7.tar.gz`. It's just
+sitting in the general downloads pile, not anywhere dockapp-specific.
+
+**Done 2026-08-01: source for all four gathered into `~/src/dockapps/`** —
+`wmcpuload/`, `wmclockmon/` (AUR git clone + `makepkg -o` to pull the actual
+upstream tarball each PKGBUILD points at, from dockapps.net and
+tnemeth.free.fr respectively), `wmmemload/` (the tarball already saved in
+`~/doc/download/`, just copied and extracted here), and `wmgtemp/` — see
+below, this is the temperature one. Two reasons for keeping this around: style
+reference when writing the volume/wifi/keyring ones, and insurance against the
+exact failure that already happened once — an AUR package or its upstream
+disappearing with no local source to fall back to.
+
+**The temperature dockapp — good news.** `wmgtemp` (AUR, not currently
+installed) is a real, better-than-expected candidate for "what if it did
+work": its source (`~/src/dockapps/wmgtemp/`) already calls the *modern*
+libsensors3 API directly — `sensors_init`, `sensors_get_detected_chips`,
+`sensors_get_subfeature(..., SENSORS_SUBFEATURE_TEMP_INPUT)` — the same
+library this box has installed (`lm_sensors 3.6.2`, confirmed working via
+`sensors`). `./configure` gets as far as `checking for sensors_get_features in
+-lsensors... yes` before failing, so the sensors API is not the blocker. The
+actual blocker is one missing build dependency, a small windowing helper
+library called `dockapp` (pkg-config can't find it) — it's in AUR
+(`aur/libdockapp`, 24 votes) but not installed. That's a `sudo`-ending `yay -S`
+at the end, so per the sudo/faillock rule in CLAUDE.md: the command to run by
+hand is
+
+```bash
+yay -S libdockapp
+```
+
+— then re-run `makepkg` in `~/src/dockapps/wmgtemp/` to confirm it builds.
+
+One tuning step waits after that, and it's a one-liner, not real work.
+`wmgtemp` defaults to reading features named `temp1`/`temp2` off whichever
+chip matches `-c` (or the first chip found with no `-c`), and `sensors` here
+reports several (`dell_smm-isa-00de`, `coretemp-isa-0000`, two
+`soc_dts*-virtual-0`). Left on defaults it locks onto `dell_smm`'s `temp1`
+(a fan/case sensor) rather than the actual cores. `-c` matches on the chip's
+*driver prefix* (`"coretemp"`), not the bus-numbered full name, so
+`-c coretemp` is the fix and it's portable to the Acer's i5 too — no
+per-machine bus-id pin needed. `sensors -u coretemp-isa-0000` shows this
+chip's cores are named `temp2`..`temp5` (Core 0–3), not `temp1`..`temp4` (no
+aggregate "Package" feature exposed here), so `wmgtemp -c coretemp` on
+defaults lands on just Core 0 (`temp2`) — which is fine, cores 1–4 track each
+other closely barring something actually wrong, so one core is most of the
+signal for free. For both display slots lit: `wmgtemp -c coretemp -1 temp2
+-2 temp4` (Core 0 and Core 2). Worth noting while in there: `sensors`
+currently reports all four cores in `ALARM (CRIT)` state against a 90°C
+threshold while sitting at 59–62°C — looks like a stuck/latched alarm bit
+rather than a real overheat, but worth a second look before trusting
+`wmgtemp`'s own warning-light logic on this chip.
+
+Wanted, roughly in order:
+
+- **Volume** — mixer level + mute. Check what's actually running here
+  (ALSA vs. pulseaudio vs. pipewire) before assuming a backend; `bin/volumectl`
+  already exists for something, worth reading first so a dockapp doesn't
+  duplicate its logic.
+- **Wifi** — connection state at a glance. `nmcli` is already the interface of
+  choice in this repo (`.blackbox/menu`'s `nmcli con up wifi`), so shelling out
+  to `nmcli` is a reasonable v1 before reaching for NetworkManager's D-Bus API.
+- **Keyring manager** — actually wanted, not a set-completer. Scope undecided:
+  a front-end for `secret-tool`/gnome-keyring, or something smaller. Check
+  what backend is actually installed before designing a UI for it.
+- **Bluetooth — not pursued.** Neither the Acer nor the Dell has a Bluetooth
+  radio (see CLAUDE.md, "ivy is a disk, not a computer"), so there is nothing
+  to control. Revisit only if the disk ever moves to a third machine that has
+  one.
+
+"They're written in C, how hard could it be" is less scary now that
+`~/src/dockapps/` has four real examples to copy conventions from —
+`wmmemload`'s `src/dockapp.c`/`dockapp.h` (Alfredo K. Kojima's original
+withdrawn-window helper, copied into most classic dockapps of that era) is the
+one to read first for the X11/withdrawn-state boilerplate every dockapp
+repeats, before writing volume/wifi/keyring's XPM-and-event-loop specifics on
+top of it.
