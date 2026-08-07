@@ -1,0 +1,82 @@
+# bin/shortcuts
+#
+# the curated half of `commando' (Mod4-slash). these outrank .blackbox/menu
+# and every .desktop file on the box, so this is where a thing goes when you
+# want it to be the first hit for its own name.
+#
+#     label            command                     @flags
+#
+# FIELDS ARE SEPARATED BY TWO OR MORE SPACES, or by tabs -- either works, on
+# purpose. .vimrc sets expandtab globally, so a Tab typed into a tab-delimited
+# config silently becomes spaces and the line silently stops parsing; that trap
+# already cost an afternoon on .config/dotkey/custom.tsv. accepting both means
+# this file cannot be broken by the editor that edits it. a single space is
+# part of the label, so labels can have spaces in them and still work.
+#
+# flags, any order, all optional:
+#     @gui     never wrap in a screen window -- it draws its own
+#     @term    always wrap, even if it looks like a GUI app
+#     @hold    keep the screen window open after the command exits
+#
+# with no flag commando works it out: anything whose argv names a terminal
+# emulator, or any binary that links libX11/libgtk/libQt, is @gui; everything
+# else is @term. that guess is right for nearly everything, so only write a
+# flag down when you have watched it get one wrong.
+#
+# commands run through a bash that has sourced bashrc's exports, functions,
+# screen, aliases and shortcuts -- so `v', `c', `g' and `t' all work here
+# exactly as they do in a terminal. `danger' is deliberately NOT sourced.
+#
+# edits are live on the next Mod4-slash; the daemon re-reads whenever the
+# mtime moves. no restart, no reload.
+#
+# astrid + claude
+# 2026-08-07
+
+# -- the little guys, straight out of bashrc/shortcuts ----------------------
+vim               v
+claude            c
+google            g                             @hold
+tryhard           t                             @hold
+
+# -- this repo --------------------------------------------------------------
+dotfiles          c ~/src/pc
+bashrc            c ~/src/bashrc
+edit vimrc        v ~/.vimrc
+edit bashrc       v ~/src/bashrc/bashrc
+edit menu         v ~/.blackbox/menu
+edit hotkeys      v ~/.bbkeysrc
+edit shortcuts    v ~/bin/shortcuts
+edit todo         v ~/src/pc/TODO.md
+edit claude.md    v ~/src/pc/CLAUDE.md
+
+# -- the machine ------------------------------------------------------------
+top               top
+disk free         df -h /                       @hold
+big directories   du -xh --max-depth=1 / | sort -h    @hold
+packages          pacman -Q | wc -l             @hold
+kernel firmware   journalctl -k -b | grep -iE 'firmware|microcode'   @hold
+running kernel    uname -a                      @hold
+screens           screen -ls                    @hold
+where does it go  commando --where              @hold
+wifi              wifi
+audio owner       fuser -v /dev/snd/*           @hold
+displays          xrandr --query                @hold
+
+# -- clipboard --------------------------------------------------------------
+what is copied    xclip -o -selection clipboard @hold
+who holds it      pgrep -a xclip                @hold
+
+# -- palette and colour -----------------------------------------------------
+palette           palette bin/Tomorrow-Night-Nineties.color
+colour test       colortest                     @hold
+
+# -- things that bring their own window -------------------------------------
+files             thunar                        @gui
+chrome            google-chrome-stable          @gui
+discord           discord                       @gui
+qjackctl          qjackctl                      @gui
+volume            pavucontrol                   @gui
+unicode popup     dotkey                        @gui
+screenshot        screenshot                    @gui
+countdown shot    countdown -t 10 screenshot    @gui

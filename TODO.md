@@ -160,37 +160,77 @@ Still open:
 - **`bell/.sequence`** is transient runtime state written into a tracked
   directory; it flickers in and out of `git status`. Probably wants a
   `.gitignore` line.
+- **`bin/setadd` is truncated and has never worked.** It ends mid-string on
+  line 21 (`the_set="$the_set`, no closing quote), so every call dies with
+  `unexpected EOF` after echoing only its first argument — and it is called
+  with three arguments while reading two. `bashrc/exports` builds `PATH`,
+  `NODE_PATH` and `LD_PRELOAD` through it, so **sourcing `exports` leaves
+  `PATH=/home/astrid/bin` and nothing else** — no `/usr/bin`. The interactive
+  shell survives by accident and wears the evidence: `$PATH` carries
+  `~/bin:~/.npm/packages/bin` three times over, the exact duplication setadd
+  exists to prevent. Verified 2026-08-07; committed broken in `e85eb01`.
+
+  Not patched blind because finishing it is a design call, not a typo fix:
+  what separator does it append with (`:` for `PATH`, but the truncated line
+  opens a *multi-line* string), and are the three-argument call sites right or
+  should it take a list? Both `bin/commandod` and anything else that sources
+  `exports` currently work around it by saving and restoring `PATH` and
+  dropping stderr; those workarounds say to delete them once this is fixed.
 - **`~/src/diet-vhost` and `~/src/maitre-d`** declare dependencies but have no
   `node_modules` — they need an `npm install` before they'll run.
 
 ---
 
-## 7. Splash command runner
+## 7. commando — the command runner — **BUILT 2026-08-07**
 
-Written 2026-08-01. Replaces the reflexive `xterm -e` scratch terminal — the
-click menu already covers launching named apps; this is for "run one
-throwaway thing," which currently costs a whole terminal window and a cleanup
-pass every few hours.
+`bin/commando` (client) and `bin/commandod` (daemon), on **Mod4-slash**.
+Replaces the reflexive right-click → Alacritty, whose whole problem was the
+terminal window left behind to be closed by hand an hour later.
 
-- Popup, `dotkey`-shaped: override-redirect GTK window on a hotkey, single-line
-  entry that grows into a multi-line box as input wraps, Enter runs it
-  (`sh -c`), Escape cancels. Reuse dotkeyd's grab lessons wholesale — same
-  shape of problem. Before writing the grab code, re-read CLAUDE.md's dotkey
-  section for all five traps: `owner_events=False`, grab `SeatCapabilities.ALL`
-  (not keyboard-only), tear the window down on a failed grab, and retry the
-  grab on a hotkey-launched popup (`ALREADY_GRABBED` is expected on attempt
-  one — see "a hotkey's own modifier holds the grab").
-- Open question: run-and-forget vs. show output. Bare `sh -c cmd &` covers most
-  of what a scratch xterm is for; anything that wants to watch output scroll
-  still wants a real terminal. Decide the scope up front rather than
-  half-building a terminal emulator.
-- History (up-arrow through past one-liners, system-wide rather than tied to
-  whichever terminal had focus) is the obvious win over the status quo and
-  worth having from v1, not bolted on later — `dotkey`'s
-  `~/.cache/dotkey/recent.json` is a reasonable pattern to copy.
-- Naming bikeshed: **"Command Presence"** is the front-runner — a real pun,
-  reads as royal bearing and does exactly what it says. Other candidates:
-  Regnum, Dominion, Sovereign, Royal Command.
+Answers to the questions this file asked before it was built:
+
+1. **Run-and-forget vs. show output** — neither, and that was the wrong axis.
+   A command gets a **new screen window inside a session you already have
+   open**, so the output is kept *and* there is nothing new to close. Which
+   session, in order: `c` → `v` → `cclod` → `vvim` → commando's own `run`.
+   The landing may be invisible (detached session, other workspace) and that
+   is fine. GUI apps skip the whole mechanism and are simply launched.
+2. **Naming** — "Command Presence" lost to **commando**, which puns on the
+   same idea and is shorter to type. "Commander" was rejected as thoroughly
+   taken: Midnight Commander, Norton, Total Commander, npm's argument parser.
+3. **History** — done, frequency-ranked, `~/.cache/commando/recent.json`, and
+   genuinely system-wide since it was never typed into a terminal to begin
+   with. Past one-liners rank as a source of their own.
+4. **Suggestions** — four sources, best first: `~/bin/shortcuts` (curated, new
+   file, and the only one written by hand), `.blackbox/menu`'s `[exec]`
+   entries, every `.desktop` file in three directories, then history. What you
+   typed is always offered verbatim as the last row, so it is never *only* a
+   launcher.
+5. **The grab** — dotkeyd's five traps applied wholesale and all five were
+   real. `owner_events=False`, `SeatCapabilities.ALL`, tear down on failure,
+   retry against a monotonic deadline.
+
+### Still open on commando
+
+- No paging: 12 rows, and more matches exist than are shown.
+- `bin/shortcuts` is a first pass. It is the file to edit when something
+  should be the first hit for its own name — edits are live on the next
+  Mod4-slash, no restart.
+- The **`.desktop` stash is stale.** `.local/share/applications/` is tracked
+  here (7 files, last touched 2023) but was never symlinked, so the live
+  `~/.local/share/applications/` is a separate real directory that has since
+  grown to 26 files — wine, steam, chrome and discord all wrote theirs into
+  the live one only. commando reads both, so nothing is missing today, but the
+  repo copy is not the source of truth it looks like. Deciding which files
+  deserve tracking (and linking those individually, never the directory — it
+  holds live files the repo must not own) is a separate call.
+- **commando is not in the click menu, on purpose.** It is not another entry
+  in that menu, it is the thing replacing it — the menu is a *source* commando
+  reads, not a place it needs to appear. That makes §8 below less "reorganize
+  the menu" and more "work out what is left for it to do."
+- The menu's `Ardour 8` entry launches `ardour8`, which **is not installed**;
+  only an orphaned `ardour9.desktop` remains. Unresolvable commands fall back
+  to "term", so it fails visibly rather than silently, but the entry is stale.
 
 ---
 

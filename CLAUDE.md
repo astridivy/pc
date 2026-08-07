@@ -240,6 +240,39 @@ to get the real binary:
 Absolute paths (`/usr/bin/cp`, `/usr/bin/pacman`) work equally well and are
 clearer in scripts. Prefer either over the bare command.
 
+### Sourcing `bashrc/exports` destroys `PATH`
+
+**`bin/setadd` is truncated.** It ends mid-string on line 21 — `the_set="$the_set`
+with no closing quote — so it dies with `unexpected EOF while looking for
+matching '"'` on every single call, having already echoed only its *first*
+argument. It is also called with three arguments and reads two.
+
+`bashrc/exports` builds `PATH`, `NODE_PATH` and `LD_PRELOAD` through it:
+
+```bash
+export PATH=`setadd "$HOME/bin" "$HOME/.npm/packages/bin" "$PATH"`
+```
+
+so anything that sources `exports` ends up with **`PATH=/home/astrid/bin`** and
+nothing else — no `/usr/bin`, so `sleep`, `grep` and `git` all stop existing.
+`NODE_PATH` comes out empty. Verified 2026-08-07.
+
+The interactive shell survives this only by accident, and wears the evidence:
+`echo $PATH` shows `~/bin:~/.npm/packages/bin` repeated **three times** ahead of
+the system paths — which is the exact duplication `setadd` was written to
+prevent. The one thing it is for is the one thing it does not do.
+
+Two consequences:
+
+- **Any script that sources `bashrc/exports` must save and restore `PATH`
+  around it.** `bin/commandod` does this and says why.
+- Don't read a failure here as your own bug. A command that exists refusing to
+  be found, immediately after sourcing anything from `~/src/bashrc`, is this.
+
+Fixing `setadd` properly needs a decision about what it should do — append with
+which separator, and whether the three-argument call sites are right — so it is
+in `TODO.md` rather than patched blind.
+
 ### The root filesystem is 38G smaller than its own partition
 
 `/dev/sda1` is a **92G partition containing a 55G ext4 filesystem**. The
@@ -1103,6 +1136,76 @@ Two more traps from the same afternoon, both cheap to avoid:
   reads first, so the popup ignores you at random and the log you are reading
   belongs to the instance that didn't get the message. Refuse to start a second
   instance.
+
+## commando, and putting a command somewhere it won't need closing
+
+`bin/commandod` is a resident daemon on **Mod4-slash** that searches four
+sources and runs what you pick; `bin/commando` is the client. It is dotkey's
+twin and inherits every X11 lesson from the section above — read that first,
+all five traps are live here too. `TODO.md` §7 has the feature list. What
+follows is the part that is specific to *running* things.
+
+**The output goes in a screen window, not a new terminal.** That is the whole
+design: `screen -X screen` adds a window to a session that already exists, so
+there is nothing new to close afterwards. Which session is a fixed order —
+`c` → `v` → `cclod` → `vvim` → commando's own `run` — and it is a promise about
+where things land, not a heuristic to be tuned.
+
+Distinguishing those four is possible only because of how `bashrc/screen` names
+sessions: `screenclaude` names one after the cwd and the click menu always hands
+its children `$HOME`, so **`claude ~` is the menu's and any other `claude <dir>`
+was typed**; `screenvim` names a bare vim `vim` and a vim-with-files
+`vim <paths>`. Also note `inscreen` **turns every `/` into `:`**, so a live
+session is named `claude ~:src:pc`, not `claude ~/src/pc`. Matching on a path
+without accounting for that finds nothing.
+
+A new window lands in whichever *region* has focus — see the `.screenrc` note
+about window-vs-region — and may be invisible entirely if the session is
+detached or on another workspace. That is wanted. An invisible window costs
+nothing; a stray terminal costs a cleanup pass.
+
+### `screen -X` re-parses what you hand it, so hand it a path
+
+`screen -S NAME -X screen <argv>` forwards its arguments through screen's own
+tokenizer, which processes escapes and quoting again. Any interesting one-liner
+— quotes, pipes, backslashes, a newline — cannot survive that intact, and what
+arrives is silently a *different command* rather than an error.
+
+**Write the command to a script file and pass the path.** A path is one word
+with nothing left in it to re-parse, and everything gnarly lives inside the file
+where screen never looks. Same reasoning for the window title: set it from
+inside the script with `printf '\033k%s\033\\'` rather than via `-t`, and the
+title never has to survive the tokenizer either. Inside the script, take the
+command as `"$1"` rather than pasting it into the script text — the same rule
+that CLAUDE.md already states for `alacritty -e`.
+
+**`screen -Q` answers nothing when there is no attached display.** `screen -S X
+-Q windows` prints an empty string rather than failing, so a probe built on it
+reports every session as having no windows. To actually read a window list
+headlessly, attach over a `pty.fork()` and send `C-a w` — see the TUI section.
+An empty `-Q` is not evidence of absence.
+
+### Asking whether a command draws its own window
+
+The runner has to decide "screen window or just launch it?", and the honest
+general test — does the binary link `libX11`/`libgtk`/`libQt` — **misses shell
+script wrappers.** `google-chrome-stable` and `discord` on this box are `#!`
+scripts around the real binary, so they link nothing at all and come back as
+terminal programs. The symptom is your browser opening inside a screen window.
+
+`.desktop` files are the fix: `Terminal=` is the one place on the system where
+a human wrote the answer down deliberately. Key it by the program basename out
+of `Exec=`, stepping over `env FOO=bar` wrappers first, and consult it before
+falling back to `ldd`.
+
+**Word-anchor any match of short program names against file text.** Checking
+whether a script mentions a terminal emulator with a plain substring test is
+wrong the moment the list contains `st`, which appears in *install*, *system*,
+*just* and most other English — it classified `bin/dotkey`, `bin/screenshot`
+and `/usr/bin/discord` as GUI apps on coincidental letters. There is no error
+and no symptom, only a confident wrong answer, and the same trap waits for
+`ls`, `cc`, `dd`, `bc` and `tr`. Anchor on `(?<![\w-])…(?![\w-])`, and note that
+matching an *argv* is safe because those are already split into whole words.
 
 ## The colour scheme lives in three files and drifts
 

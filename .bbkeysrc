@@ -17,6 +17,11 @@
       [execute] (Mod4-M) { xdotool search --name "Wine System Tray" windowactivate }
       # dotkey -- searchable unicode popup, "win-key ." from windows
       [execute] (Mod4-period) { dotkey }
+      # commando -- searchable command runner. lands what you pick in a screen
+      # window inside a session you already have open, so nothing new to close.
+      # keysym is lowercase "slash"; "Slash" is NoSymbol and binds nothing,
+      # silently, exactly like Mod4-Period did before it was Mod4-period
+      [execute] (Mod4-slash) { commando }
       # print screen -- whole desktop; shift for one window (click to pick it)
       # keysym is capital-P "Print" (keycode 107); lowercase is NoSymbol
       [execute] (Print) { screenshot }
