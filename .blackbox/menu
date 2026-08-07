@@ -3,25 +3,10 @@
 [begin] (astrid@ivy)
   [workspaces] (Spaces)
   [exec] (Claude) { claude-desktop }
+  [exec] ("Claude-code") { cclod }
+  [exec] ("vim") { vvim }
   [exec] (Chrome) {google-chrome-stable}
   [exec] (Files) {thunar}
-  [submenu] (Blackbox) {window mamnager}
-    [exec] (Sensible Defaults) {default}
-    [exec] (Edit This Menu) { vimtim ~/.blackbox/menu}
-    [exec] (Edit Hotkeys) { vimtim ~/.bbkeysrc}
-    [exec] (Configurator) {bbconf}
-    [submenu] (Dockapps) { widjets}
-      [exec] (Enable) { dockapps}
-      [exec] (Cull) { dockapps kill}
-    [end]
-    [submenu] (Styles) {}
-      [stylesdir] (/usr/share/blackbox/styles)
-    [end]
-    [config] (Configuration)
-    [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
-    [restart] (Restart Blackbox) {}
-    [exit] (Exit Blackbox)
-  [end]
   [submenu] (System) { Bleep bloop computer}
     [exec] (Sleep) { systemctl suspend}
     [exec] (Shut Down) { shutdown now}
@@ -83,6 +68,23 @@
       [exec] (Carla) { carla}
       [exec] (LMMS) { lmms}
       [exec] (taptempo) { watempo }
+    [end]
+    [submenu] (Blackbox) {window mamnager}
+      [exec] (Sensible Defaults) {default}
+      [exec] (Edit This Menu) { vimtim ~/.blackbox/menu}
+      [exec] (Edit Hotkeys) { vimtim ~/.bbkeysrc}
+      [exec] (Configurator) {bbconf}
+      [submenu] (Dockapps) { widjets}
+        [exec] (Enable) { dockapps}
+        [exec] (Cull) { dockapps kill}
+      [end]
+      [submenu] (Styles) {}
+        [stylesdir] (/usr/share/blackbox/styles)
+      [end]
+      [config] (Configuration)
+      [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
+      [restart] (Restart Blackbox) {}
+      [exit] (Exit Blackbox)
     [end]
   [end]
 [end]
