@@ -1,85 +1,88 @@
 # blackbox menu, configured with style by bbconf
 
 [begin] (astrid@ivy)
-  [workspaces] (Spaces)
-  [submenu] (Terminal) {xterm and its frends}
-    [exec] (Xterm) { xterm -ls -sl 1000}
-    [exec] (Alacritty) { alacritty --config-file ~/.config/alacritty/tall.toml }
-    [submenu] (Applications) {C-L-I love the terminal}
-      [exec] (Vim) { vimtim }
-      [exec] (Musikcube) { alacritty --title "music kube" -e musikcube}
-      [exec] (Clock) { clock }
-      [exec] (Tap Tempo) { watempo }
-      [exec] (Volume Mixer) { volumectl }
+  [submenu] (Cutting Room) {everything that used to be out here}
+    [workspaces] (Spaces)
+    [submenu] (Terminal) {xterm and its frends}
+      [exec] (Xterm) { xterm -ls -sl 1000}
+      [exec] (Alacritty) { alacritty --config-file ~/.config/alacritty/tall.toml }
+      [submenu] (Applications) {C-L-I love the terminal}
+        [exec] (Vim) { vimtim }
+        [exec] (Musikcube) { alacritty --title "music kube" -e musikcube}
+        [exec] (Clock) { clock }
+        [exec] (Tap Tempo) { watempo }
+        [exec] (Volume Mixer) { volumectl }
+      [end]
+      [submenu] (Monitor) {beep boop computer !}
+        [exec] (batt) { watbat }
+        [exec] (sensors) { watsen }
+        [exec] (jack meters) { meters }
+        [exec] (top) { alacritty --config-file ~/.config/alacritty/xlarge.toml --title "top - system monitor" -e top }
+        #[exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
+      [end]
+      [submenu] (Connect to) {SSH || wifi}
+        [exec] (Venusaur) {xterm -e "ssh astrid.computer -l ai"}
+        [exec] (Peace+Love) {xterm -e "nmcli con up wifi"}
+        [exec] (Wind0ze) { alacritty --title "wind0ze" -e "cd ~/.wine/drive_c" }
+      [end]
     [end]
-    [submenu] (Monitor) {beep boop computer !}
-      [exec] (batt) { watbat } 
-      [exec] (sensors) { watsen }
-      [exec] (jack meters) { meters }
-      [exec] (top) { alacritty --config-file ~/.config/alacritty/xlarge.toml --title "top - system monitor" -e top }
-      #[exec] (Disable Laptop Monitor) { xterm -e 'xrandr --output LVDS-1 --off'}
+    [exec] (Claude) { claude-desktop }
+    [submenu] (Gaming) {make play gaem}
+      [exec] (Minecraft >=1.17) { xterm -e "MESA_GL_VERSION_OVERRIDE=4.3 minecraft-launcher"}
+      [exec] (Discord) { discord}
+      [exec] (Steam) { steam }
+      [exec] (Tetris) { xterm -e vitetris}
+      [exec] (Obs Studio) { obs }
+      #[exec] (RGB Keyboard LEDs) { keyledsd }
     [end]
-    [submenu] (Connect to) {SSH || wifi}
-      [exec] (Venusaur) {xterm -e "ssh astrid.computer -l ai"}
-      [exec] (Peace+Love) {xterm -e "nmcli con up wifi"}
+    [submenu] (Audio) {make play mueseic}
+      [exec] (Ardour 8) { ardour8 }
+      [exec] (Labs) { carla-jack-single ~/doc/carla/labs.carxp }
+      [exec] (Carla-Rack) {carla-rack}
+      [exec] (Hydrogen) { hydrogen}
+      [exec] (All of the Above) { maeusic }
+      [submenu] (Jack) { of all trades baby }
+        [exec] (QJackctl) { qjackctl }
+        [exec] (Calf FX) { calfjackhost}
+        [exec] (CLI Meters) { meters111 }
+        [exec] (Output Meter) { cadence-jackmeter }
+        [exec] (Input Meter) { cadence-jackmeter -in }
+        [exec] (Reset Pulse Shi*) { pajack }
+      [end]
+      [submenu] (Etc) {whatev er}
+        [exec] (Audacity) { audacity}
+        [exec] (Carla) { carla}
+        [exec] (LMMS) { lmms}
+        [exec] (taptempo) { watempo }
+      [end]
+      [exec] (Volume Control) { pavucontrol}
     [end]
-  [end]
-  [exec] (Claude) { claude-desktop }
-  [submenu] (Gaming) {make play gaem}
-    [exec] (Minecraft >=1.17) { xterm -e "MESA_GL_VERSION_OVERRIDE=4.3 minecraft-launcher"}
-    [exec] (Discord) { discord}
-    [exec] (Steam) { steam }
-    [exec] (Tetris) { xterm -e vitetris}
-    [exec] (Obs Studio) { obs }
-    #[exec] (RGB Keyboard LEDs) { keyledsd }
-  [end]
-  [submenu] (Audio) {make play mueseic}
-    [exec] (Ardour 8) { ardour8 }
-    [exec] (Labs) { carla-jack-single ~/doc/carla/labs.carxp }
-    [exec] (Carla-Rack) {carla-rack}
-    [exec] (Hydrogen) { hydrogen}
-    [exec] (All of the Above) { maeusic }
-    [submenu] (Jack) { of all trades baby }
-      [exec] (QJackctl) { qjackctl }
-      [exec] (Calf FX) { calfjackhost}
-      [exec] (CLI Meters) { meters111 }
-      [exec] (Output Meter) { cadence-jackmeter }
-      [exec] (Input Meter) { cadence-jackmeter -in }
-      [exec] (Reset Pulse Shi*) { pajack }
+    [exec] (Chrome) {google-chrome-stable}
+    [exec] (Files) {thunar}
+    [submenu] (Blackbox) {window mamnager}
+      [exec] (Sensible Defaults) {default}
+      [exec] (Edit This Menu) { vimtim ~/.blackbox/menu}
+      [exec] (Edit Hotkeys) { vimtim ~/.bbkeysrc}
+      [exec] (Configurator) {bbconf}
+      [submenu] (Dockapps) { widjets}
+        [exec] (Enable) { dockapps}
+        [exec] (Cull) { dockapps kill}
+      [end]
+      [submenu] (Styles) {}
+        [stylesdir] (/usr/share/blackbox/styles)
+      [end]
+      [config] (Configuration)
+      [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
+      [restart] (Restart Blackbox) {}
+      [exit] (Exit Blackbox)
     [end]
-    [submenu] (Etc) {whatev er}
-      [exec] (Audacity) { audacity}
-      [exec] (Carla) { carla}
-      [exec] (LMMS) { lmms}
-      [exec] (taptempo) { watempo }
+    [submenu] (System) { Bleep bloop computer}
+      [exec] (Sleep) { systemctl suspend}
+      [exec] (Shut Down) { shutdown now}
+      [exec] (Restart) { shutdown now -r}
+      [exec] (Screenshot) { screenshot}
+      [exec] (Screenshot An App) { screenshot -1}
+      [exec] (Terminate An App) { xdotool  selectwindow  windowkill }
     [end]
-    [exec] (Volume Control) { pavucontrol}
-  [end]
-  [exec] (Chrome) {google-chrome-stable}
-  [exec] (Files) {thunar}
-  [submenu] (Blackbox) {window mamnager}
-    [exec] (Sensible Defaults) {default}
-    [exec] (Edit This Menu) { vimtim ~/.blackbox/menu}
-    [exec] (Edit Hotkeys) { vimtim ~/.bbkeysrc}
-    [exec] (Configurator) {bbconf}
-    [submenu] (Dockapps) { widjets}
-      [exec] (Enable) { dockapps}
-      [exec] (Cull) { dockapps kill}
-    [end]
-    [submenu] (Styles) {}
-      [stylesdir] (/usr/share/blackbox/styles)
-    [end]
-    [config] (Configuration)
-    [exec] (Redraw Desktop) {feh --bg-scale $HOME/doc/galaxy.png}
-    [restart] (Restart Blackbox) {}
-    [exit] (Exit Blackbox)
-  [end]
-  [submenu] (System) { Bleep bloop computer}
-    [exec] (Sleep) { systemctl suspend}
-    [exec] (Shut Down) { shutdown now}
-    [exec] (Restart) { shutdown now -r}
-    [exec] (Screenshot) { screenshot}
-    [exec] (Screenshot An App) { screenshot -1}
-    [exec] (Terminate An App) { xdotool  selectwindow  windowkill }
   [end]
 [end]
