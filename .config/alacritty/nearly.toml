@@ -1,0 +1,22 @@
+# nearly the whole screen -- vvim and cclod, off the blackbox menu
+#
+# "most of the screen, not the whole thing but almost". xlarge is the whole
+# thing (startup_mode = "Maximized"), which is a different look: maximized
+# means no desktop showing and no window to grab, and these two are things
+# you push aside to look at something else.
+#
+# 90% of the panel, worked back from the cell: Tamsyn at size 12 measures
+# 8x16 px, so 1920x1080 is exactly 240x67 cells, and 90% of that is 216x60 --
+# less the blackbox titlebar, which is charged to the same 1080 and is not
+# free. That leaves a border of desktop on every side, deliberately.
+#
+# The arithmetic is for the Dell's 1920x1080 eDP1. On another panel this is
+# simply a fixed 1728x944 box rather than a proportion, which is the same
+# bargain every other variant here makes.
+
+[general]
+import = ["alacritty.toml"]
+
+[window.dimensions]
+columns = 216
+lines = 59

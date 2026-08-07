@@ -355,6 +355,42 @@ JACK-for-production / Pulse-for-desktop split is deliberate and working, and
 Installing a session manager is what would turn this from harmless into a
 device-ownership fight.
 
+### A menu launch already has a terminal, and it is tty1
+
+X starts from a tty via the `desktop` alias and there is **no display manager**,
+so blackbox inherits that login shell's stdio and never lets go of it. Its
+fds 0, 1 and 2 are all `/dev/tty1`, and every child it execs from the menu
+inherits them.
+
+The consequence catches anything trying to be clever: **a script launched from
+the right-click menu passes `[ -t 1 ]`.** So the usual "am I being run from a
+terminal, or from a mouse?" test answers *terminal* — and a script that
+branches on it runs its curses app, its editor or its pager on tty1, behind X,
+where nobody can see it or quit it. Nothing errors; the menu entry just appears
+to do nothing. `$TERM` is no better (`linux` from the menu, `linux` from a real
+console shell too).
+
+There is no reliable sniff here. **Decide the mode explicitly** — a flag, a
+separate script, or simply always bringing your own terminal, which is what
+every launcher in `bin/` does:
+
+```sh
+exec alacritty --config-file ~/.config/alacritty/SIZE.toml --title "…" -e CMD
+```
+
+`alacritty -e` **execs** its argument — there is no shell inside it. It cannot
+expand an alias or find a shell function, and nearly everything in
+`~/src/bashrc` is one of those. To reach a bashrc function from a menu entry,
+wrap a bash around it and source what it needs first, passing arguments as real
+arguments rather than pasting them into the script text:
+
+```sh
+exec alacritty … -e bash -c 'source "$1"/functions; source "$1"/screen
+                             shift; screenvim "$@"' _ "$BASHRC" "$@"
+```
+
+`bin/vvim` and `bin/cclod` are the worked examples.
+
 ## Layout
 
 - `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
@@ -378,12 +414,27 @@ device-ownership fight.
 - `bin/palette` — the colour-scheme editor. Sixteen ansi colours in, the
   console / xterm / alacritty files out. See the colour section below.
 - `.config/alacritty/` — `alacritty.toml` is the base (colours, font, bell,
-  keybinds) and is found automatically; `tall/medium/bitsy/eensy/xlarge.toml`
-  each `import` it and override only window geometry. Edit colours in the base
-  once, not six times. Alacritty dropped YAML in 0.14, so the old
-  `~/.alacritty.*.yml` are gone — anything passing `--config-file` wants the
-  `.toml` paths (`bin/{watbat,watsen,watempo,volumectl,clock}`,
-  `.blackbox/menu`).
+  keybinds) and is found automatically;
+  `tall/medium/bitsy/eensy/xlarge/countdown/nearly.toml` each `import` it and
+  override only window geometry. Edit colours in the base once, not six times.
+  Alacritty dropped YAML in 0.14, so the old `~/.alacritty.*.yml` are gone —
+  anything passing `--config-file` wants the `.toml` paths
+  (`bin/{watbat,watsen,watempo,volumectl,clock,vvim,cclod}`, `.blackbox/menu`).
+
+  Sizing a new variant needs the cell, not the pixel, and the cell is
+  measurable rather than guessable: **Misc Tamsyn at size 12 is exactly 8x16
+  px**, so the Dell's 1920x1080 is 240x67 cells and a percentage of the screen
+  is simple arithmetic (`nearly.toml` is 90% of it, 216x59). Measure it again
+  rather than trusting that after any font change — launch one with
+  `alacritty -o window.dimensions.columns=80 -o window.dimensions.lines=24` and
+  divide what `xwininfo` reports.
+
+  **Don't hardcode `[window.position]`** unless the window is a pinned readout
+  like `eensy`. `session.windowPlacement: CascadePlacement` in `.blackboxrc`
+  wraps between slots instead of marching off the edge — verified with three
+  216x59 windows, worst case `right=1790 bottom=1034` on a 1920x1080 screen —
+  so blackbox places these correctly by itself, and a fixed x/y would be wrong
+  on the other machine anyway.
 - `.config/ardour{7,8}/` — one directory per Ardour major version. When
   upgrading, copy the *live* `~/.config/ardourN/` files in; don't `cp -r` the
   previous version's directory, which silently enshrines stale keybindings.

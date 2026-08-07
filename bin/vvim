@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# vvim
+#
+# "vim" -- the one off the right click menu
+#
+# The scare quotes on the menu label are the point: this is not vim, it is
+# `v'. It hands the file to screenvim, so what comes up is a vim living in
+# a screen named after whatever it's editing -- one per file. Click the
+# menu twice and you land back in the first one, still where you left the
+# cursor, instead of opening a second vim on the same buffer.
+#
+# `v' in bashrc/shortcuts is still how you type it and is untouched. This
+# is the front door for a mouse, and a mouse has no terminal to be typed
+# in, so this one brings its own alacritty.
+#
+# dependencies
+#   screenvim  [bashrc/screen]
+#   scold      [bashrc/functions] -- inscreen calls it if screen is missing
+#   /usr/bin/alacritty
+#   ~/.config/alacritty/nearly.toml
+#   /usr/bin/vim
+#
+# claude, for 4strid (Astrid Ivy)
+# 2026-08-07
+
+BASHRC="${BASHRC:-$HOME/src/bashrc}"
+
+TITLE="vim"
+(( $# )) && TITLE="vim $*"
+
+# alacritty -e *execs* what follows. There is no shell in there to expand an
+# alias or go looking for a function, and screenvim is a function -- so hand
+# it a bash and let that source what it needs first.
+#
+# The arguments ride along after the path as real arguments rather than
+# being pasted into the script text, which is what keeps a filename with a
+# space in it in one piece.
+exec alacritty --config-file ~/.config/alacritty/nearly.toml \
+               --title "$TITLE" -e bash -c '
+  BASHRC="$1" ; shift
+  if [[ -r "$BASHRC/functions" && -r "$BASHRC/screen" ]] ; then
+    source "$BASHRC/functions"
+    source "$BASHRC/screen"
+  else
+    # launched from the menu this window is the only place an error can
+    # go, and it would otherwise blink out before anyone could read it
+    echo "vvim: nothing to source at $BASHRC -- no screenvim, no vim" >&2
+    read -rsn1 -p "[any key]"
+    exit 1
+  fi
+  screenvim "$@"
+' _ "$BASHRC" "$@"

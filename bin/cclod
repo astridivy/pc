@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# cclod
+#
+# "Claude-code" -- the one off the right click menu
+#
+# Scare quotes again, and for the same reason: this is not claude, it is
+# `c'. screenclaude puts it in a screen named after the directory it was
+# started in, one per directory, so clicking this twice gets you back to
+# the conversation you walked away from rather than a second claude sitting
+# in the same folder talking to itself.
+#
+# Off the menu there is no working directory to speak of -- blackbox hands
+# its children its own, which is $HOME -- so the menu's claude is always
+# the `~' one. Run from anywhere else it follows the directory it was run
+# from, exactly like `c'.
+#
+# `c' in bashrc/shortcuts is still how you type it and is untouched. This
+# is the front door for a mouse, and a mouse has no terminal to be typed
+# in, so this one brings its own alacritty.
+#
+# dependencies
+#   screenclaude [bashrc/screen]
+#   scold        [bashrc/functions] -- inscreen calls it if screen is missing
+#   /usr/bin/alacritty
+#   ~/.config/alacritty/nearly.toml
+#   ~/.npm/packages/bin/claude
+#
+# claude, for 4strid (Astrid Ivy)
+# 2026-08-07
+
+BASHRC="${BASHRC:-$HOME/src/bashrc}"
+
+# alacritty -e *execs* what follows. There is no shell in there to expand an
+# alias or go looking for a function, and screenclaude is a function -- so
+# hand it a bash and let that source what it needs first.
+#
+# The arguments ride along after the path as real arguments rather than
+# being pasted into the script text, so anything quoted stays quoted.
+exec alacritty --config-file ~/.config/alacritty/nearly.toml \
+               --title "claude-code" -e bash -c '
+  BASHRC="$1" ; shift
+  if [[ -r "$BASHRC/functions" && -r "$BASHRC/screen" ]] ; then
+    source "$BASHRC/functions"
+    source "$BASHRC/screen"
+  else
+    # launched from the menu this window is the only place an error can
+    # go, and it would otherwise blink out before anyone could read it
+    echo "cclod: nothing to source at $BASHRC -- no screenclaude, no claude" >&2
+    read -rsn1 -p "[any key]"
+    exit 1
+  fi
+  screenclaude "$@"
+' _ "$BASHRC" "$@"
