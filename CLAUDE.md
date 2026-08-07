@@ -596,6 +596,44 @@ skinny. Multiply the horizontal scale by 2.
 whatever window you were already typing in. `bin/dotkey` is the client.
 `TODO.md` has the feature list; what follows is the part that cost the time.
 
+### Adding a glyph: `.config/dotkey/custom.tsv`, and its two silent failures
+
+Custom glyphs live in `.config/dotkey/custom.tsv` — one line of
+`glyph<TAB>KEYWORDS`, ranked above all ~149k unicode names. `~/.config/dotkey`
+is a whole-**directory** symlink into this repo (one of the few places
+`link.sh`'s dotdir rule was skipped), so the repo copy *is* the live file. The
+daemon reads it once at startup: `dotkey --restart` after editing.
+
+Both ways of getting it wrong fail without saying anything.
+
+**The separator must be a literal tab, and `.vimrc` sets `expandtab`
+globally.** So typing Tab while editing this file inserts *spaces*, the
+parser's `if "\t" not in line: continue` skips the line, and the entry simply
+never appears — no error, and nothing on screen distinguishes it from a good
+line. Insert the tab with **`<C-v><Tab>`**, which is exempt from `expandtab`
+and needs no mapping. This generalises past this one file: **any
+whitespace-delimited config edited under a global `expandtab` is one keystroke
+from silently becoming a different file**, so check with `cat -A` rather than
+by looking at it. Astrid declined a per-filetype `noexpandtab` autocmd for
+`*.tsv` on 2026-08-07 — the manual chord is the wanted fix, don't re-propose
+the setting.
+
+**Search matches the keyword column only — never the glyph column.** The
+scorer reads `lower[i]`, which is built from the right-hand field, so an entry
+is unreachable by anything not spelled out in its keywords. A glyph that is
+itself a word (`Yggdrasill`, `née`, `Mímir`) therefore needs its own ASCII
+spelling repeated on the right, which looks redundant and is not. Matching is
+substring, so the longest spelling covers the shorter (`YGGDRASILL` answers
+`yggdrasil`); accented forms do not fold to ASCII, so `mímir` will not find
+`Mímir` and `MIMIR` is what makes it reachable.
+
+Validate the whole file the way the daemon does, rather than trusting a
+reading of it — parse it and search for what you added:
+
+```bash
+python3 bin/dotkeyd --search mimir     # headless, no popup, no daemon needed
+```
+
 **Resident because process startup dominates, not rendering.** Measured here:
 `import gi` + GTK 3.24 alone is **1.64s**, building the unicode index 2.2s,
 alacritty cold 0.61s, xterm cold 0.19s, bare python3 0.20s. Anything
