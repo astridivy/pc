@@ -476,6 +476,42 @@ assuming a flag is inert.
 - `.config/ardour{7,8}/` — one directory per Ardour major version. When
   upgrading, copy the *live* `~/.config/ardourN/` files in; don't `cp -r` the
   previous version's directory, which silently enshrines stale keybindings.
+- `.screenrc` — screen's keybindings, and the only screen config that isn't in
+  `bashrc/screen`. That file is the *dance* and the little guys — shell
+  functions, all of it — so grepping the bashrc repo for a key never finds one.
+  Keys live here; sessions and windows live there.
+
+  Three things bite when editing it, and two of them do it silently:
+
+  **Every letter is already bound.** `C-a ?` lists the lot, and `bind` will
+  overwrite any of them without a word — there is no warning and no error, the
+  old command simply stops having a key. Check `man screen`'s table before
+  claiming a letter, and give whatever you evicted somewhere to live (or write
+  down that you didn't). Most defaults have a spare binding already — `prev`
+  answers to four keys — so look for the one that's cheap to take.
+
+  **A running session never re-reads this file.** `.screenrc` is read at session
+  *creation*, so an edit does nothing at all to the screen you are sitting in,
+  and the symptom is a key that just doesn't work. `screen -X source ~/.screenrc`
+  applies it live, per session; new sessions get it for free. This matters more
+  here than most places, because the ssh session is long-lived by design.
+
+  **Testing one needs a pty**, which an agent shell hasn't got — `screen`
+  detached refuses anything that wants a display. The rig that works is a fifo
+  into `script`, then `screen -Q title` to read back which window you landed in:
+
+  ```bash
+  mkfifo in; script -qfc "screen -c ./.screenrc -S t -t one bash --norc" \
+      /dev/null < in >/dev/null 2>&1 &
+  exec 3> in; sleep 1.5
+  screen -S t -X screen -t two bash --norc     # a window to move to
+  printf '\001l' >&3; sleep 0.5                # C-a l
+  screen -S t -Q title; screen -S t -X quit
+  ```
+
+  Always run it a second time with `-c /dev/null` as a control. Half of screen's
+  letters do *something* by default, so a binding that appears to work may just
+  be the default doing its own thing.
 - `etc/`, `usr/` — files destined for system paths, staged for manual install.
   These are **copies**, deliberately: their live counterparts are root-owned or
   package-managed, so nothing here can link them and a snapshot is all it is.

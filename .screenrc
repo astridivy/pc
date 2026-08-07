@@ -1,0 +1,20 @@
+# ~/.screenrc
+#
+# vim motions for the window list: C-a h goes left, C-a l goes right, which
+# is what the fingers are already doing everywhere else.
+#
+# both letters were already spoken for, so each one's ctrl-twin takes in
+# whatever got evicted:
+#
+#   C-a h    was hardcopy   -> prev.  hardcopy moves down to C-a C-h
+#   C-a l    was redisplay  -> next.  redisplay was already on C-a C-l too,
+#                                     so that one needed no help
+#
+# C-a C-h was a third way to say prev (screen 5 lists backspace, C-h, p and
+# C-p for it), which is exactly why it was cheap to give away -- prev still
+# answers to p, C-p and backspace, and next still answers to n, C-n and
+# space. nothing here is the only route to anything.
+
+bind h prev
+bind ^h hardcopy
+bind l next
