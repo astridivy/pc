@@ -1,1 +1,1 @@
-_TRY_COMMON=("." ".." "$HOME" "/née" "/ivy" "$HOME/src" "/")
+_TRY_COMMON=("." ".." "/" "$HOME" "/née" "/ivy" "$HOME/src" )
