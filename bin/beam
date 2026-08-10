@@ -1,0 +1,53 @@
+#!/usr/bin/bash
+#
+# beam FILE...
+#
+# scp things up to astrid.computer:/ivy/temp, because "where did I put that"
+# is a worse problem than "how do I get it there".
+#
+# override the destination with BEAM_DEST if the host or path ever moves:
+#   BEAM_DEST=me@elsewhere:/tmp beam foo.png
+
+set -euo pipefail
+
+dest=${BEAM_DEST:-ai@astrid.computer:/ivy/temp}
+
+usage() {
+  printf 'usage: %s [-r] FILE...\n' "${0##*/}" >&2
+  printf '       uploads to %s\n' "$dest" >&2
+  exit 64
+}
+
+flags=(-p)                     # keep mtimes; -q would hide the progress meter
+recurse=0
+while [[ ${1-} == -* ]]; do
+  case $1 in
+    -h|--help) usage ;;
+    --)        shift; break ;;
+    -*r*)      recurse=1; flags+=("$1"); shift ;;
+    *)         flags+=("$1"); shift ;;
+  esac
+done
+
+(( $# )) || usage
+
+# scp reports a missing local file per-transfer and carries on with the rest,
+# which reads as success at a glance. check first so a typo stops everything.
+missing=0
+for f in "$@"; do
+  if [[ ! -e $f ]]; then
+    printf '%s: no such file: %s\n' "${0##*/}" "$f" >&2
+    missing=1
+  elif [[ -d $f ]] && (( ! recurse )); then
+    printf '%s: %s is a directory (pass -r)\n' "${0##*/}" "$f" >&2
+    missing=1
+  fi
+done
+(( missing )) && exit 66
+
+scp "${flags[@]}" -- "$@" "$dest/"
+
+# say where they landed, so the next step is a copy-paste away
+for f in "$@"; do
+  printf '%s/%s\n' "${dest#*:}" "$(basename -- "$f")"
+done
