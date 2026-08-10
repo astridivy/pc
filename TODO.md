@@ -8,7 +8,14 @@ outlived two computers.
 
 ---
 
-## 1. dotkey — searchable Unicode popup — **BUILT 2026-07-31**
+## 1. dotkey — searchable Unicode popup — **BUILT 2026-07-31, MERGED 2026-08-10**
+
+> **Moved.** dotkey and commando were one program twice over, and are now one
+> program once: `~/src/commando`, its own repo, one daemon holding one popup
+> with N tab-menus. `dotkey` survives as the name of the glyph menu and as the
+> client that opens straight on it, so the chord and the muscle memory are
+> unchanged. `bin/{commandod,commando,dotkey}` here are symlinks into it.
+> Everything below is history; the live notes are in that repo's `CLAUDE.md`.
 
 *"win-key dot, but mangled a bit."* Bound to **Mod4-period**, the same chord
 Windows uses. Works end to end: press it, type a name, hit enter, the glyph
@@ -45,29 +52,31 @@ Answers to the questions this file asked before it was built:
    `bin/{heart,supson,endash,emdash,♡}` are still there and still work; deleting
    them is a separate call, since `.blackbox/menu` may reference them.
 
-### Still open on dotkey
+### Still open on the glyph menu
 
 - No **skin-tone** or variation-selector handling.
-- The popup is fixed at 10 rows and does not scroll; more matches exist than
-  are shown. Fine in practice, but paging would be nice.
-- `--type` mode is kept as a fallback and is genuinely unreliable — see the
-  measurement in `CLAUDE.md` before trying to "fix" it.
+- The grid is 63 cells and does not scroll; more matches exist than are shown.
+  Fine in practice, but paging would be nice.
+- `shift+enter` typing is kept as a fallback and is genuinely unreliable — see
+  the measurement before trying to "fix" it.
 
 ---
 
-## 2. Clipboard
+## 2. Clipboard — **history BUILT 2026-08-10**
 
-- **Install a clipboard manager.** Nothing arbitrates selection ownership right
-  now, which is the cause of alacritty's intermittent
-  `Unable to store text in clipboard`. Recommended: `copyq` (`extra/`, 9 pkgs;
-  `qt6-base` already present). It is a resident daemon with a real query API —
-  `copyq clipboard`, `copyq selection`, `copyq read 0`, `copyq add`,
-  `copyq size`, `copyq eval`. Lighter alternatives: `clipmenu` (4 pkgs, ~2M,
-  history is plain files) or `clipnotify` (14K) to build our own.
-- **CopyQ's `menu(tabName[, max[, x, y]])` + `paste()` is a picker for free** —
-  worth knowing when designing the popup above; it's the "daemon pops a Qt
-  widget" design already built. A `glyphs` tab may be the cheapest version of
-  item 1.
+The clipboard **history** is the `clipboard` tab-menu in `~/src/commando`, and
+it cost no new packages: the watch is XFixes, which gtk already speaks, and
+xclip was already here. So `copyq`, `clipmenu` and `clipnotify` were all
+considered and none was needed — don't re-propose installing one to get history.
+
+What it does **not** do, still open and a deliberate decision rather than an
+omission: it **records but does not hold**. The clip still dies with the
+process that owned it, so alacritty's intermittent `Unable to store text in
+clipboard` is untouched — nothing arbitrates selection ownership, and adding a
+second fighter over one selection is not obviously an improvement on nobody
+arbitrating. Taking persistent ownership is a small change if it is ever
+wanted; it needs a decision first, and a way to tell "we own it because we are
+the manager" from "we own it because someone just picked a clip".
 - **Wire up `g:clipboard` in `.vimrc`.** Arch's vim is built `-clipboard -X11
   -xterm_clipboard`, so `set clipboard=unnamedplus` (line 11) has never done
   anything — `has('clipboard_working')` is 0. Vim 9.2 has
@@ -173,7 +182,7 @@ Still open:
   Not patched blind because finishing it is a design call, not a typo fix:
   what separator does it append with (`:` for `PATH`, but the truncated line
   opens a *multi-line* string), and are the three-argument call sites right or
-  should it take a list? Both `bin/commandod` and anything else that sources
+  should it take a list? Both `~/src/commando` and anything else that sources
   `exports` currently work around it by saving and restoring `PATH` and
   dropping stderr; those workarounds say to delete them once this is fixed.
 - **`~/src/diet-vhost` and `~/src/maitre-d`** declare dependencies but have no
@@ -181,7 +190,11 @@ Still open:
 
 ---
 
-## 7. commando — the command runner — **BUILT 2026-08-07**
+## 7. commando — the command runner — **BUILT 2026-08-07, MOVED 2026-08-10**
+
+> Now `~/src/commando`, and now the whole program rather than one of two — see
+> §1. The command sources are one tab-menu, `~/bin/shortcuts` is a second, and
+> the glyphs and clipboard are the rest.
 
 `bin/commando` (client) and `bin/commandod` (daemon), on **Mod4-slash**.
 Replaces the reflexive right-click → Alacritty, whose whole problem was the
@@ -213,6 +226,12 @@ Answers to the questions this file asked before it was built:
 ### Still open on commando
 
 - No paging: 12 rows, and more matches exist than are shown.
+- **A new `.tsv` needs a restart.** Editing one is live, but discovery runs at
+  startup because the tab list is what the popup indexes into and growing it
+  under a running popup is a way to land on a tab that no longer exists.
+- No hotkey lands directly on the `clipboard` or `shortcuts` menus. `commando
+  --tab NAME` exists and works, so it is one line in `.bbkeysrc` if a chord can
+  be spared — deliberately not chosen for Astrid.
 - `bin/shortcuts` is a first pass. It is the file to edit when something
   should be the first hit for its own name — edits are live on the next
   Mod4-slash, no restart.

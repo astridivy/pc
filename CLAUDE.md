@@ -193,7 +193,7 @@ The fix is to identify processes by something that isn't your own text:
 
 Failing a pidfile, walk `/proc/*/cmdline` and skip your own PID. Long-running
 daemons here should write a pidfile precisely so callers never have to guess —
-`bin/dotkeyd` does.
+`commandod` does.
 
 ### Aliases no longer reach non-interactive shells
 
@@ -265,7 +265,7 @@ prevent. The one thing it is for is the one thing it does not do.
 Two consequences:
 
 - **Any script that sources `bashrc/exports` must save and restore `PATH`
-  around it.** `bin/commandod` does this and says why.
+  around it.** `~/src/commando`'s `run_script()` does this and says why.
 - Don't read a failure here as your own bug. A command that exists refusing to
   be found, immediately after sourcing anything from `~/src/bashrc`, is this.
 
@@ -464,7 +464,12 @@ assuming a flag is inert.
 
 ## Layout
 
-- `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`)
+- `bin/` — personal scripts, symlinked as `~/bin` (on `$PATH`). Three entries
+  are **symlinks out of this repo** into `~/src/commando`
+  (`commandod`, `commando`, `dotkey`), which is how a program that grew its own
+  checkout stays on `$PATH` without anything being added to it. `$PATH` here is
+  built by `bashrc/exports`, which is broken (see above), so pointing a link at
+  the sibling repo is much safer than teaching the shell a new directory.
 - `.config/keyledsd.conf` — per-application RGB keyboard profiles (Logitech, via
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop
@@ -803,17 +808,28 @@ character art, remember **terminal cells are about twice as tall as they are
 wide**: scale equally on both axes and everything comes out stretched and
 skinny. Multiply the horizontal scale by 2.
 
-## dotkey, and the three ways X11 lies about input
+## commando, and the ways X11 lies about input
 
-`bin/dotkeyd` is a resident daemon that pops an override-redirect window on
-**Mod4-period**, searches all ~149k named codepoints, and delivers the pick to
-whatever window you were already typing in. `bin/dotkey` is the client.
-`TODO.md` has the feature list; what follows is the part that cost the time.
+**The program moved out of this repo on 2026-08-10.** It lives in
+`~/src/commando`, its own checkout, and `bin/{commandod,commando,dotkey}` here
+are **symlinks into it** — so `~/bin/commando` still works and the keybindings
+never changed. `dotkey` and `commando` used to be two daemons; they are now one
+popup with N tab-menus, and `dotkey` is the name of the glyph menu plus a
+client that opens straight on it.
 
-### Adding a glyph: `.config/dotkey/custom.tsv`, and its two silent failures
+Read `~/src/commando/CLAUDE.md` for anything about how it works. What stays
+here is what is true of **this desktop** rather than of that program: bbkeys,
+blackbox, the keysym rules, and the grab lessons that any new popup on this box
+will meet. A third repo also means a third close sequence — see *All tasks*.
 
-Custom glyphs live in `.config/dotkey/custom.tsv` — one line of
-`glyph<TAB>KEYWORDS`, ranked above all ~149k unicode names. `~/.config/dotkey`
+Its config lives here, deliberately: `.config/commando/*.tsv` is Astrid's own
+content and `~/bin/shortcuts` is the curated command list, and neither belongs
+to the program.
+
+### Adding a glyph: `.config/commando/*.tsv`, and its two silent failures
+
+Custom glyphs live in `.config/commando/custom.tsv` — one line of
+`glyph<TAB>KEYWORDS`, ranked above all ~149k unicode names. `~/.config/commando`
 is a whole-**directory** symlink into this repo (one of the few places
 `link.sh`'s dotdir rule was skipped), so the repo copy *is* the live file. The
 daemon reads it once at startup: `dotkey --restart` after editing.
@@ -845,7 +861,7 @@ Validate the whole file the way the daemon does, rather than trusting a
 reading of it — parse it and search for what you added:
 
 ```bash
-python3 bin/dotkeyd --search mimir     # headless, no popup, no daemon needed
+commando --tab dotkey --search mimir   # headless, no popup, no daemon needed
 ```
 
 **Resident because process startup dominates, not rendering.** Measured here:
@@ -943,7 +959,8 @@ no race to lose. Measured 100% reliable across repeated trials.
 Paste is not one keystroke, though. Terminals treat `ctrl+v` as the shell's
 literal-next, and the xterm family pastes PRIMARY via `shift+Insert` rather
 than CLIPBOARD at all — so match on `xdotool getactivewindow
-getwindowclassname` and pick the chord (`PASTE_CHORDS` in `bin/dotkeyd`).
+getwindowclassname` and pick the chord (`PASTE_CHORDS` in
+`~/src/commando/commando/deliver.py`).
 Getting it wrong fails silently: the glyph really is on the clipboard, the
 window simply never reads it. Own **both** selections and middle-click works
 too.
@@ -1081,12 +1098,19 @@ you can believe, and the real display when you just want to watch the thing
 work.
 
 **A singleton daemon gets its own `XDG_RUNTIME_DIR`, not its own machine.**
-`dotkeyd` refuses to start twice and keys its fifo, pidfile and log off that
+`commandod` refuses to start twice and keys its fifo, pidfile and log off that
 variable, so pointing it at a scratch directory is the whole trick for running
 a test instance beside the live one — no fighting over the fifo, no stopping
 the daemon the human is using, and the pidfile still works for shutting the
 test copy down. Combined with `DISPLAY=:77` on an Xvfb, a full
 daemon-plus-popup rig costs two environment variables.
+
+**Ask whether the popup is up by its *size*, not by whether any window is
+mapped.** GTK parks a 10x10 stub at `-100,-100` for its own purposes, and
+`xdotool search --name .` returns it perfectly happily — so a check written the
+obvious way reports the popup as still on screen after Escape, forever, and the
+dismissal path looks broken when it is fine. Match the known width and read
+`Map State` out of `xwininfo -id`.
 
 **Capture a popup by window id, and don't trust `-trim` to tell you it
 rendered.** `xwd -root | magick -trim` against this desktop's near-black
@@ -1137,13 +1161,10 @@ Two more traps from the same afternoon, both cheap to avoid:
   belongs to the instance that didn't get the message. Refuse to start a second
   instance.
 
-## commando, and putting a command somewhere it won't need closing
+## Where a command commando runs ends up
 
-`bin/commandod` is a resident daemon on **Mod4-slash** that searches four
-sources and runs what you pick; `bin/commando` is the client. It is dotkey's
-twin and inherits every X11 lesson from the section above — read that first,
-all five traps are live here too. `TODO.md` §7 has the feature list. What
-follows is the part that is specific to *running* things.
+Also `~/src/commando` now; this section is the `screen` half, which is about
+this machine's sessions rather than about that program.
 
 **The output goes in a screen window, not a new terminal.** That is the whole
 design: `screen -X screen` adds a window to a session that already exists, so
@@ -1348,11 +1369,13 @@ Getting the thing working is the middle of a task, not the end. Close every
 one with this sequence:
 
 **1. Commit.** Part of the close sequence, not a separate request — don't leave
-a dirty tree and report the job done. Note that work here often spans two
-repos: `~/src/pc` and `~/src/bashrc` each need their own commit. Push only if
-asked.
+a dirty tree and report the job done. Note that work here often spans several
+repos: `~/src/pc`, `~/src/bashrc` and `~/src/commando` each need their own
+commit, and a change to the popup usually touches at least two of them —
+the code in one, the config or keybinding in another. Check `git status` in
+each before calling anything done. Push only if asked.
 
-Agent-specific, since that two-repo split has a sharp edge: **a Claude Code
+Agent-specific, since that multi-repo split has a sharp edge: **a Claude Code
 session applies the `.claude/settings.json` of the directory it was *launched*
 in, not the one it is currently in.** `/cd` moves the shell without moving the
 settings, so a session started in `~/src/bashrc` and moved here ignores this

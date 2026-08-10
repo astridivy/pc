@@ -9,7 +9,7 @@
 # FIELDS ARE SEPARATED BY TWO OR MORE SPACES, or by tabs -- either works, on
 # purpose. .vimrc sets expandtab globally, so a Tab typed into a tab-delimited
 # config silently becomes spaces and the line silently stops parsing; that trap
-# already cost an afternoon on .config/dotkey/custom.tsv. accepting both means
+# already cost an afternoon on .config/commando/custom.tsv. accepting both means
 # this file cannot be broken by the editor that edits it. a single space is
 # part of the label, so labels can have spaces in them and still work.
 #
@@ -78,5 +78,7 @@ discord           discord                       @gui
 qjackctl          qjackctl                      @gui
 volume            pavucontrol                   @gui
 unicode popup     dotkey                        @gui
+clipboard         commando --tab clipboard      @gui
+which menus       commando --tabs               @hold
 screenshot        screenshot                    @gui
 countdown shot    countdown -t 10 screenshot    @gui

@@ -51,8 +51,11 @@ xset fp+ /usr/share/fonts/
 
 # start some nice programs
 
-# dotkeyd is resident on purpose: it pays gtk's ~1.6s import and the unicode
-# index build once, here, so that Mod4-Period is instant every time after.
-# `dotkey` would start it on demand anyway, but then the first press waits.
-wallpaper & dockapps & bbkeys & dotkeyd & ${TRANSPROG} & blackbox
+# commandod is resident on purpose: it pays gtk's ~1.6s import and the unicode
+# index build once, here, so that Mod4-slash and Mod4-period are instant every
+# time after. `commando` would start it on demand anyway, but then the first
+# press waits. It is one daemon holding every tab-menu -- commands, glyphs,
+# clipboard -- and it is also what records the clipboard, so it wants to be up
+# from login rather than from the first time anyone opens the popup.
+wallpaper & dockapps & bbkeys & commandod & ${TRANSPROG} & blackbox
 #xrandr > xrandr.log
