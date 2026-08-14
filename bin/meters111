@@ -6,6 +6,22 @@
 #
 # astrid
 # 2022-04-15
+#
+# two jack_meter clients, wide (111 cols), bottom-left and bottom-right.
+# they register as 'meter' and connect to nothing on purpose -- patch them
+# in the qjackctl graph. pass output ports to start pre-connected instead:
+#
+#     meters111 system:capture_1 system:capture_2
+#
+# jack_meter only connects to *output* ports. system:playback_* are inputs
+# and will refuse ("Cannot connect port ... to 'meter:in'"); to meter what
+# reaches the speakers, name whatever is feeding them.
+#
+# -f is updates per second (jack_meter's default is a chunky 8). the server
+# only produces a new buffer every period, so past rate/period -- 46.9/s at
+# 48000/1024 -- extra frames just reprint stale peaks. METER_RATE to taste.
 
-xterm -geometry 115x3+1-29 -e jack_meter -w 111 &
-xterm -geometry 115x3-65-2 -e jack_meter -w 111 &
+rate=${METER_RATE:-30}
+
+xterm -geometry 115x3+1-29 -e jack_meter -f "$rate" -w 111 "$@" &
+xterm -geometry 115x3-65-2 -e jack_meter -f "$rate" -w 111 "$@" &

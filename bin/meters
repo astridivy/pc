@@ -6,6 +6,11 @@
 #
 # astrid
 # 2022-04-15
+#
+# as meters111, but at jack_meter's default 79-col width. see that file for
+# the port and refresh-rate notes.
 
-xterm -geometry 115x3+1-29 -e jack_meter &
-xterm -geometry 115x3-65-2 -e jack_meter &
+rate=${METER_RATE:-30}
+
+xterm -geometry 115x3+1-29 -e jack_meter -f "$rate" "$@" &
+xterm -geometry 115x3-65-2 -e jack_meter -f "$rate" "$@" &

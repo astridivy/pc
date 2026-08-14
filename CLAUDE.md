@@ -388,6 +388,96 @@ JACK-for-production / Pulse-for-desktop split is deliberate and working, and
 Installing a session manager is what would turn this from harmless into a
 device-ownership fight.
 
+### "Is JACK running?" has two answers, and the daemon only tells you one
+
+`jackdbus` can report the server as **started** while its ALSA driver is
+**dead**. Losing the capture or playback device — a USB interface sleeping,
+dropping off the bus, or being unplugged — stops the driver, and nothing
+restarts it:
+
+```
+ERROR: ALSA: capture device disconnected
+ERROR: JackAudioDriver::ProcessSync: read error, stopping...
+```
+
+From then on `jack_control status` still says `started`, the existing graph
+still lists every client that was already connected, and qjackctl looks
+entirely normal — because clients are only torn down when *they* exit. But
+every **new** client is refused, with `Driver is not running` → `Cannot create
+new client` on the server side and, on the client side, a set of errors that
+point nowhere near the cause:
+
+```
+Cannot read socket fd = 9 err = Success      # note: "err = Success"
+CheckRes error / JackSocketClientChannel read fail
+Cannot open <name> client
+```
+
+So the symptom is *"my meters/tools stopped appearing in the graph"* while
+audio that was already patched keeps working, and the shape of the client-side
+error invites a hunt for a version or protocol mismatch that isn't there.
+
+**Read `~/.log/jack/jackdbus.log` first.** It names the real cause in plain
+English and timestamps it, which no client-side message does. The generalisable
+part: when a daemon's own status call and its log disagree, the log wins — a
+status flag reports what the daemon was *asked* to do, the log reports what
+happened to it since. The fix is a driver restart, needs no root, and is safe
+precisely because audio is already dead:
+
+```bash
+jack_control stop && sleep 2 && jack_control start
+```
+
+Confirm the device actually came back first (`aplay -l`, `arecord -l`) or the
+restart just fails again — and check `/proc/asound/cardN/stream0`, which shows
+`Status: Running` plus the real channel count and format once it does.
+
+**`stop`/`start` restarts the driver but not the engine, and after a crash that
+is not enough.** New clients connect again, so it looks fixed — but the engine
+carries the damage forward and says so, in lines that are easy to scroll past
+because the thing you were testing just started working:
+
+```
+ERROR: JackFreewheelDriver::ProcessSync: SuspendRefNum error
+ERROR: JackAudioDriver::ProcessGraphSync: ProcessWriteSlaves error, engine may now behave abnormally!!
+ERROR: JackEngine::ClientDeactivate wait error / ClientKill cannot be removed from the graph !!
+ERROR: Failed to find port 'system:capture_1' to [dis]connect
+```
+
+That last one is the tell worth knowing generally: **the engine failing to find
+a port that `jack.Client().get_ports()` lists** means the two registries have
+diverged, and no amount of client-side retrying will reconcile them. The cost
+is a **5-second** stall — `LockedTimedWait usec = 5000000` — on client open and
+again on exit, hit intermittently, which reads as "this tool is slow to start"
+rather than as a server fault. Measured here: 5.08s on 3 runs of 5.
+
+`jack_control exit` (terminate jackdbus entirely; the next dbus call
+re-activates it) followed by `jack_control start` clears it. Same box, same
+tool, after a full restart: **0.086s to open, 0.007s to exit**, every
+connection landing. PulseAudio re-registers its sink and source by itself, so
+desktop audio comes back without intervention — but anything that was patched
+by hand needs re-patching.
+
+Two tooling notes for anything that has to inspect the graph here:
+
+- **`jack_lsp` is not installed** — Arch split the example tools out of `jack2`
+  and only `jackmeter`, `jack_delay`, `jack_mixer` and friends are present. Use
+  **`python-jack-client`** (`import jack; jack.Client(...)`), which is
+  installed, rather than assuming the classic CLI tools exist.
+- **The dbus patchbay graph goes stale; libjack does not.**
+  `org.jackaudio.JackPatchbay.GetGraph` can keep serving a pre-restart snapshot
+  — listing only MIDI ports, or ports that no longer exist — while
+  `jack.Client().get_ports()` shows the true state. Never conclude a port is
+  missing from the dbus view alone; that reads as a half-started driver when
+  nothing is wrong. Same rule as above: ask the thing that owns the state.
+
+Finally, **a meter connects to *output* ports only.** `jack_meter`'s own port
+is an input, so naming `system:playback_1` fails with `Cannot connect port
+'system:playback_1' to 'meter:in'` — playback ports are sinks. To meter what
+reaches the speakers, name whatever is *feeding* them (`PulseAudio JACK
+Sink:front-left`, a track's output); to meter what comes in, `system:capture_N`
+is already an output and works directly.
+
 ### A menu launch already has a terminal, and it is tty1
 
 X starts from a tty via the `desktop` alias and there is **no display manager**,
