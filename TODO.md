@@ -120,6 +120,17 @@ The DeathAdder Essential mouse (`1532:0098`) is supported by the same daemon.
   conservative world domain, which limits channels and TX power.
   `wireless-regdb` is installed now, so the database is there; nothing sets a
   country.
+- **JACK runs non-realtime, and cannot do otherwise as configured.** Every
+  server start logs `JACK server starting in non-realtime mode` and
+  `Cannot lock down 107341340 byte memory area (Cannot allocate memory)`:
+  `ulimit -l` is 8192 KB, there is no `/etc/security/limits.d/` at all, and
+  `astrid` is in neither an `audio` nor a `realtime` group (`realtime` doesn't
+  exist; `audio` does, gid 995, empty). Audio works — Pulse, the TASCAM and
+  Carla are all fine at 1024/3/48000 — so this is xruns-under-load rather than
+  anything broken, which is why it has gone unnoticed. The standard fix is the
+  `realtime-privileges` package plus adding the user to its group, then a
+  re-login; it needs root and a decision about whether the latency is actually
+  wanted, so it is here rather than done.
 
 *(Done this session, don't redo: fallback initramfs enabled and built,
 `intel-ucode` installed, `grub-mkconfig` run — grub.cfg now has 3 ucode
