@@ -96,8 +96,23 @@ fi
 # Remember the mode it is in right now, so stage 3 can put it back exactly
 # rather than trusting --auto to guess. Blank if the output is already off, in
 # which case stage 3 falls back to whatever mode the panel says it prefers.
-mode=$(xrandr --query 2>/dev/null | awk -v o="$output" \
-	'$1 == o && $3 ~ /^[0-9]+x[0-9]+\+/ {split($3, a, "+"); print a[1]; exit}')
+#
+# Scan for the geometry field rather than naming a column number: xrandr
+# inserts an extra "primary" word for the primary output, so the resolution is
+# $3 on a normal output and $4 on that one. Counting columns here gives you a
+# parser that works right up until the moment stage 3 sets --primary, and then
+# quietly reads "primary" as the mode forever after.
+mode=$(xrandr --query 2>/dev/null | awk -v o="$output" '
+	$1 == o { for (i = 2; i <= NF; i++)
+			if ($i ~ /^[0-9]+x[0-9]+\+/) { split($i, a, "+"); print a[1]; exit } }')
+
+# Remember whether dpms is supposed to be on at all, because we are about to
+# trample it. `.xinitrc` runs `xset s off -dpms` -- the panel dying out of an
+# idle blank is what started all this -- and `xset dpms force off` *silently
+# re-enables dpms* as a side effect. So without this, one stage 2 panic hands
+# the 600s blank straight back to the machine it just rescued, with nothing
+# on screen or in any log to say it happened. Restored at the end.
+dpms_was=$(xset q 2>/dev/null | awk '/DPMS is/ {print $NF}')
 
 # How panicked are we. An explicit -s wins; otherwise escalate if the last
 # press was recent, and start over from calm if it wasn't.
@@ -153,9 +168,19 @@ stage3() {
 	run xrandr --output "$output" --auto
 	run xrandr --output "$output" --primary
 
+	# Did it come back? Same column trap as the mode read above -- ask whether
+	# the output's line carries a geometry anywhere on it, not whether one
+	# sits at a fixed offset. Getting this wrong gives a check that can never
+	# pass, which means it can never fail either: the fallback below fires
+	# every single time and a genuinely dead panel looks exactly like a live
+	# one. A verification step that always says "broken" is not a
+	# verification step.
 	if [ "$dry" = 1 ]; then
 		echo "would then check $output came back, and force ${mode:-its preferred mode} if not"
-	elif ! xrandr --query 2>/dev/null | grep -q "^$output connected [0-9]"; then
+	elif ! xrandr --query 2>/dev/null | awk -v o="$output" '
+		$1 == o { for (i = 2; i <= NF; i++)
+				if ($i ~ /^[0-9]+x[0-9]+\+/) f = 1 }
+		END { exit !f }'; then
 		# --auto did not bring it back. Name the mode out loud instead of
 		# letting the server pick, and pin it to the origin so the screen has
 		# somewhere to be.
@@ -186,5 +211,14 @@ case "$stage" in
 3) stage3 ;;
 *) echo "unblank: stage must be 1, 2 or 3" >&2; exit 2 ;;
 esac
+
+# Put dpms back the way we found it -- see dpms_was above. Deliberately after
+# the case and not inside a stage, so it holds whichever one ran.
+if [ "$dry" = 1 ]; then
+	[ "$dpms_was" = Disabled ] && echo "would run: xset -dpms (put it back how .xinitrc left it)"
+elif [ "$dpms_was" = Disabled ]; then
+	say "putting dpms back to disabled, where .xinitrc left it"
+	xset -dpms >> "$LOG" 2>&1
+fi
 
 exit 0
