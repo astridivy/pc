@@ -1,0 +1,190 @@
+#!/bin/sh
+# unblank -- AHHH MY MONITOR IS DEAD
+#
+# ...except it isn't, and neither is the computer. That is the whole point of
+# this script. When the screen goes black on this box the machine underneath
+# is very often completely fine: the terminal bell still rings out of your
+# headphones when you jam ctrl-c, ssh still answers, X has not crashed
+# ("Server terminated successfully" is what Xorg.0.log says afterwards, every
+# time). What died is one thing only -- the display pipe -- and i915 says so
+# on the way out:
+#
+#     [drm] *ERROR* pipe A underrun
+#     [drm] *ERROR* CPU pipe A FIFO underrun
+#
+# Nothing in the kernel ever retries it. So the panel stays black forever
+# while everything else hums along, you conclude the computer is gone, and you
+# hold the power button. Four times in four days, going by the journal: every
+# single boot that logged that underrun ended with "Power key pressed short",
+# and every boot that didn't shut down cleanly.
+#
+# But bbkeys is still running. bbkeys is still grabbing keys. Which means a
+# keybinding can still reach in there and shake the pipe until it wakes up,
+# and you never lose the session at all.
+#
+# So: DON'T HOLD THE POWER BUTTON. Mash Mod4-M instead.
+#
+# Each press within $WINDOW seconds escalates, so mashing is the interface:
+#
+#   1  AHH      -- wake from dpms. it was probably just blanked, honestly
+#   2  AHHH     -- cycle dpms off->on, forcing the CRTC down and back up
+#   3  AHHHH    -- full modeset. the big hammer. nothing louder than this
+#
+# One press is always the cheap thing and you cannot reach stage 3 by
+# accident. After $WINDOW seconds of not panicking it resets to stage 1.
+#
+# Stage 3 takes the X screen to 0x0 and back, so clients that care about
+# screen size (chrome, gtk things) may come back with their windows moved
+# around. That is a fine price for not losing the session, and it is the
+# reason stage 3 is last instead of first.
+#
+# STILL BLACK AFTER ALL THREE? Then it is wedged somewhere below X, and there
+# is one more thing to try before the power button: flip to another virtual
+# terminal and back -- ctrl+alt+F2, then ctrl+alt+F1. That makes fbcon do its
+# own modeset without needing X to be healthy at all.
+#
+#   unblank            one stage (escalating). also answers to `ahhh`
+#   unblank -s 3       skip the panic, go straight to a stage
+#   unblank -n         dry run, print what it would do and touch nothing
+#   unblank -a         every stage in order, no escalation, no state
+
+WINDOW=12
+STATE="${XDG_RUNTIME_DIR:-/tmp}/unblank.stage"
+LOCK="${XDG_RUNTIME_DIR:-/tmp}/unblank.lock"
+LOG="$HOME/.log/unblank.log"
+
+dry=0 all=0 want=
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-n) dry=1 ;;
+	-a) all=1 ;;
+	-s) want="$2"; shift ;;
+	-h|--help) sed -n '2,/^$/p' "$0" | cut -c3-; exit 0 ;;
+	*) echo "unblank: unknown option $1" >&2; exit 2 ;;
+	esac
+	shift
+done
+
+: "${DISPLAY:=:0}"
+export DISPLAY
+
+mkdir -p "$(dirname "$LOG")"
+
+say() {
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"
+}
+
+run() {
+	if [ "$dry" = 1 ]; then
+		echo "would run: $*"
+	else
+		"$@" >> "$LOG" 2>&1
+	fi
+}
+
+# Never hardcode an output name -- this disk boots two different machines and
+# they do not agree about what the panel is called (eDP-1 here, LVDS-1 on the
+# Acer). Ask the server that is actually running, every time.
+output=$(xrandr --query 2>/dev/null | awk '/ connected/ {print $1; exit}')
+if [ -z "$output" ]; then
+	say "no connected output at all on DISPLAY=$DISPLAY -- wrong display?"
+	echo "unblank: no connected output on $DISPLAY" >&2
+	exit 1
+fi
+
+# Remember the mode it is in right now, so stage 3 can put it back exactly
+# rather than trusting --auto to guess. Blank if the output is already off, in
+# which case stage 3 falls back to whatever mode the panel says it prefers.
+mode=$(xrandr --query 2>/dev/null | awk -v o="$output" \
+	'$1 == o && $3 ~ /^[0-9]+x[0-9]+\+/ {split($3, a, "+"); print a[1]; exit}')
+
+# How panicked are we. An explicit -s wins; otherwise escalate if the last
+# press was recent, and start over from calm if it wasn't.
+if [ -n "$want" ]; then
+	stage=$want
+elif [ "$all" = 1 ]; then
+	stage=0
+else
+	now=$(date +%s)
+	last=0 prev=0
+	if [ -r "$STATE" ]; then
+		read -r last prev < "$STATE" 2>/dev/null || true
+	fi
+	: "${last:=0}" "${prev:=0}"
+	if [ $((now - last)) -le "$WINDOW" ]; then
+		stage=$((prev + 1))
+		[ "$stage" -gt 3 ] && stage=3
+	else
+		stage=1
+	fi
+	[ "$dry" = 1 ] || echo "$now $stage" > "$STATE"
+fi
+
+stage1() {
+	say "AHH -- stage 1, poking $output, it is probably just blanked"
+	run xset dpms force on
+	run xset s reset
+}
+
+stage2() {
+	say "AHHH -- stage 2, still black, slamming dpms off and back on"
+	run xset dpms force off
+	[ "$dry" = 1 ] && echo "would run: sleep 2" || sleep 2
+	run xset dpms force on
+}
+
+stage3() {
+	say "AHHHH -- stage 3, FULL MODESET on $output (was ${mode:-unknown}), hold on to your windows"
+
+	# Every step here is allowed to fail and none of them is trusted.
+	#
+	# --off on the only connected output asks the server to resize the screen
+	# to 0x0, which is under its stated minimum, so RRSetScreenSize answers
+	# BadValue and xrandr exits 1 -- possibly *after* it has already pulled
+	# the CRTC down. A script that stops on that error is a script that
+	# leaves the panel dark forever, which is the exact thing we are here to
+	# rescue you from. So --off is best-effort, --auto is a separate call
+	# that runs no matter what --off did, --primary is separate again so it
+	# cannot take the re-enable down with it, and the check at the end is
+	# what actually decides whether we are done.
+	run xrandr --output "$output" --off
+	[ "$dry" = 1 ] && echo "would run: sleep 1" || sleep 1
+	run xrandr --output "$output" --auto
+	run xrandr --output "$output" --primary
+
+	if [ "$dry" = 1 ]; then
+		echo "would then check $output came back, and force ${mode:-its preferred mode} if not"
+	elif ! xrandr --query 2>/dev/null | grep -q "^$output connected [0-9]"; then
+		# --auto did not bring it back. Name the mode out loud instead of
+		# letting the server pick, and pin it to the origin so the screen has
+		# somewhere to be.
+		m=${mode:-$(xrandr --query 2>/dev/null | awk -v o="$output" '
+			$1 == o {f = 1; next} f && /^ / {print $1; exit} f {exit}')}
+		say "AHHHH -- --auto did not do it either, forcing --mode $m by hand"
+		run xrandr --output "$output" --mode "$m" --pos 0x0 --primary
+	fi
+
+	run xset dpms force on
+}
+
+# Mashing the key spawns one process per press, and stages 2 and 3 sleep in
+# the middle, so without this their xset and xrandr calls interleave and each
+# one undoes the last -- panic-mashing would be *worse* than one press, which
+# would be a rude thing for a panic button to do. The stage was recorded above,
+# before this point, so every press still counts toward the escalation while
+# it waits its turn.
+if [ "$dry" = 0 ]; then
+	exec 9>"$LOCK"
+	flock -w 15 9 || { say "stage $stage: gave up waiting for the lock"; exit 1; }
+fi
+
+case "$stage" in
+0) stage1; stage2; stage3 ;;
+1) stage1 ;;
+2) stage2 ;;
+3) stage3 ;;
+*) echo "unblank: stage must be 1, 2 or 3" >&2; exit 2 ;;
+esac
+
+exit 0

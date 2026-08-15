@@ -14,7 +14,17 @@
       [option] (cycleMenuY) {180}
    [end]
    [keybindings] (bind some keys please !)
-      [execute] (Mod4-M) { xdotool search --name "Wine System Tray" windowactivate }
+      # panic key for when the panel dies but the computer does not. i915
+      # drops pipe A with a FIFO underrun and nothing ever retries it, so
+      # the screen goes black while X, bbkeys and the terminal bell are all
+      # still perfectly alive -- which is why a keybinding can still rescue
+      # it. Mash it: each press within 12s escalates dpms wake -> dpms
+      # cycle -> full modeset, so one press is the cheap fix and three is
+      # the big hammer. See bin/unblank.
+      # Same key and same reflex as the old jam-Mod4-M-until-the-wine-tray-
+      # comes-back hack this replaced, but aimed at something that actually
+      # recovers. (Mod4-M inside the launcher chain still opens mouse-control.)
+      [execute] (Mod4-M) { unblank }
       # Both of these are ONE program -- commando, in ~/src/commando -- and one
       # resident daemon holding one popup. They differ only in which tab-menu it
       # opens on, and Tab walks between them: commands, ~/bin/shortcuts, all of
