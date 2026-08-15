@@ -30,15 +30,27 @@ in play and none of them agree:
 
 | where | looks like |
 |---|---|
-| `xrandr` on the Dell (intel/modesetting) | `eDP1`, `HDMI1`, `DP1` — **no hyphen** |
+| `xrandr` on the Dell (intel/modesetting) | `eDP-1`, `HDMI-1`, `DP-1`, `DP-2`, `HDMI-2` |
 | `/sys/class/drm` on the Dell | `card0-eDP-1`, `card0-HDMI-A-1` |
 | Acer era, in `.xinitrc` and `.blackbox/menu` | `HDMI-0`, `LVDS-1` |
 
-Only `eDP1` is connected here. `.xinitrc` still runs `xrandr --output HDMI-0
+Only `eDP-1` is connected here. `.xinitrc` still runs `xrandr --output HDMI-0
 --primary`, which matches nothing on the Dell and fails silently on every X
 start — harmless, and correct again if the laptop board comes back. **Never
 hardcode an output name from memory or from another machine's config; run
 `xrandr --query` on the box you're actually targeting.**
+
+That rule applies to *this table too*. It said `eDP1`, unhyphenated, until
+2026-08-15, when a `xrandr --query` run for an unrelated task came back
+`eDP-1` — the name having presumably changed under a driver upgrade at some
+point nobody noticed, because nothing reads these names from here. A written
+note about a name the system generates is a cache, and caches go stale
+silently; the server is the only authority. Scripts should derive it at
+runtime rather than quoting either the table or their own memory:
+
+```sh
+output=$(xrandr --query | awk '/ connected/ {print $1; exit}')
+```
 
 The `~/bin` terminal launchers are sized for the machine too (`watbat` is 18x1,
 `watsen` 23x8). A geometry that looks wrong may just be tuned for the other
@@ -477,6 +489,60 @@ is an input, so naming `system:playback_1` fails with `Cannot connect port
 reaches the speakers, name whatever is *feeding* them (`PulseAudio JACK
 Sink:front-left`, a track's output); to meter what comes in, `system:capture_N`
 is already an output and works directly.
+
+### A black screen is not a dead computer, and the power button costs you the session
+
+The panel on this box dies while everything behind it keeps running. i915
+drops the display pipe and says so:
+
+```
+i915 0000:00:02.0: [drm] *ERROR* pipe A underrun
+i915 0000:00:02.0: [drm] *ERROR* CPU pipe A FIFO underrun
+```
+
+Nothing in the kernel ever retries the pipe, so the screen stays black
+forever — while X is *fine* (`Xorg.0.log` records "Server terminated
+successfully" on the way out, no crash and no `(EE)`), the terminal bell
+still rings, and ssh still answers. The natural reading of a black screen is
+"the computer is gone", so the power button gets held, and the session dies
+of the cure rather than the disease.
+
+**`~/bin/unblank` is the way out, bound to `Mod4-M` in `.bbkeysrc`** (it also
+answers to `ahhh`). bbkeys is still resident and still holding its grabs
+during this, which is the entire reason a keybinding can rescue it. Each
+press inside 12s escalates — dpms wake, dpms off/on, then a full modeset —
+so mashing the key *is* the interface and three presses is the big hammer.
+If all three fail the wedge is below X: `ctrl+alt+F2` then `ctrl+alt+F1`
+makes fbcon do its own modeset without X's cooperation. Power button last.
+
+Two general lessons, both of which cost real sessions here:
+
+**When something "keeps happening", diff how each boot *ended*, not what is
+in the current one.** `journalctl --list-boots` plus a per-boot count of the
+suspect message and of `"Power key pressed short"` turns a vague complaint
+into a table, and the table settles causation in a way no amount of reading
+one boot's log can. Here it was unanimous — every boot logging the underrun
+ended in a power-key mash, every boot without one shut down cleanly, and the
+clean boots were the control that made it an argument instead of a hunch.
+The underrun is also the *last* kernel line in each of those boots, with
+minutes of total journal silence before it, which is what says "idle, then
+the pipe went" rather than "something was thrashing".
+
+**`xrandr --output <the only output> --off` fails, and can leave the panel
+dark.** With nothing else connected the screen would have to shrink to 0x0,
+which is below the server's stated minimum, so `RRSetScreenSize` answers
+`BadValue` and xrandr exits 1 — *after* possibly having already pulled the
+CRTC down. Any recovery path built on `--off` must therefore treat it as
+best-effort, run the re-enable as a separate command that happens regardless,
+and then *verify* the output actually came back rather than trusting either
+call's exit status. `unblank`'s stage 3 is written that way and says why.
+
+For testing this sort of thing, note **Xvfb speaks RANDR but has no DPMS
+extension**, and `+extension DPMS` does not add one — `xset dpms force on`
+there prints its usage text and fails. So the off-screen rig can exercise
+every `xrandr` path but no `xset dpms` path, and a script driving both has to
+be checked in two places: the rig for the modeset, the live display for the
+dpms calls (which are harmless — forcing a monitor *on* cannot blank it).
 
 ### A menu launch already has a terminal, and it is tty1
 
