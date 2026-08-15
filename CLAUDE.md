@@ -515,6 +515,17 @@ so mashing the key *is* the interface and three presses is the big hammer.
 If all three fail the wedge is below X: `ctrl+alt+F2` then `ctrl+alt+F1`
 makes fbcon do its own modeset without X's cooperation. Power button last.
 
+The prevention side is `xset s off -dpms` in `.xinitrc`: every one of those
+deaths came out of a long idle stretch, so not blanking removes the trigger,
+and it costs nothing on a mains-powered all-in-one. **`xset dpms force off`
+silently re-enables dpms**, though — the `force` verbs turn the extension back
+on as a side effect, with no output and nothing in any log. So anything that
+cycles dpms to recover has to read the state first and put it back after, or
+one panic press quietly hands the blank timer back to the machine it just
+rescued. `unblank` does this; grep it for `dpms_was`. The general shape:
+a "force this now" API that implicitly enables the subsystem it operates on
+will undo your configuration as a side effect of using it.
+
 Two general lessons, both of which cost real sessions here:
 
 **When something "keeps happening", diff how each boot *ended*, not what is
@@ -536,6 +547,35 @@ CRTC down. Any recovery path built on `--off` must therefore treat it as
 best-effort, run the re-enable as a separate command that happens regardless,
 and then *verify* the output actually came back rather than trusting either
 call's exit status. `unblank`'s stage 3 is written that way and says why.
+
+**`xrandr --query` has no fixed columns — the primary output gets an extra
+word.** A normal output reads `eDP-1 connected 1920x1080+0+0 (…)`; the primary
+one reads `eDP-1 connected primary 1920x1080+0+0 (…)`, so the geometry moves
+from `$3` to `$4`. Anything keyed on the column number therefore works
+perfectly until something sets `--primary`, and then reads the literal string
+`primary` as the mode forever after. Scan the fields for a `WxH+X+Y` pattern
+instead of counting them:
+
+```sh
+awk -v o="$output" '$1 == o { for (i = 2; i <= NF; i++)
+        if ($i ~ /^[0-9]+x[0-9]+\+/) { split($i, a, "+"); print a[1]; exit } }'
+```
+
+The nasty half is what it does to a *check*. "Is the output alive?" written as
+`grep "^$output connected [0-9]"` stops matching the moment the output is
+primary — which yields a test that can never pass, and therefore can never
+fail: its recovery branch fires unconditionally and a genuinely dead panel
+looks exactly like a healthy one. **A verification step that always reports
+failure has stopped being a verification step**, and it announces itself as a
+too-eager fallback rather than as a broken test. Unit-test any such predicate
+against both answers — a live line and an output-off line (`eDP-1 connected
+(normal left …)`, no geometry at all) — before trusting either.
+
+**Beware of fixing the display state in your own test harness.** Checking
+whether a recovery left dpms the way it found it, by running `xset dpms force
+on` first, re-enables dpms as a side effect and reports your own command's
+work as the script's. The harness has to be more passive than the thing it
+measures: read `xset q`, never `xset`.
 
 For testing this sort of thing, note **Xvfb speaks RANDR but has no DPMS
 extension**, and `+extension DPMS` does not add one — `xset dpms force on`
