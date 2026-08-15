@@ -49,6 +49,19 @@ setxkbmap -option ctrl:nocaps
 # fonts? ??
 xset fp+ /usr/share/fonts/
 
+# never blank the screen. this is not a preference, it is a workaround: i915
+# drops pipe A here with a FIFO underrun and never retries it, so the panel
+# goes black while the machine behind it is completely fine, and the only way
+# out used to be the power button. every one of those deaths in the journal
+# came out of a long idle stretch, i.e. out of the blank -- so the cheapest
+# thing that removes the trigger is to stop blanking at all. costs nothing on
+# a mains-powered all-in-one with an LCD.
+#
+# `unblank` (Mod4-M) is the rescue for when it happens anyway. note it has to
+# put this back afterwards, because `xset dpms force off` quietly re-enables
+# dpms behind you.
+xset s off -dpms
+
 # start some nice programs
 
 # commandod is resident on purpose: it pays gtk's ~1.6s import and the unicode
