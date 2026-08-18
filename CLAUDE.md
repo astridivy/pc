@@ -1287,10 +1287,19 @@ astray, and produced two false diagnoses here. Before concluding a GUI bug is
 real, confirm the desktop was actually idle, and prefer probes that record
 where input landed over probes that only show whether it arrived.
 
-**An agent shell has `DISPLAY` set and no tty.** Anything choosing between
-"draw here" and "go and open a window" by testing `[ -t 1 ]` therefore takes
-the *window* branch when an agent runs it, and windows appear on the live
+**An agent shell usually has `DISPLAY` set and no tty.** Anything choosing
+between "draw here" and "go and open a window" by testing `[ -t 1 ]` therefore
+takes the *window* branch when an agent runs it, and windows appear on the live
 desktop unannounced.
+
+**"Usually" is doing real work in that sentence, and it cost a daemon.** A
+background session here had `DISPLAY` *unset* — so the branch that opens a
+window instead died on `Gtk couldn't be initialized`, which is the one failure
+mode neither half of the test anticipates: not a terminal, and not a display
+either. It is asymmetric in the dangerous direction for anything resident,
+because stopping a daemon needs no X and starting it back up does. `echo
+$DISPLAY` before restarting something the human is relying on, and `DISPLAY=:0`
+is the fix once you have.
 
 **This is a feature. Astrid's favourite thing about a computer, stated in as
 many words, is "someone else doing something in here".** A window you opened
