@@ -232,7 +232,7 @@ terminal is completely unchanged. Verified in both directions: all 15 absent
 from `bash -lc`, all 43 original aliases still present under `bash -ic`.
 
 What remains in `aliases`, and so still reaches a non-interactive shell, is
-new names only — `la`, `lsl`, `wifi`, `stop`, `whattime`, `desktop`, `vimrc`,
+new names only — `la`, `lsl`, `wifi`, `stop`, `whattime`, `fancy`, `vimrc`,
 `tree~` and friends. None of them shadow anything real.
 
 **The invariant that keeps this true:** `aliases` is above the guard and may
@@ -596,10 +596,54 @@ every `xrandr` path but no `xset dpms` path, and a script driving both has to
 be checked in two places: the rig for the modeset, the live display for the
 dpms calls (which are harmless — forcing a monitor *on* cannot blank it).
 
+### The desktop inherits exactly one environment, and `.bash_profile` builds it
+
+There is **no display manager**, so nothing assembles an environment for the X
+session. A console login sources `~/.bashrc` and then runs `desktop --login`,
+and whatever that shell happened to be holding at that instant is what blackbox
+and every child it ever execs will have, for the life of the session.
+
+Which makes the order in `~/.bash_profile` load-bearing rather than stylistic:
+
+```sh
+[[ -f ~/.bashrc ]] && . ~/.bashrc   # <- must come first
+desktop --login
+```
+
+`~/bin` is on `PATH` **only** because `bashrc/exports` puts it there; a login
+shell that skips bashrc gets `/usr/local/sbin:/usr/local/bin:/usr/bin` and
+nothing else. `.xinitrc` launches `wallpaper`, `dockapps`, `bbkeys` and
+`commandod` by bare name. So a `.bash_profile` that starts the desktop *before*
+sourcing bashrc — or *instead of* it, which is the tempting shape, because
+`desktop || source ~/.bashrc` reads beautifully and gets the fallback exactly
+right — hands the session a `PATH` with no `~/bin` on it.
+
+**The failure looks nothing like its cause.** `blackbox` lives in `/usr/bin`,
+so the window manager starts, draws its root menu and handles windows exactly
+as always. Only the things in `~/bin` go missing, which reads as *four separate
+programs broke* rather than as *one directory fell off `PATH`*.
+
+The general shape, worth carrying past this box: **when a session inherits its
+environment from a shell rather than being handed one, "set up the environment"
+and "start the thing" are ordered operations — and getting them backwards fails
+partially**, which is far harder to read than failing completely.
+
+`desktop` (in `bin/`) is where "can X start here?" is decided, and it has two
+modes on purpose. Bare `desktop` is a human typing it: start X, and complain
+out loud if that is impossible. `desktop --login` is `.bash_profile`: start X
+only if this login should have one — X installed, none already running, not
+already inside one, on a real vt — and otherwise **say nothing and exit 0**.
+Both halves of that matter. The silence keeps a tty2 login clean; the 0 keeps
+the refusal out of `PS1`, since `ok` draws `$?` into the prompt and a declined
+desktop is not an error. It is also what keeps ctrl+alt+F2 working: the second
+tty sees the server already up on tty1, declines, and gives you a full-screen
+console instead of a second X fighting the first for the card.
+
 ### A menu launch already has a terminal, and it is tty1
 
-X starts from a tty via the `desktop` alias and there is **no display manager**,
-so blackbox inherits that login shell's stdio and never lets go of it. Its
+X starts from a tty — `desktop --login`, from `~/.bash_profile` — and there is
+**no display manager**, so blackbox inherits that login shell's stdio and never
+lets go of it. Its
 fds 0, 1 and 2 are all `/dev/tty1`, and every child it execs from the menu
 inherits them.
 
@@ -681,7 +725,7 @@ assuming a flag is inert.
 - `.config/keyledsd.conf` — per-application RGB keyboard profiles (Logitech, via
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop
-  environment; X starts from a tty via the `desktop` alias. The menu is re-read
+  environment; X starts from a tty via `desktop --login` in `~/.bash_profile`. The menu is re-read
   whenever it is opened, so an edit is live on the next right-click — no
   restart, no reconfigure, don't tell Astrid to do either.
 

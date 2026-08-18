@@ -1,0 +1,123 @@
+#!/bin/bash
+#
+# desktop -- bring up the X session, or quietly decide not to
+#
+# There is no display manager on this machine. X exists because a login shell
+# on a console runs this script: `~/.bash_profile` ends with `desktop --login`
+# and that is the entire greeter.
+#
+# Two modes, on purpose, because "should X start?" has a different answer
+# depending on who is asking:
+#
+#   desktop           you typed it. start X, and if that cannot happen, say so
+#                     out loud -- a command that prints nothing and does
+#                     nothing is indistinguishable from a broken keyboard.
+#
+#   desktop --login   ~/.bash_profile runs this at every console login. start X
+#                     only if this is a login that ought to have one, and
+#                     otherwise decline in silence and exit 0. The silence
+#                     keeps tty2 clean. The 0 keeps the error indicator out of
+#                     the prompt: `ok` in bashrc/functions draws $? into PS1,
+#                     so a refusal that "failed" would paint red at every
+#                     single login that was never going to get a desktop.
+#
+# Declining is the whole reason ctrl+alt+F2 still works. X is already up on
+# tty1, so the login on tty2 notices, says nothing, and leaves you with a
+# full-screen console instead of a second server fighting the first for the
+# card.
+#
+# Arguments after the mode flag are handed to xinit, so the single-app
+# spellings still work: `desktop /usr/bin/chromium'. The environment passes
+# through too, which is all `fancy' (_X_TRANSPARENCY=yes) ever was.
+#
+# dependencies
+#   /usr/bin/xinit
+#   /usr/bin/Xorg
+#   ~/.xinitrc -- the session proper. It launches wallpaper, dockapps, bbkeys
+#     and commandod by bare name, and ~/bin is on $PATH only because
+#     bashrc/exports puts it there. That is why .bash_profile sources .bashrc
+#     *before* calling this, and why that order is load-bearing rather than
+#     traditional.
+#
+# 2026-08-18
+#
+
+set -u
+
+usage () {
+  cat <<'EOF'
+usage: desktop [--login] [xinit arguments ...]
+
+  (no flag)   start X here, and explain it out loud if that can't happen
+  --login     start X only if this login should have one; otherwise do
+              nothing, say nothing, and exit 0
+
+Anything else is passed straight to xinit:
+
+  desktop /usr/bin/chromium
+  _X_TRANSPARENCY=yes desktop
+EOF
+}
+
+login=0
+
+case ${1-} in
+  --login)    login=1; shift ;;
+  -h|--help)  usage; exit 0 ;;
+esac
+
+# One place to turn "we are not starting X" into the right behaviour for
+# whoever asked: a human gets a reason, a login gets nothing at all.
+decline () {
+  (( login )) && exit 0
+  echo "desktop: $1" >&2
+  exit 1
+}
+
+# 1. Is there an X here to start?
+command -v xinit >/dev/null || decline "xinit is not installed"
+command -v Xorg  >/dev/null || decline "no X server installed"
+
+# 2. Are we inside one already? This is the check that makes a login shell
+#    inside a terminal emulator behave like an ordinary shell.
+[[ -n ${DISPLAY-} ]]         && decline "already inside X (DISPLAY=$DISPLAY)"
+[[ -n ${WAYLAND_DISPLAY-} ]] && decline "already inside Wayland"
+
+# 3. Is a server already running elsewhere? The lock file is the pidfile X
+#    writes for exactly this question, and it is worth reading the pid *inside*
+#    it rather than trusting the file to exist: a crash leaves the lock behind,
+#    and believing a stale one would lock us out of our own desktop until
+#    somebody deleted it by hand.
+for lock in /tmp/.X*-lock; do
+  [[ -r $lock ]] || continue
+  read -r pid < "$lock" || continue
+  [[ $pid =~ ^[0-9]+$ ]] || continue
+  kill -0 "$pid" 2>/dev/null && decline "X is already running (pid $pid, $lock)"
+done
+
+# Backstop, for a server that never got as far as a lock file. `pgrep -x`
+# matches /proc/PID/comm -- the executable's name, with no arguments in it --
+# so unlike the `-f` one letter away it cannot match the shell doing the
+# asking. See pc/CLAUDE.md; the `-f` spelling has eaten a session here.
+for server in Xorg X Xwayland; do
+  pgrep -x "$server" >/dev/null 2>&1 && decline "X is already running ($server)"
+done
+
+# 4. Is this somewhere a desktop belongs? A real virtual console -- not an ssh
+#    pts, not the pipe a cron job or a coding agent handed us. (This is
+#    `is_tty` from bashrc/functions, inlined, because a script in ~/bin cannot
+#    assume that file was ever sourced.)
+#
+#    Checked even when a human typed it, which is not belt-and-braces: an agent
+#    shell on this box can have DISPLAY *unset* (pc/CLAUDE.md, and it cost a
+#    daemon), so check 2 waves that case straight through and X would appear on
+#    Astrid's real screen uninvited.
+[[ $(tty) =~ ^/dev/tty[0-9]+$ ]] ||
+  decline "not on a console tty -- X starts from a real vt or not at all"
+
+# Start from ~. Every terminal blackbox opens inherits this directory, so this
+# is what makes a fresh xterm open in the home directory no matter where the
+# login shell had wandered off to.
+cd "$HOME" || decline "cannot cd to $HOME"
+
+exec xinit "$@"
