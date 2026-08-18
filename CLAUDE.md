@@ -201,11 +201,23 @@ The fix is to identify processes by something that isn't your own text:
 
 ```bash
 [ -r "$PIDFILE" ] && read -r pid < "$PIDFILE" && kill -0 "$pid"   # best
+pgrep -x Xvfb                                # next best: the name, not the argv
 ```
 
-Failing a pidfile, walk `/proc/*/cmdline` and skip your own PID. Long-running
-daemons here should write a pidfile precisely so callers never have to guess —
-`commandod` does.
+`pgrep -x` matches `/proc/PID/comm` — the executable's name, at most 15
+characters, with no arguments in it — so it cannot match the shell that is
+asking, whose `comm` is `bash`. That is the tool for anything started by a test
+rig without a pidfile of its own, and it is one letter away from the `-f` that
+kills the asker.
+
+Failing both, walk `/proc/*/cmdline` and **skip your own PID** — and note the
+skip is easy to drop when the walk is retyped as a one-liner inside a larger
+command. It cost a session here on 2026-08-17, in a shell that had used the
+guarded version correctly ten minutes earlier: the second copy grepped for
+`Xvfb :77`, its own command line said `Xvfb :77`, exit 144. If you find
+yourself writing this loop twice, that is the signal to use `pgrep -x` instead.
+Long-running daemons here should write a pidfile precisely so callers never
+have to guess — `commandod` does.
 
 ### Aliases no longer reach non-interactive shells
 
