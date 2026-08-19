@@ -7,8 +7,13 @@
     "baseRef": "fresh"
   },
   "askUserQuestionTimeout": "never",
-  "theme": "auto",
+  "autoUpdatesChannel": "stable",
+  "minimumVersion": "2.1.220",
+  "theme": "custom:bubblegumn",
   "editorMode": "vim",
+  "preferredNotifChannel": "terminal_bell",
+  "autoCompactEnabled": true,
+  "terminalProgressBarEnabled": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true
 }

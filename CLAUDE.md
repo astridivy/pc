@@ -1597,12 +1597,28 @@ as things land; this section is just the pointer.
 - Commit messages are lowercase, informal, and explain *why*. Match that.
 - Old commits carry an older email on purpose — **never rewrite history to
   normalize author identity.** It was true when written.
-- `.claude/` is gitignored **except `.claude/CLAUDE.md`**, which is tracked on
-  purpose: settings and local state are per-machine, but the notes are for
-  whoever works here next. Note the ignore has to be written `.claude/*` for
-  that to work at all — git does not descend into an excluded *directory*, so
-  a `!.claude/CLAUDE.md` under a plain `.claude/` line is silently inert. Same
-  deny-then-allowlist shape as `.ssh/`.
+- `.claude/` is **tracked**, apart from the two machine-local parts:
+  `.claude/worktrees/` (scratch checkouts) and `.claude/settings.local.json`.
+  `settings.json` is the portable Claude Code config — theme, model,
+  permissions — and `~/.claude/settings.json` is a symlink to it, so those
+  settings follow the disk between machines exactly like every other dotfile
+  here. `.claude/CLAUDE.md` is tracked for the same reason: it is notes for
+  whoever works here next.
+
+  The subtlety is that this repo is `$HOME`, so that one file is read at **two
+  scopes at once** — as user settings via the symlink, and as project settings
+  for the `~/src/pc` checkout. Anything meant to apply *only* to this checkout
+  therefore cannot live in it, and goes in `settings.local.json` instead. That
+  is where `worktree.bgIsolation: "none"` lives — the setting that lets a
+  background session edit this repo in place rather than demanding a worktree,
+  which is wrong for a repo that *is* `$HOME`. Being local, it does not travel:
+  a fresh clone on another machine needs it written again by hand.
+
+  Unverified, worth checking the first time it comes up: if Claude Code
+  rewrites `settings.json` by replacing the file rather than writing in place,
+  a `/config` change would clobber the symlink and the repo copy would quietly
+  stop being the live one. `ls -l ~/.claude/settings.json` after any settings
+  change settles it.
 
 ## Fix what you find
 
