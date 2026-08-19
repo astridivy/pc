@@ -495,16 +495,48 @@ so mashing the key *is* the interface and three presses is the big hammer.
 If all three fail the wedge is below X: `ctrl+alt+F2` then `ctrl+alt+F1`
 makes fbcon do its own modeset without X's cooperation. Power button last.
 
-The prevention side is `xset s off -dpms` in `.xinitrc`: every one of those
-deaths came out of a long idle stretch, so not blanking removes the trigger,
-and it costs nothing on a mains-powered all-in-one. **`xset dpms force off`
-silently re-enables dpms**, though — the `force` verbs turn the extension back
-on as a side effect, with no output and nothing in any log. So anything that
-cycles dpms to recover has to read the state first and put it back after, or
-one panic press quietly hands the blank timer back to the machine it just
-rescued. `unblank` does this; grep it for `dpms_was`. The general shape:
-a "force this now" API that implicitly enables the subsystem it operates on
-will undo your configuration as a side effect of using it.
+**It rings a bell when it fires, and that is load-bearing.** The rescue takes
+a few seconds and you are staring at a black screen for all of them, so with
+no feedback there is no way to know the key even registered — which is exactly
+when you mash, and queue ten more modesets behind the one that was already
+working (the log has a run of eight stage 3s and two `gave up waiting for the
+lock` from precisely that). It rings **both** `xkbbell` and `~/bin/bell`,
+because they fail in opposite directions: the X bell reaches the PC speaker
+through the kernel and sounds no matter who owns the audio device, but is
+quiet enough to lose to a loud room; `bell` is a `paplay` of a synth sample
+and is properly audible, but needs pulseaudio to still hold the card, which
+during a JACK session it may not.
+
+Both are fired **into the background**, which is the part worth generalising:
+`bell` blocks until its sample finishes, so ringing it inline would have put
+seconds between the keypress and the modeset — in the one script whose whole
+complaint is that the fix already feels too slow to trust. **Feedback about a
+slow operation must never be on that operation's critical path.**
+
+**Blanking is not the trigger, and that has been tested.** Every death up to
+2026-08-15 came out of a long idle stretch, which made `xset s off -dpms` in
+`.xinitrc` look like an obvious prevention. It was tried for three days and it
+does not work — the underruns kept arriving with dpms disabled, five of them
+in one boot — so the line is gone and the nap is back. Don't re-derive that
+experiment from the idle correlation; it is a coincidence of when the machine
+is left alone, not a cause.
+
+While it was disabled it did teach one durable thing: **`xset dpms force off`
+silently re-enables dpms.** The `force` verbs turn the extension back on as a
+side effect, with no output and nothing in any log, so anything that cycles
+dpms to recover must read the state first and put it back after. `unblank`
+still does this (grep `dpms_was`) even though it is usually a no-op now. The
+general shape is worth carrying: **a "force this now" API that implicitly
+enables the subsystem it operates on will undo your configuration as a side
+effect of being used.**
+
+What it actually is remains open, and the evidence now points below the
+driver: it happens with blanking off, it is intermittent rather than periodic,
+Astrid reports the RAM being "spicy" and has seen the *login tty* flashing and
+corrupting before X ever starts. A FIFO underrun is by definition the display
+pipe not getting its pixels out of memory in time, so marginal or badly-seated
+memory fits every one of those. Reseating the DIMMs is the free experiment;
+`memtest86+` is not installed. Treat "it's a driver bug" as unproven.
 
 Two general lessons, both of which cost real sessions here:
 

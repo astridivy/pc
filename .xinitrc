@@ -49,18 +49,17 @@ setxkbmap -option ctrl:nocaps
 # fonts? ??
 xset fp+ /usr/share/fonts/
 
-# never blank the screen. this is not a preference, it is a workaround: i915
-# drops pipe A here with a FIFO underrun and never retries it, so the panel
-# goes black while the machine behind it is completely fine, and the only way
-# out used to be the power button. every one of those deaths in the journal
-# came out of a long idle stretch, i.e. out of the blank -- so the cheapest
-# thing that removes the trigger is to stop blanking at all. costs nothing on
-# a mains-powered all-in-one with an LCD.
+# The screen is *meant* to blank -- that nap is wanted. Recording the failed
+# experiment so nobody re-runs it: from 2026-08-15 to 08-18 this line read
+# `xset s off -dpms`, on the theory that the panel died out of the idle blank
+# (every death up to then had come out of a long quiet stretch). It did not
+# help. The pipe A underruns kept happening with dpms disabled -- five of them
+# in one boot -- so blanking was never the trigger, and turning it off only
+# cost the nap. `unblank` (Mod4-M) is the actual answer, and it rings the bell
+# so you know it fired.
 #
-# `unblank` (Mod4-M) is the rescue for when it happens anyway. note it has to
-# put this back afterwards, because `xset dpms force off` quietly re-enables
-# dpms behind you.
-xset s off -dpms
+# Leaving the timeouts at the server's own defaults (10 min) rather than
+# restating them here, which is where they were before any of this.
 
 # start some nice programs
 

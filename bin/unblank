@@ -53,6 +53,22 @@ STATE="${XDG_RUNTIME_DIR:-/tmp}/unblank.stage"
 LOCK="${XDG_RUNTIME_DIR:-/tmp}/unblank.lock"
 LOG="$HOME/.log/unblank.log"
 
+# The rescue takes a few seconds to land and you are staring at a black screen
+# for all of them, so with no noise there is no way to know the key even
+# registered -- which is precisely when you start mashing and queue up ten more
+# modesets behind the one that was already working. So it rings the moment it
+# fires: one ring means the key landed and the rescue is on its way, and you
+# can stop hammering and wait.
+#
+# Both bells, on purpose, because they fail in different directions. xkbbell
+# is the X bell: it goes to the PC speaker through the kernel and rings no
+# matter who owns the audio device, which is the property you want from
+# something whose job is to work when things are broken -- but it is *quiet*,
+# and loses to a loud room. ~/bin/bell is a paplay of a synth sample, which is
+# actually audible in headphones, but needs pulseaudio to still have the card
+# (during a jack session it may not). Ring both and you are covered either way.
+BELLS="xkbbell bell"
+
 dry=0 all=0 want=
 
 while [ $# -gt 0 ]; do
@@ -83,6 +99,20 @@ run() {
 	fi
 }
 
+ring() {
+	if [ "$dry" = 1 ]; then
+		echo "would ring [$BELLS] in the background"
+		return
+	fi
+	# Backgrounded, because `bell` blocks until its sample finishes playing and
+	# the noise must never sit on the critical path of the thing it is
+	# reporting on -- this is the one script whose entire complaint is that the
+	# fix already feels too slow to trust.
+	for b in $BELLS; do
+		$b >/dev/null 2>&1 &
+	done
+}
+
 # Never hardcode an output name -- this disk boots two different machines and
 # they do not agree about what the panel is called (eDP-1 here, LVDS-1 on the
 # Acer). Ask the server that is actually running, every time.
@@ -106,12 +136,12 @@ mode=$(xrandr --query 2>/dev/null | awk -v o="$output" '
 	$1 == o { for (i = 2; i <= NF; i++)
 			if ($i ~ /^[0-9]+x[0-9]+\+/) { split($i, a, "+"); print a[1]; exit } }')
 
-# Remember whether dpms is supposed to be on at all, because we are about to
-# trample it. `.xinitrc` runs `xset s off -dpms` -- the panel dying out of an
-# idle blank is what started all this -- and `xset dpms force off` *silently
-# re-enables dpms* as a side effect. So without this, one stage 2 panic hands
-# the 600s blank straight back to the machine it just rescued, with nothing
-# on screen or in any log to say it happened. Restored at the end.
+# Remember whether dpms is enabled, because we are about to trample it and
+# `xset dpms force off` *silently re-enables dpms* as a side effect -- the
+# force verbs switch the extension back on with no output and nothing in any
+# log. Blanking is wanted here, so today this restore is usually a no-op; it
+# matters the moment anyone turns dpms off again, when one stage 2 panic would
+# otherwise hand it back with nothing anywhere to say so.
 dpms_was=$(xset q 2>/dev/null | awk '/DPMS is/ {print $NF}')
 
 # How panicked are we. An explicit -s wins; otherwise escalate if the last
@@ -137,12 +167,14 @@ else
 fi
 
 stage1() {
+	ring
 	say "AHH -- stage 1, poking $output, it is probably just blanked"
 	run xset dpms force on
 	run xset s reset
 }
 
 stage2() {
+	ring
 	say "AHHH -- stage 2, still black, slamming dpms off and back on"
 	run xset dpms force off
 	[ "$dry" = 1 ] && echo "would run: sleep 2" || sleep 2
@@ -150,6 +182,7 @@ stage2() {
 }
 
 stage3() {
+	ring
 	say "AHHHH -- stage 3, FULL MODESET on $output (was ${mode:-unknown}), hold on to your windows"
 
 	# Every step here is allowed to fail and none of them is trusted.
@@ -215,9 +248,9 @@ esac
 # Put dpms back the way we found it -- see dpms_was above. Deliberately after
 # the case and not inside a stage, so it holds whichever one ran.
 if [ "$dry" = 1 ]; then
-	[ "$dpms_was" = Disabled ] && echo "would run: xset -dpms (put it back how .xinitrc left it)"
+	[ "$dpms_was" = Disabled ] && echo "would run: xset -dpms (put it back the way we found it)"
 elif [ "$dpms_was" = Disabled ]; then
-	say "putting dpms back to disabled, where .xinitrc left it"
+	say "putting dpms back to disabled, the way we found it"
 	xset -dpms >> "$LOG" 2>&1
 fi
 
