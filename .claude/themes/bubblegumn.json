@@ -1,0 +1,16 @@
+{
+  "name": "bubblegumn",
+  "base": "dark-ansi",
+  "overrides": {
+    "autoAccept": "ansi:yellowBright",
+    "autoAcceptShimmer": "ansi:yellow",
+    "background": "ansi:blueBright",
+    "blue_FOR_SUBAGENTS_ONLY": "ansi:blue",
+    "claude": "ansi:cyan",
+    "claudeBlueShimmer_FOR_SYSTEM_SPINNER": "ansi:blue",
+    "clawd_body": "ansi:cyanBright",
+    "cyan_FOR_SUBAGENTS_ONLY": "ansi:green",
+    "planMode": "ansi:green",
+    "rainbow_orange": "ansi:yellowBright"
+  }
+}
