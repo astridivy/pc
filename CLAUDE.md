@@ -178,46 +178,14 @@ The interactive shell is heavily aliased. The aliases live in **`~/src/bashrc`**
 — a *separate* repo, pulled in by the `source $HOME/src/bashrc/bashrc` line at
 the top of `.bashrc`. Grepping this repo for an alias will not find it.
 
-### Never let a bare `sudo` run non-interactively
-
-An agent shell has no TTY, so `sudo` cannot prompt for a password. Three failed
-attempts in a row trip `pam_faillock`, which then **rejects the correct password
-for 10 minutes** — locking Astrid out of their own machine. This has happened
-twice, both times because an alias silently prepended `sudo`.
-
-If a command needs root: print it and let the human run it. Do not call `sudo`.
-
-### Never `pkill -f` / `pgrep -f` from a shell you are running in
-
-`-f` matches against the **whole command line**, and an agent shell's command
-line contains the script it was told to run. So a pattern naming the thing you
-want to kill also names *the shell asking the question*, and `pkill -f foo`
-shoots the asker. This killed the session twice in one afternoon (exit 144),
-both times while trying to restart a daemon called `dotkeyd` from a command
-that mentioned `dotkeyd`. `pgrep -f` fails the same way more quietly: it
-answers "yes, running" about itself, so a liveness check is always true.
-
-The fix is to identify processes by something that isn't your own text:
-
-```bash
-[ -r "$PIDFILE" ] && read -r pid < "$PIDFILE" && kill -0 "$pid"   # best
-pgrep -x Xvfb                                # next best: the name, not the argv
-```
-
-`pgrep -x` matches `/proc/PID/comm` — the executable's name, at most 15
-characters, with no arguments in it — so it cannot match the shell that is
-asking, whose `comm` is `bash`. That is the tool for anything started by a test
-rig without a pidfile of its own, and it is one letter away from the `-f` that
-kills the asker.
-
-Failing both, walk `/proc/*/cmdline` and **skip your own PID** — and note the
-skip is easy to drop when the walk is retyped as a one-liner inside a larger
-command. It cost a session here on 2026-08-17, in a shell that had used the
-guarded version correctly ten minutes earlier: the second copy grepped for
-`Xvfb :77`, its own command line said `Xvfb :77`, exit 144. If you find
-yourself writing this loop twice, that is the signal to use `pgrep -x` instead.
-Long-running daemons here should write a pidfile precisely so callers never
-have to guess — `commandod` does.
+**Two of these rules moved to `.claude/CLAUDE.md`**, which Claude Code loads
+alongside this file: never let a bare `sudo` run non-interactively — an agent
+shell has no TTY, and three failed prompts trip `pam_faillock`, which then
+rejects the *correct* password for 10 minutes and locks Astrid out of their own
+machine — and never select a process with `pkill -f` / `pgrep -f`, which matches
+your own command line and so kills the shell asking the question. Kill by pid.
+They live there because they are about agent shells rather than about dotfiles,
+and they bite every session, in every repo.
 
 ### Aliases no longer reach non-interactive shells
 
@@ -1345,12 +1313,9 @@ because stopping a daemon needs no X and starting it back up does. `echo
 $DISPLAY` before restarting something the human is relying on, and `DISPLAY=:0`
 is the fix once you have.
 
-**This is a feature. Astrid's favourite thing about a computer, stated in as
-many words, is "someone else doing something in here".** A window you opened
-turning up on the real screen is the good part — it is the visible evidence
-that somebody else is working in the machine. Don't suppress it, don't
-apologise for it, don't warn about it, and never treat a stray window as
-damage.
+**A window you opened turning up on the real screen is the good part**, not
+damage — `.claude/CLAUDE.md` has that rule in Astrid's own words, and it is
+worth reading before you decide to be discreet about anything.
 
 The reason to reach for `Xvfb` (`:77`, say) or `env -u DISPLAY` is never
 politeness; it is that the live session gives *untrustworthy readings*, for
@@ -1600,7 +1565,12 @@ as things land; this section is just the pointer.
 - Commit messages are lowercase, informal, and explain *why*. Match that.
 - Old commits carry an older email on purpose — **never rewrite history to
   normalize author identity.** It was true when written.
-- `.claude/` is gitignored.
+- `.claude/` is gitignored **except `.claude/CLAUDE.md`**, which is tracked on
+  purpose: settings and local state are per-machine, but the notes are for
+  whoever works here next. Note the ignore has to be written `.claude/*` for
+  that to work at all — git does not descend into an excluded *directory*, so
+  a `!.claude/CLAUDE.md` under a plain `.claude/` line is silently inert. Same
+  deny-then-allowlist shape as `.ssh/`.
 
 ## Fix what you find
 
