@@ -27,3 +27,26 @@ bind k focus up
 bind l focus right
 
 bind ^h hardcopy
+
+# dead windows stay put instead of vanishing the instant their program exits.
+# a finished command leaves its output sitting there as an artifact you can
+# read at your leisure; `q' destroys it, `r' would resurrect it.
+#
+# BOTH KEYS ARE BARE, pressed inside the dead window itself -- there is no C-a
+# prefix on either, and no prefixed spelling exists. (C-a r is `wrap', and
+# always was. it is the obvious guess and it is wrong.)
+#
+# q rather than screen's customary k, for quit. nothing collides either way:
+# zombie keys never go through C-a, so `bind k focus up' above is untouched.
+#
+# this is also what stops a finished window's region being backfilled. screen
+# only swaps another window into a region when the region goes *empty*, and a
+# zombie never empties it -- so the window that was there stays there, which
+# is the whole thing anyone wanted. anything walking the regions to remove
+# them by hand is solving a problem this line prevents.
+#
+# resurrect does not work on commando's windows, and that is not a fault here:
+# ~/src/commando hands each window a throwaway script from its spool dir which
+# ends in `rm -f "$SELF"', so by the time the window is dead there is nothing
+# left on disk for screen to relaunch. use q on those.
+zombie qr
