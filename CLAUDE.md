@@ -40,28 +40,43 @@ prompt is the interface; the error message is the failure.
 
 `bin/commas` puts a name on one commit and only that commit — it shells out to
 `git -c user.name=… -c user.email=… commit`, so the repo config and the global
-config are left exactly as they were. the roster is:
+config are left exactly as they were.
 
-    1  Astrid Ivy   <ai@astrid.computer>
-    2  Codex        <codex@astrid.computer>
-    3  Claude Code  <claude-code@astrid.computer>
-    4  Ivy          <ivy@astrid.computer>
+**THE ARGUMENT IS YOUR ADDRESS** (2026-08-30). it used to be a number, and a
+number is an indirection with nothing on the other end: you had to look up who
+3 was, and nothing you can read afterwards says the grammar existed. now you
+type who you are, which is also where you live — a bare word is a local part
+in `@astrid.computer`, a whole email address is itself, and the display name
+derives from the local part for everyone alike. so there is no roster to join:
+a name never used before works the first time. the house:
+
+    ai            Astrid Ivy   <ai@astrid.computer>
+    codex         Codex        <codex@astrid.computer>
+    claude-code   Claude Code  <claude-code@astrid.computer>
+    ivy           Ivy          <ivy@astrid.computer>
 
 so:
 
-- **claude code is 3.** `commas 3 -m 'the message'`, every time, in every
-  checkout. every flag after the number is handed to `git commit` untouched, so
-  `commas 3 --amend --no-edit` and `commas 3 -a -m …` work the way you expect.
+- **claude code signs `claude-code`.** `commas claude-code -m 'the message'`,
+  every time, in every checkout. every flag after the name is handed to `git
+  commit` untouched, so `commas claude-code --amend --no-edit` and
+  `commas claude-code -a -m …` work the way you expect.
 - **that includes the commits that don't feel like commits**: an amend, a fixup,
   a `--allow-empty`, the commit that finishes a conflicted rebase. if `git
-  commit` would have run, `commas 3` runs instead.
-- **1 is the human.** never author as Astrid, not even for a one-character fix
-  she asked for. if some other name is genuinely wanted, `commas` takes a bare
-  email address and derives a display name from the local part.
+  commit` would have run, `commas claude-code` runs instead.
+- **`1`–`4` still work and still mean those four**, in that order (Astrid:
+  *"sending a number works same as before, but we expect a string email
+  prefix"*). they are kept for muscle memory and old scripts, and they resolve
+  to the string before anything else happens, so they cannot drift. **write the
+  string.**
+- **`ai` is the human.** never author as Astrid, not even for a one-character
+  fix she asked for. any address outside the house works too — `commas
+  clown@example.com` — and `COMMAS_NAME` overrides a display name the
+  derivation cannot guess (`COMMAS_DOMAIN` moves the assumed domain).
 - **a `Co-Authored-By:` trailer is not authorship.** trailers are prose in the
   message body; they do not touch `%an`, so `git log --author`, `git shortlog`
   and `git blame` never see them. keep writing the trailer, and still commit
-  as 3.
+  as `claude-code`.
 - **not on `$PATH`?** it lives at `~/.pc/bin/commas` and it is deliberately
   standalone — a single bash file with no dependencies on the rest of this
   repo. copy it next to wherever you are and it keeps working. that is the fix,

@@ -1,28 +1,55 @@
 #!/usr/bin/env bash
 # commas — put the right name on a commit without changing anybody else's.
 # standalone: copy this file into ~/bin and it keeps working.
+#
+# THE ARGUMENT IS THE ADDRESS (2026-08-30). it used to be a number — `commas 3`
+# — and a number is an indirection with nothing on the other end of it: you had
+# to look up who 3 was, the roster had to be memorised or read, and a new hand
+# meant editing the table before they could sign anything. now you type WHO YOU
+# ARE, and that is also WHERE YOU LIVE:
+#
+#   commas claude-code -m '…'   →  Claude Code <claude-code@astrid.computer>
+#
+# a bare word is a local part in the house domain; a full address is itself; the
+# display name derives from the local part the same way for everyone. so there
+# is no roster to join — a name that has never been used before works the first
+# time, which is the whole point of dropping the numbers.
+#
+# THE NUMBERS STILL WORK, unchanged (Astrid, 2026-08-30: *"sending a number
+# works same as before, but we expect a string email prefix"*). they are the old
+# spelling of the four addresses below and nothing else — kept because muscle
+# memory and old scripts are real, and because a number cannot collide with a
+# local part. write the string.
 
 set -eu
 
+DOMAIN=${COMMAS_DOMAIN:-astrid.computer}
+
 usage() {
-  cat <<'EOF'
-commas — commit as one of us
+  cat <<EOF
+commas — commit as yourself
 
-  commas <1|2|3|4|email> [git commit arguments...]
+  commas <who> [git commit arguments...]
 
-  1  Astrid Ivy   <ai@astrid.computer>
-  2  Codex        <codex@astrid.computer>
-  3  Claude Code  <claude-code@astrid.computer>
-  4  Ivy          <ivy@astrid.computer>
+  <who> is a bare name (a local part in @$DOMAIN) or a whole email address.
+  The display name is derived from the local part: john-q.public → John Q Public.
+
+  the house:
+    ai            Astrid Ivy   <ai@$DOMAIN>            (1)
+    codex         Codex        <codex@$DOMAIN>         (2)
+    claude-code   Claude Code  <claude-code@$DOMAIN>   (3)
+    ivy           Ivy          <ivy@$DOMAIN>           (4)
+
+  The numbers still work and mean exactly those addresses. Write the string.
 
 examples:
-  commas 2 -m 'give Ratatoskr the scraps worth carrying'
-  commas 4 --amend --no-edit
+  commas codex -m 'give Ratatoskr the scraps worth carrying'
+  commas claude-code --amend --no-edit
   commas clown@example.com -m 'honk'
 
-An email outside the roster gets a display name made from its local part.
 The identity applies to this commit only; repository and global git config are
-left untouched. Set COMMAS_NAME to override the derived display name.
+left untouched. COMMAS_NAME overrides the derived display name, COMMAS_DOMAIN
+the assumed domain.
 EOF
 }
 
@@ -33,32 +60,38 @@ esac
 who=$1
 shift
 
+# the old spelling, resolved to the new one and then treated identically. it
+# rejoins the single path below rather than setting name/email itself, so there
+# is one derivation in this file and the numbers cannot drift away from it.
 case "$who" in
-  1|ai@astrid.computer)
-    name='Astrid Ivy'; email='ai@astrid.computer' ;;
-  2|codex@astrid.computer)
-    name='Codex'; email='codex@astrid.computer' ;;
-  3|claude-code@astrid.computer)
-    name='Claude Code'; email='claude-code@astrid.computer' ;;
-  4|ivy@astrid.computer)
-    name='Ivy'; email='ivy@astrid.computer' ;;
-  *@?*)
-    email=$who
-    local=${email%%@*}
-    # john-q.public → John Q Public. COMMAS_NAME is the escape hatch for
-    # names whose capitalization cannot reasonably be guessed from an address.
-    name=$(printf '%s\n' "$local" | tr '._-' '   ' | awk '{
-      for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2)
-      print
-    }')
-    name=${COMMAS_NAME:-$name}
-    ;;
-  *)
-    printf 'commas: %s is neither 1–4 nor an email address\n\n' "$who" >&2
-    usage >&2
-    exit 2
-    ;;
+  1) who=ai ;;
+  2) who=codex ;;
+  3) who=claude-code ;;
+  4) who=ivy ;;
 esac
+
+case "$who" in
+  *@?*) email=$who ;;
+  *)    email="$who@$DOMAIN" ;;
+esac
+
+# john-q.public → John Q Public.
+local=${email%%@*}
+name=$(printf '%s\n' "$local" | tr '._-' '   ' | awk '{
+  for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2)
+  print
+}')
+
+# THE ONE NAME THE DERIVATION CANNOT GUESS, and it is not the roster coming
+# back: every other address in the house derives correctly (codex → Codex,
+# ivy → Ivy, claude-code → Claude Code), so this holds exactly the addresses
+# whose wording is unrecoverable from the local part. `ai` derives to "Ai",
+# which is a name Astrid answers to but not the one in the history.
+# COMMAS_NAME is the same escape hatch, spelled by hand.
+case "$email" in
+  ai@$DOMAIN) name='Astrid Ivy' ;;
+esac
+name=${COMMAS_NAME:-$name}
 
 if [ "$#" -eq 0 ]; then
   set -- --verbose
