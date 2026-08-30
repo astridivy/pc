@@ -1,0 +1,343 @@
+#!/usr/bin/env bash
+# redact — rewrite a name out of a git repository's entire history.
+# standalone: copy this file into ~/bin and it keeps working.
+#
+# Reads a rules file, so the script itself never has to contain the string you
+# are trying to get rid of. One pass covers author and committer identities,
+# commit messages, file contents, and symlink targets, across every branch and
+# tag at once.
+
+set -eu
+
+usage() {
+  cat <<'EOF'
+redact — take a name out of a repository's history, everywhere at once
+
+  redact --rules FILE [--dry] [--force] [--repo DIR]
+  redact --verify --rules FILE [--repo DIR]
+
+  --rules FILE  substitutions to apply. one per line:
+
+                    pattern==>replacement
+
+                Patterns are literal by default and matched case
+                insensitively. Prefix with regex: for a real regex, or
+                literal: to be explicit. Blank lines and # comments are
+                ignored. Rules apply top to bottom, so put the longest
+                pattern first: a rule for "Jane Roe" must come before the
+                rule for "Roe", or the first will never fire.
+
+  --dry         report what would change and touch nothing.
+  --verify      re-scan a repository and report anything a rule still matches.
+  --repo DIR    operate on DIR instead of the current directory.
+  --force       run even if the repo still has a remote configured.
+
+Every commit hash changes, so the result is incompatible with whatever is on
+the other end of a remote. That is why a repo with a remote is refused unless
+you pass --force. Work on a throwaway clone; the repo you cloned from stays
+untouched and is your undo.
+
+On success the refs/original backup that filter-branch leaves behind is
+dropped and the old objects pruned, because leaving them in place would leave
+the name inside the repository you are trying to clean. If verification fails
+the backup is kept, so you can fix the rules and run again.
+
+examples:
+  git clone /path/to/repo scrub && cd scrub && git remote remove origin
+  redact --dry --rules ~/rules.txt
+  redact --rules ~/rules.txt
+EOF
+}
+
+rules=
+repo=.
+dry=0
+verify=0
+force=0
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --rules)  rules=${2:?--rules needs a file}; shift 2 ;;
+    --repo)   repo=${2:?--repo needs a directory}; shift 2 ;;
+    --dry)    dry=1; shift ;;
+    --verify) verify=1; shift ;;
+    --force)  force=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf 'redact: unknown argument %s\n\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+if [ -z "$rules" ]; then
+  printf 'redact: --rules is required\n\n' >&2
+  usage >&2
+  exit 2
+fi
+
+[ -r "$rules" ] || { printf 'redact: cannot read rules file %s\n' "$rules" >&2; exit 2; }
+rules=$(cd "$(dirname "$rules")" && printf '%s/%s' "$(pwd)" "$(basename "$rules")")
+
+cd "$repo"
+git rev-parse --git-dir >/dev/null 2>&1 || {
+  printf 'redact: %s is not a git repository\n' "$repo" >&2; exit 2; }
+
+# The helper lives in a file rather than inline in the filter-branch arguments,
+# because those are re-parsed by a fresh shell once per commit.
+helper=$(mktemp -t redact-helper.XXXXXX.pl)
+tmp=$(mktemp -d -t redact.XXXXXX)
+trap 'rm -f "$helper"; rm -rf "$tmp"' EXIT
+
+cat >"$helper" <<'PERL'
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @rules;
+open(my $rh, '<', $ENV{REDACT_RULES}) or die "redact: $ENV{REDACT_RULES}: $!\n";
+while (my $line = <$rh>) {
+  chomp $line;
+  next if $line =~ /^\s*#/ || $line =~ /^\s*$/;
+  my ($pat, $rep) = split /==>/, $line, 2;
+  die "redact: rule has no ==> : $line\n" unless defined $rep;
+  my $re;
+  if ($pat =~ s/^regex://) { $re = $pat }
+  else { $pat =~ s/^literal://; $re = quotemeta($pat) }
+  push @rules, [qr/$re/i, $rep];
+}
+close $rh;
+die "redact: no rules in $ENV{REDACT_RULES}\n" unless @rules;
+
+sub redact {
+  my ($s) = @_;
+  for my $r (@rules) { $s =~ s/$r->[0]/$r->[1]/g }
+  return $s;
+}
+
+my $mode = shift @ARGV // '--stream';
+
+# stdin -> stdout. commit messages.
+if ($mode eq '--stream') {
+  local $/;
+  my $s = <STDIN>;
+  print defined $s ? redact($s) : '';
+  exit 0;
+}
+
+# one argument -> stdout. author / committer name and email.
+if ($mode eq '--string') {
+  print redact(defined $ARGV[0] ? $ARGV[0] : '');
+  exit 0;
+}
+
+# Rewrite the checked-out tree in place, or (--scan) just name the files.
+# Symlinks are never followed, but their targets ARE rewritten: git stores a
+# symlink's target as the blob content, so a name in a link target is a name
+# in the repository.
+if ($mode eq '--files' || $mode eq '--scan') {
+  my $scan = ($mode eq '--scan');
+  my @stack = ('.');
+  while (my $dir = shift @stack) {
+    opendir(my $dh, $dir) or next;
+    for my $entry (readdir $dh) {
+      next if $entry eq '.' || $entry eq '..' || $entry eq '.git';
+      my $path = "$dir/$entry";
+
+      if (-l $path) {
+        my $target = readlink $path;
+        next unless defined $target;
+        my $new = redact($target);
+        next if $new eq $target;
+        if ($scan) { print "$path (symlink)\n"; next }
+        unlink $path or die "redact: $path: $!\n";
+        symlink($new, $path) or die "redact: $path: $!\n";
+        next;
+      }
+
+      if (-d $path) { push @stack, $path; next }
+      next unless -f $path && -s $path;
+
+      open(my $in, '<:raw', $path) or next;
+      local $/;
+      my $data = <$in>;
+      close $in;
+      next if !defined $data || $data =~ /\0/;   # skip binaries
+      my $new = redact($data);
+      next if $new eq $data;
+      if ($scan) { print "$path\n"; next }
+      my $bits = (stat $path)[2] & 07777;
+      open(my $out, '>:raw', $path) or die "redact: $path: $!\n";
+      print $out $new;
+      close $out;
+      chmod $bits, $path;
+    }
+    closedir $dh;
+  }
+  exit 0;
+}
+
+# stdin is "name <email>" lines; print the distinct ones a rule still matches.
+if ($mode eq '--scan-ids') {
+  my %seen;
+  while (my $id = <STDIN>) {
+    chomp $id;
+    next if $id eq '' || $seen{$id}++;
+    print "$id\n" if redact($id) ne $id;
+  }
+  exit 0;
+}
+
+# stdin is NUL-separated <sha>\0<message>\0 records; print the matching shas.
+if ($mode eq '--scan-msgs') {
+  local $/ = "\0";
+  while (defined(my $sha = <STDIN>)) {
+    chomp $sha;
+    my $msg = <STDIN>;
+    last unless defined $msg;
+    chomp $msg;
+    $sha =~ s/^\s+//;
+    next if $sha eq '';
+    print "$sha\n" if redact($msg) ne $msg;
+  }
+  exit 0;
+}
+
+# Every blob reachable from branches and tags, read in one cat-file batch
+# rather than one process per object.
+if ($mode eq '--scan-objects') {
+  my %path;
+  open(my $rl, '-|', 'git', 'rev-list', '--objects', '--branches', '--tags')
+    or die "redact: rev-list: $!\n";
+  while (my $line = <$rl>) {
+    chomp $line;
+    my ($sha, $p) = split / /, $line, 2;
+    next unless defined $p && $p ne '';
+    $path{$sha} = $p unless exists $path{$sha};
+  }
+  close $rl;
+  exit 0 unless %path;
+
+  my $list = "$ENV{REDACT_TMP}/objects.txt";
+  open(my $lw, '>', $list) or die "redact: $list: $!\n";
+  print $lw "$_\n" for keys %path;
+  close $lw;
+
+  open(my $cf, '-|', "git cat-file --batch < \Q$list\E")
+    or die "redact: cat-file: $!\n";
+  binmode $cf;
+  my %hit;
+  while (my $hdr = <$cf>) {
+    chomp $hdr;
+    my ($sha, $type, $size) = split / /, $hdr;
+    last unless defined $size;
+    my $data = '';
+    read($cf, $data, $size) if $size > 0;
+    read($cf, my $nl, 1);
+    next unless $type eq 'blob';
+    next if $data =~ /\0/;
+    $hit{$path{$sha}} = 1 if defined $path{$sha} && redact($data) ne $data;
+  }
+  close $cf;
+  print "$_\n" for sort keys %hit;
+  exit 0;
+}
+
+die "redact: unknown helper mode $mode\n";
+PERL
+
+export REDACT_RULES=$rules
+export REDACT_HELPER=$helper
+export REDACT_TMP=$tmp
+
+# Branches and tags only. refs/original is filter-branch's pre-rewrite backup,
+# and scanning it would report the very history we just replaced.
+scan_report() {
+  ids=$(git log --branches --tags --format='%an <%ae>%n%cn <%ce>' \
+        | perl "$helper" --scan-ids)
+  msgs=$(git log --branches --tags --format="%H%x00%B%x00" \
+        | perl "$helper" --scan-msgs)
+  blobs=$(perl "$helper" --scan-objects)
+
+  rc=0
+  printf '== identities ==\n'
+  if [ -n "$ids" ];   then printf '%s\n' "$ids";   rc=1; else printf '(clean)\n'; fi
+  printf '\n== commit messages ==\n'
+  if [ -n "$msgs" ];  then printf '%s\n' "$msgs";  rc=1; else printf '(clean)\n'; fi
+  printf '\n== file contents and symlink targets ==\n'
+  if [ -n "$blobs" ]; then printf '%s\n' "$blobs"; rc=1; else printf '(clean)\n'; fi
+  return "$rc"
+}
+
+if [ "$verify" -eq 1 ]; then
+  scan_report
+  exit $?
+fi
+
+if [ "$dry" -eq 1 ]; then
+  printf '== identities that would change ==\n'
+  git log --branches --tags --format='%an <%ae>%n%cn <%ce>' \
+    | perl "$helper" --scan-ids \
+    | while IFS= read -r id; do
+        printf '  %s\n     -> %s\n' "$id" "$(perl "$helper" --string "$id")"
+      done
+  printf '\n== commits whose message would change ==\n'
+  git log --branches --tags --format="%H%x00%B%x00" \
+    | perl "$helper" --scan-msgs \
+    | while IFS= read -r c; do
+        printf '  %s\n' "$(git log -1 --format='%h %s' "$c")"
+      done
+  printf '\n== paths whose content would change, at any point in history ==\n'
+  perl "$helper" --scan-objects | sed 's/^/  /'
+  exit 0
+fi
+
+if [ "$force" -ne 1 ] && [ -n "$(git remote)" ]; then
+  cat >&2 <<EOF
+redact: this repository still has a remote configured:
+
+$(git remote -v | sed 's/^/    /')
+
+Every commit hash is about to change, which makes this history incompatible
+with whatever is on the other end. Work on a throwaway clone and drop the
+remote first:
+
+    git remote remove $(git remote | head -1)
+
+or pass --force if that is genuinely what you want.
+EOF
+  exit 3
+fi
+
+printf 'redact: rewriting %s commits across %s refs...\n' \
+  "$(git rev-list --branches --tags --count)" \
+  "$(git for-each-ref --format='%(refname)' refs/heads refs/tags | wc -l)"
+
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f \
+  --env-filter '
+    GIT_AUTHOR_NAME=$(perl "$REDACT_HELPER" --string "$GIT_AUTHOR_NAME")
+    GIT_AUTHOR_EMAIL=$(perl "$REDACT_HELPER" --string "$GIT_AUTHOR_EMAIL")
+    GIT_COMMITTER_NAME=$(perl "$REDACT_HELPER" --string "$GIT_COMMITTER_NAME")
+    GIT_COMMITTER_EMAIL=$(perl "$REDACT_HELPER" --string "$GIT_COMMITTER_EMAIL")
+    export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+  ' \
+  --msg-filter 'perl "$REDACT_HELPER" --stream' \
+  --tree-filter 'perl "$REDACT_HELPER" --files' \
+  --tag-name-filter cat \
+  -- --branches --tags
+
+printf '\nredact: rewrite finished, verifying...\n\n'
+
+if scan_report; then
+  printf '\nredact: clean. dropping the refs/original backup and pruning.\n'
+  git for-each-ref --format='%(refname)' refs/original \
+    | while IFS= read -r r; do git update-ref -d "$r"; done
+  git reflog expire --expire=now --all
+  git gc --prune=now --quiet
+  printf 'redact: done. your undo is the repository you cloned from.\n'
+  exit 0
+fi
+
+cat >&2 <<'EOF'
+
+redact: verification found leftovers, so the refs/original backup was KEPT.
+Fix the rules and run again, or start from a fresh clone.
+EOF
+exit 1
