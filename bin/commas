@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# commas — put the right name on a commit without changing anybody else's.
+# standalone: copy this file into ~/bin and it keeps working.
+
+set -eu
+
+usage() {
+  cat <<'EOF'
+commas — commit as one of us
+
+  commas <1|2|3|4|email> [git commit arguments...]
+
+  1  Astrid Ivy   <ai@astrid.computer>
+  2  Codex        <codex@astrid.computer>
+  3  Claude Code  <claude-code@astrid.computer>
+  4  Ivy          <ivy@astrid.computer>
+
+examples:
+  commas 2 -m 'give Ratatoskr the scraps worth carrying'
+  commas 4 --amend --no-edit
+  commas clown@example.com -m 'honk'
+
+An email outside the roster gets a display name made from its local part.
+The identity applies to this commit only; repository and global git config are
+left untouched. Set COMMAS_NAME to override the derived display name.
+EOF
+}
+
+case "${1:-}" in
+  -h|--help|'') usage; exit 0 ;;
+esac
+
+who=$1
+shift
+
+case "$who" in
+  1|ai@astrid.computer)
+    name='Astrid Ivy'; email='ai@astrid.computer' ;;
+  2|codex@astrid.computer)
+    name='Codex'; email='codex@astrid.computer' ;;
+  3|claude-code@astrid.computer)
+    name='Claude Code'; email='claude-code@astrid.computer' ;;
+  4|ivy@astrid.computer)
+    name='Ivy'; email='ivy@astrid.computer' ;;
+  *@?*)
+    email=$who
+    local=${email%%@*}
+    # john-q.public → John Q Public. COMMAS_NAME is the escape hatch for
+    # names whose capitalization cannot reasonably be guessed from an address.
+    name=$(printf '%s\n' "$local" | tr '._-' '   ' | awk '{
+      for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2)
+      print
+    }')
+    name=${COMMAS_NAME:-$name}
+    ;;
+  *)
+    printf 'commas: %s is neither 1–4 nor an email address\n\n' "$who" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
+
+if [ "$#" -eq 0 ]; then
+  set -- --verbose
+fi
+
+exec git -c "user.name=$name" -c "user.email=$email" commit "$@"
