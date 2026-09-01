@@ -158,6 +158,30 @@ Two practical notes, neither of which is a reason to stop:
 The same spirit covers cheap, unnecessary, curious tests. They are the point,
 not overhead. Run them, and don't apologise for those either.
 
+## An empty grep is not evidence until the grep has proved it can see
+
+A search that finds nothing and a search that never ran look **identical** —
+both are a silent zero. An agent shell can produce the second one for reasons
+that have nothing to do with the tree: a cwd that was reset out from under the
+command, a sandboxed path, a run that was moved to the background and read
+back wrong. Nothing prints, exit status is the same 1 you would get from an
+honest miss, and the conclusion drawn is "that name is unused anywhere" — a
+statement about the whole disk, resting on the absence of output.
+
+**Pair any negative conclusion with a positive control in the same command.**
+Grep for a token you are certain is there; if the control comes back empty
+too, the probe is broken and the negative means nothing:
+
+```bash
+grep -rl thing_i_doubt "$DIR"; grep -c . "$DIR/known-file"   # control
+```
+
+Same rule as the Xvfb/`xrdb` and grab-probe controls in `../CLAUDE.md`, and it
+bites hardest where it is cheapest to check: **before telling the human that
+something does not exist.** A confident "there are no other callers" or "that
+package doesn't ship it yet" is a claim the human will act on, and it is worth
+one extra command to make sure it was measured rather than assumed.
+
 ## Never let a bare `sudo` run non-interactively
 
 An agent shell has no TTY, so `sudo` cannot prompt. Three failures in a row trip
