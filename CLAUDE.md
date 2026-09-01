@@ -722,6 +722,21 @@ assuming a flag is inert.
   checkout stays on `$PATH` without anything being added to it. `$PATH` here is
   built by `bashrc/exports`, which is broken (see above), so pointing a link at
   the sibling repo is much safer than teaching the shell a new directory.
+
+  `~/bin` **is** this directory — one symlink, and `bashrc/exports` puts it
+  ahead of `/usr/bin` on `$PATH`. So a script here **shadows a packaged
+  binary of the same name**, silently and forever: the package installs
+  cleanly, `pacman -Ql` lists its executable, and the personal script goes on
+  winning every lookup. When something in `~/src` starts shipping a real
+  command, the old script wearing that name has to be deleted, not just
+  ignored. (`bin/splash`, a `catimg` wrapper, went on 2026-08-31 to clear the
+  name for panel-de-pop's help popup.)
+
+  And **grep `bin/` for the name before deleting anything out of it.** These
+  scripts call each other by bare name with no imports and no manifest, so the
+  breakage surfaces in a *different* script, at whatever later moment someone
+  runs it — `splash` had two callers, and `command -v` on the doomed name
+  finds neither of them.
 - `.config/keyledsd.conf` — per-application RGB keyboard profiles (Logitech, via
   `keyledsd`). Profiles match on window class; effects are composited in order.
 - `.blackbox/menu`, `.blackboxrc` — Blackbox WM. There is no desktop

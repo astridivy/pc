@@ -4,9 +4,15 @@
 #
 # the show must go on
 #
+# was a loop around bin/splash until 2026-08-31, when panel-de-pop took that
+# name for its help popup. catimg's own two lines live here now.
+#
 # astrid
 # 2023-01-30
 
+COLS=`tput cols`
+WIDTH=$(($COLS * 2))
+
 for f in  "$@" ; do
-  splash "$f";
+  catimg -w $WIDTH "$f"
 done

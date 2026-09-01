@@ -4,6 +4,9 @@
 #
 # show me what you got ?  huh  ? whozat ???
 #
+# called bin/splash until 2026-08-31; see bin/show. anything after the search
+# term is still handed to catimg as options.
+#
 # astrid
 # 2023-01-30
 
@@ -11,7 +14,10 @@ search="$1"
 
 shift 1
 
+COLS=`tput cols`
+WIDTH=$(($COLS * 2))
+
 for f in  *$search* ; do
   echo "$f"
-  splash  "$f"  $@
+  catimg -w $WIDTH  "$f"  $@
 done
