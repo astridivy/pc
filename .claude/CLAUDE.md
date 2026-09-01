@@ -77,7 +77,4 @@ so:
   message body; they do not touch `%an`, so `git log --author`, `git shortlog`
   and `git blame` never see them. keep writing the trailer, and still commit
   as `claude-code`.
-- **not on `$PATH`?** it lives at `~/.pc/bin/commas` and it is deliberately
-  standalone — a single bash file with no dependencies on the rest of this
-  repo. copy it next to wherever you are and it keeps working. that is the fix,
-  not falling back to `git commit`.
+- it is on the path ? should just work anywhere ! "commas claude-code -m message"
