@@ -3,8 +3,9 @@ doc/download
 # AUR build checkout: 141M of tarballs, pkg/, src/ and its own .git
 yay/yay/
 
-# Claude Code project settings
-.claude/
+# Claude Code: agent worktrees and per-box settings stay out
+.claude/worktrees/
+.claude/settings.local.json
 
 # .ssh/ is deny-by-default: this repo is $HOME, so a key copied in here
 # would be one `git add .` away from being published. config is the only
