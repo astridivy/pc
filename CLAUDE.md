@@ -787,7 +787,28 @@ assuming a flag is inert.
   Keys live here; sessions and windows live there.
 
   What's in it: `C-a h/j/k/l` move between **split regions** (`focus left` and
-  friends), the binding screen's own man page suggests under `focus`.
+  friends), the binding screen's own man page suggests under `focus`; `zombie
+  qr` to keep finished windows around; and `defscrollback 11111`, because the
+  stock 100 lines loses the top of anything that printed.
+
+  **A buffer-size setting is often allocated eagerly, so it costs its full
+  size per instance whether or not anything ever fills it.** screen builds a
+  window's entire scrollback at window *creation*, so the price is paid by
+  every empty window and does not show up in any measurement taken by
+  scrolling text past it. Measure a **fresh, idle** instance and compare
+  against a control with the setting absent — the difference appears in the
+  baseline, and a before/after around the workload reads as ~0 and looks like
+  the setting did nothing. Here, at 240 cols, it is a flat ~1 kB per line per
+  window: 10.3 MB for the default 100, 21.2 MB at 11111, 109.4 MB at 99999.
+  That cost is *per window*, which is what rules out the bigger numbers on
+  this box — commando opens a screen window per command, so anything in the
+  99999 range is a gigabyte of empty buffer across ten of them.
+
+  Note the `def` prefix on any such default: `defscrollback` applies to
+  windows created from then on, so sourcing it into a running session leaves
+  every already-open window on the old value. Same shape as the re-read
+  problem below, one step further in — the file *did* load, and the window in
+  front of you still disagrees with it.
 
   **"Window" and "region" are different things in screen, and the words are
   easy to swap by accident.** A *window* is a shell; a *region* is a pane that

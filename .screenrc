@@ -50,3 +50,30 @@ bind ^h hardcopy
 # ends in `rm -f "$SELF"', so by the time the window is dead there is nothing
 # left on disk for screen to relaunch. use q on those.
 zombie qr
+
+# scrollback, unreasonably large. the default is 100 lines -- about a screenful
+# and a half, i.e. long enough to lose the top of any command that actually
+# printed something. 11111 instead: massive, but reasonable.
+#
+# the number is neither free nor lazy. screen allocates the whole buffer when
+# the *window* is created, not as lines scroll into it, so a brand-new empty
+# window already costs the full amount. measured here at 240 cols (full-screen
+# alacritty on the dell -- 1920x1080 over an 8x16 cell), rss of a fresh window
+# with nothing in it:
+#
+#   100 (default)     10.3 MB
+#   1000              11.2 MB
+#   11111             21.2 MB   <- this. ~11 MB of buffer.
+#   99999            109.4 MB
+#
+# flat ~1 kB per line per window, paid up front. that is the whole argument
+# against 99999 rather than any doubt about the disk: commando opens a screen
+# window per command, so ten of them would be a gigabyte of *empty* scrollback
+# on a box with 8 GB. 11 MB a window is affordable; 99 is not.
+#
+# `def' is the load-bearing prefix. it sets the default for windows created
+# from here on, so `screen -X source ~/.screenrc' into a running session gives
+# every NEW window the big buffer and leaves the ones already open on 100 --
+# those want `scrollback 11111' aimed at each, or simply to be reopened. the
+# ssh session here is long-lived by design, so that is the normal case.
+defscrollback 11111
