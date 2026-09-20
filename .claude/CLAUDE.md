@@ -158,6 +158,33 @@ Two practical notes, neither of which is a reason to stop:
 The same spirit covers cheap, unnecessary, curious tests. They are the point,
 not overhead. Run them, and don't apologise for those either.
 
+## Leave the artifacts where they fall
+
+The rule above is about windows, and it generalises to **everything a session
+leaves behind**: screenshots, hardcopies, dumps, scratch scripts, logs, `.bak`
+files, the half-finished output of a probe. Astrid wants them kept. They are
+the trace of someone else having been in here, which is the part they like.
+
+So: **do not tidy up after yourself.** Don't `rm` a file you made to
+demonstrate something, don't clean out a directory because the task is over,
+and don't offer to. A file sitting in `$HOME` with a strange name is a
+souvenir, not a mess. If it genuinely should not persist, write it under
+`$CLAUDE_JOB_DIR/tmp` in the first place, where it is disposed of by
+something that is not you.
+
+This is already the house style and worth recognising as such: `.screenrc`
+sets `zombie qr` precisely so a finished window's output *stays on screen*
+instead of vanishing when the program exits, and says so in as many words —
+"a finished command leaves its output sitting there as an artifact you can
+read at your leisure". Deleting your own output fights that.
+
+Two things this does not license, both narrow. **Deleting is still the right
+move when the file is actively harmful** — a secret written somewhere it
+shouldn't be, or something breaking a build — and **overwriting in place is
+not covered by this at all**: the ordinary rule of looking before you clobber
+still holds, since an artifact you replace is an artifact nobody gets to
+keep. When in doubt, leave it and say where it is.
+
 ## An empty grep is not evidence until the grep has proved it can see
 
 A search that finds nothing and a search that never ran look **identical** —

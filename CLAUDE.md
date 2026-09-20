@@ -1650,11 +1650,41 @@ as things land; this section is just the pointer.
   which is wrong for a repo that *is* `$HOME`. Being local, it does not travel:
   a fresh clone on another machine needs it written again by hand.
 
-  Unverified, worth checking the first time it comes up: if Claude Code
-  rewrites `settings.json` by replacing the file rather than writing in place,
-  a `/config` change would clobber the symlink and the repo copy would quietly
-  stop being the live one. `ls -l ~/.claude/settings.json` after any settings
-  change settles it.
+  **Verified 2026-09-19, and it happens: Claude Code replaces that file rather
+  than writing through the symlink.** `~/.claude/settings.json` was a plain
+  file again, dated 2026-08-20 14:15:26, with a `settings.json.bak-<stamp>`
+  beside it holding exactly the repo's content — so the write path backs the
+  old file up, unlinks it, and drops a regular file in its place. The repo copy
+  had been inert for a month and nothing said so: the settings all still worked,
+  because the live file was a faithful *copy*, just no longer the tracked one.
+  A settings change made since (`remoteControlAtStartup`) existed only in
+  `$HOME` and would not have travelled with the disk.
+
+  So this is not a one-time repair. **Re-check after any `/config` change or
+  anything else that writes settings**, and expect to redo the link:
+
+  ```bash
+  ls -l ~/.claude/settings.json   # a `-rw-` here means it needs relinking
+  ```
+
+  Relink by carrying the live file's content into the repo *first* (it is the
+  newer of the two), then swapping the live path for a symlink with a rename —
+  `ln -s` to a temp name, `mv -T` over the original — never `rm && ln -s`. The
+  general shape, which is what makes it worth writing down: **a symlink is not
+  a durable way to make someone else's config file yours if that program
+  rewrites rather than edits it.** The link survives reads indefinitely and
+  dies on the first write, so the failure lands long after the setup, looks
+  like nothing at all, and the copy left behind keeps working — which is
+  precisely why nobody notices.
+
+  `.claude/CLAUDE.md` is linked the same way (`~/.claude/CLAUDE.md` →
+  here, 2026-09-19) and had **never existed at user scope before that**, so
+  despite opening with "true whichever repo you are working in" it was only
+  ever loaded as project instructions for this one checkout — invisible in
+  `~/src/bashrc` and `~/src/commando`, the two repos its multi-repo advice is
+  most about. Claude Code does not rewrite that file on its own, so it should
+  be stabler than `settings.json`; check it the same way regardless, since the
+  symptom of its absence is silence.
 
 ## Fix what you find
 
