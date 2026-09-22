@@ -8,9 +8,15 @@ yay/yay/
 # .codex/auth.json) beside the settings, plus history, sessions and sqlite
 # state. only the settings travel; add new entries deliberately.
 # no .codex/rules: codex runs in yolo mode, so prefix rules never fire.
+# > actually , while that is USUALLY what settings.local.json is for , ours DOES
+# > happily travel along , so claude sessions in .pc happily work without work trees
+# > on any computer ;>
+# > ~ ♥ * AI ☯ ★ 💻!
 .claude/*
 !.claude/CLAUDE.md
 !.claude/settings.json
+!.claude/settings.local.json
+!.claude/themes/
 .codex/*
 !.codex/config.toml
 !.codex/AGENTS.md
@@ -25,3 +31,7 @@ yay/yay/
 __pycache__/
 
 bell/.sequence
+
+.config/commando/hidden.txt
+.config/commando/favorite.tsv
+.config/commando/terminals.tsv
