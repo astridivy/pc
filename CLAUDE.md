@@ -1806,6 +1806,34 @@ as things land; this section is just the pointer.
   be stabler than `settings.json`; check it the same way regardless, since the
   symptom of its absence is silence.
 
+### A symlinked dotfile is a place programs write their secrets
+
+`~/.npmrc` is a symlink into this repo, so npm's *userconfig* **is** a
+tracked file. `npm login` then writes its registry token there — not into
+some private location npm owns, but straight into the working tree — and
+the next broad commit sweeps it up. That is exactly how a live credential
+reached a public history here: the token arrived in "latest dotfiles 2021"
+and was carried forward by "everything else ><", neither of which is a
+commit anybody reviews line by line.
+
+The general rule, and it applies to every dotfile this repo adopts:
+**linking a config file into `$HOME` does not just publish what you wrote
+there — it publishes whatever the program writes there later.** A file you
+only ever meant to hold settings becomes a credential store the first time
+the tool decides to cache a login, and nothing announces the change.
+
+So before linking any config a program writes back to, ask what that
+program puts in it when it authenticates. Where the answer is "a token",
+keep the secret out of the tracked file: npm expands `${NPM_TOKEN}` from
+the environment in `.npmrc` (verified, npm 12.0.1 — left literal when
+unset), and most tools have an equivalent. Failing that, do not link the
+file at all.
+
+This is the same shape as the `settings.json` note under Conventions, one
+step nastier: there the program replaced the symlink and the damage was a
+config that quietly stopped travelling. Here the link survives and the
+damage travels *outward*.
+
 ## Fix what you find
 
 **Nobody else is going to fix these bugs.** This is one person's `$HOME`, not
