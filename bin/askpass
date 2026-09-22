@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# askpass -- answer a password prompt in a dialog box, for anything that has
+# no terminal to prompt on.
+#
+# An agent shell (or a cron job, or ssh from a script) has no tty, so every
+# program that wants a password has nowhere to ask.  ssh reaches for
+# $SSH_ASKPASS in exactly that case and otherwise prompts on the terminal as
+# usual, so exporting it costs an interactive session nothing.  sudo never
+# uses this unless it is asked to, with `sudo -A` and $SUDO_ASKPASS.
+#
+# The prompt arrives as $1.  Whatever we print on stdout is the answer, so the
+# password goes from the dialog straight to the caller without passing through
+# a shell history, a log file, an environment variable, or an argv that
+# anything else on the system can read.
+#
+#   ssh-add ~/.ssh/id_ed25519          # with SSH_ASKPASS exported
+#   sudo -A pacman -Syu                # with SUDO_ASKPASS exported
+#
+# Cancelling the dialog exits non-zero and prints nothing, which the caller
+# reads as a refusal.  That distinction matters for sudo: three *wrong*
+# answers trip pam_faillock, which then rejects the correct password for ten
+# minutes -- so cancel rather than guess.
+
+if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+    echo "${0##*/}: no DISPLAY -- nowhere to draw a prompt" >&2
+    exit 1
+fi
+
+exec zenity --entry --hide-text --title="askpass" --text="${1:-Password:}"
