@@ -1317,8 +1317,24 @@ since the bbkeys-ng import in 2003 — `KeyTree::getAction()` resets `_current` 
 `KeyClient::initKeywords()` never inserted it into the `KeywordMap` that
 `FileTokenizer` looks tags up in, so every `[cancelChain]` line is dropped with
 `unknown tag: cancelchain` and the chains have no cancel whatsoever. Verified
-2026-09-22 on bbkeys-git 0.9.2.r0.g6a28d46; `keychain`, `numberchain` and
-`stringchain` are missing from the same table.
+2026-09-22 on bbkeys-git 0.9.2.r0.g6a28d46, and it is not alone: diffing
+the `ActionType` enum against `initKeywords` turns up **seven** dead words,
+`cancelchain` plus `nextwindowofclass`, `prevwindowofclass`, their two
+`onallworkspaces` variants, and `nextwindowonallscreens` /
+`prevwindowonallscreens` — every one of them dispatched in
+`ScreenHandler.cpp` and unreachable from a config file. A further seven
+(`upwindow`/`downwindow`/`leftwindow`/`rightwindow`,
+`stringchain`/`keychain`/`numberchain`) are missing from the table *and*
+have no implementation anywhere, so registering those would only buy a
+binding that silently does nothing.
+
+**The audit is worth re-running rather than re-reading, because it is three
+sets and not two.** A name can exist in the enum, in the printing table, in
+the parser's keyword map, and in the dispatch switch, and any of those four
+can be the one that is missing — "parseable but never dispatched" fails just
+as silently as "implemented but unparseable". Grep `case Action::` for the
+dispatch set, `value_type("..., Action::` for the parse set, and diff both
+against the enum.
 
 The table in `actions.cc` that *does* list all four is **reverse-only** — it
 lives inside `Action::getActionName()` and is walked comparing `.act` to return
