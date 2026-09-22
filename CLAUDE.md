@@ -1306,10 +1306,41 @@ whole keyboard config being broken.
 
 **Give every chain a cancel, nested ones included** — `[cancelChain] (Escape)`
 resets to the top from any depth. A chain without one can only be left by
-spending a hotkey on it. Bracket tags are lowercased by the tokenizer, so
-`[cancelChain]` and `[cancelchain]` both parse; the keysym in the parens is
-**not** lowercased, so it is `Escape` and never `escape` (`NoSymbol`, binding
-dropped). Same trap as the section above, one line further right.
+spending a hotkey on it. The keysym in the parens is **not** lowercased, so it
+is `Escape` and never `escape` (`NoSymbol`, binding dropped) — same trap as the
+section above, one line further right.
+
+**But `[cancelChain]` does not parse on stock bbkeys at all, and that is not a
+case problem.** `Action::cancelChain` has been implemented in `keytree.cc`
+since the bbkeys-ng import in 2003 — `KeyTree::getAction()` resets `_current` to
+`_head` when it matches one — and `Action::getActionName()` knows its name. But
+`KeyClient::initKeywords()` never inserted it into the `KeywordMap` that
+`FileTokenizer` looks tags up in, so every `[cancelChain]` line is dropped with
+`unknown tag: cancelchain` and the chains have no cancel whatsoever. Verified
+2026-09-22 on bbkeys-git 0.9.2.r0.g6a28d46; `keychain`, `numberchain` and
+`stringchain` are missing from the same table.
+
+The table in `actions.cc` that *does* list all four is **reverse-only** — it
+lives inside `Action::getActionName()` and is walked comparing `.act` to return
+`.str`, i.e. enum → string, for printing. So grepping the source for the word
+finds it, and proves nothing about whether it can be configured. **A name table
+is not a parser; check the direction it is read in before concluding a keyword
+exists.**
+
+Lowercasing the tag in `.bbkeysrc` does **not** help, and the error message is
+its own proof: `FileTokenizer` already `transform`s every tag to lowercase
+before the lookup, which is why a file saying `[cancelChain]` is reported as
+`unknown tag: cancelchain`. **When a parser echoes your token back in a form you
+did not write, it has already normalised it — whatever it is rejecting, it is
+not the difference you are looking at.**
+
+Fixed here by patching bbkeys (`~/src/bbkeys`, branch
+`register-cancelchain-keyword`, one line into `initKeywords`), which means
+**`.bbkeysrc`'s cancel lines now depend on a locally-built bbkeys** and go back
+to silently doing nothing against a stock 0.9.2 — which matters, because this
+disk is meant to travel. The config-only substitute needs no patch: *any* leaf
+action matched inside a chain resets `_current = _head` before returning, so
+`[execute] (Escape) {true}` cancels exactly as `[cancelChain]` would.
 
 **Press Escape and retry before investigating anything.** A parked chain is
 indistinguishable from a binding that was never installed, and it masquerades
@@ -1332,6 +1363,19 @@ Two corollaries when a binding "does nothing":
   X. Don't wait to be told a config is broken; validate it yourself — balance
   the brackets and resolve every keysym through `XKeysymToKeycode`, since
   keycode 0 is exactly what makes a binding vanish without a trace.
+
+  **Simplest validator: run `bbkeys` by hand in a terminal.** It parses the rc
+  and prints every complaint before it ever looks for a window manager, so the
+  errors arrive even where it then bails. Point it at a scratch `Xvfb` with
+  `-d :77` rather than `:0`, or the second copy fights the live one for grabs.
+  `-c FILE` parses any file, so a config can be checked without installing it.
+
+  Put a **deliberately bogus tag** in whatever you parse, and assert it is
+  still reported. bbkeys prints nothing on a clean parse, so "no errors" and
+  "the binary never started" are the same empty log — the known-bad line is
+  what tells them apart. General form of the empty-grep rule above: **when a
+  tool signals success by silence, a positive control is the only way to read
+  it.**
 
 ### 5. A hotkey's own modifier holds the grab you are about to ask for
 
