@@ -219,6 +219,40 @@ silently prepended `sudo`.
 If a command needs root: print it and let the human run it. Do not call `sudo`.
 Nothing is urgent enough to be worth the lockout.
 
+**"Bare" is the load-bearing word, though — there is a supported way to ask.**
+`sudo -A` takes its password from `$SUDO_ASKPASS` instead of from a terminal,
+and `~/bin/askpass` is a nine-line `zenity` wrapper that pops a dialog on `:0`.
+So a root command from an agent shell looks like this, and Astrid answers it on
+screen:
+
+```bash
+SUDO_ASKPASS=~/bin/askpass sudo -A pacman -Syu
+```
+
+The same script answers ssh key passphrases through `$SSH_ASKPASS`, which is
+what makes `ssh-add` and `git push` work from a session with no tty:
+
+```bash
+SSH_ASKPASS=~/bin/askpass SSH_ASKPASS_REQUIRE=force ssh-add ~/.ssh/id_ed25519
+```
+
+Three things to keep straight before reaching for it. It needs `DISPLAY`, and
+an agent shell here does not always have one — the script says so on stderr
+rather than hanging. It needs Astrid to actually be at the machine, so it is
+useless from a detached job and the dialog will simply sit there; give it a
+`timeout`. And **it does not repeal the faillock arithmetic**: a wrong answer
+typed into the dialog counts exactly like a wrong answer typed at a prompt, so
+ask before popping one rather than surprising somebody into guessing. Escape
+cancels, prints nothing, and is not an attempt.
+
+The generalisable half is worth more than the sudo case: **"it cannot prompt
+without a tty" is almost never the end of the story.** A program that needs a
+secret from a human usually carries an askpass-shaped hook for exactly this
+situation — an environment variable naming a helper whose stdout becomes the
+answer. Look for one before concluding something is impossible from an agent
+shell. Here the capability sat behind a single environment variable for years
+while the documented workaround was "print the command and give up".
+
 ## The interactive shell is heavily aliased, and its aliases are elsewhere
 
 They live in `~/src/bashrc`, a separate repo sourced from `.bashrc` — so
