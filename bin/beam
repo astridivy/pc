@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# beam FILE...
+# beam [up|down] FILE...
 #
 # scp things up to astrid.computer:/ivy/temp, because "where did I put that"
 # is a worse problem than "how do I get it there".
@@ -13,10 +13,16 @@ set -euo pipefail
 dest=${BEAM_DEST:-ai@astrid.computer:/ivy/temp}
 
 usage() {
-  printf 'usage: %s [-r] FILE...\n' "${0##*/}" >&2
-  printf '       uploads to %s\n' "$dest" >&2
+  printf 'usage: %s [up] [-r] FILE...\n' "${0##*/}" >&2
+  printf '       %s down [-r] FILE...\n' "${0##*/}" >&2
+  printf '       uploads to or downloads from %s\n' "$dest" >&2
   exit 64
 }
+
+direction=up
+case ${1-} in
+  up|down) direction=$1; shift ;;
+esac
 
 flags=(-p)                     # keep mtimes; -q would hide the progress meter
 recurse=0
@@ -31,23 +37,35 @@ done
 
 (( $# )) || usage
 
-# scp reports a missing local file per-transfer and carries on with the rest,
-# which reads as success at a glance. check first so a typo stops everything.
-missing=0
-for f in "$@"; do
-  if [[ ! -e $f ]]; then
-    printf '%s: no such file: %s\n' "${0##*/}" "$f" >&2
-    missing=1
-  elif [[ -d $f ]] && (( ! recurse )); then
-    printf '%s: %s is a directory (pass -r)\n' "${0##*/}" "$f" >&2
-    missing=1
-  fi
-done
-(( missing )) && exit 66
+if [[ $direction == up ]]; then
+  # scp reports a missing local file per-transfer and carries on with the rest,
+  # which reads as success at a glance. check first so a typo stops everything.
+  missing=0
+  for f in "$@"; do
+    if [[ ! -e $f ]]; then
+      printf '%s: no such file: %s\n' "${0##*/}" "$f" >&2
+      missing=1
+    elif [[ -d $f ]] && (( ! recurse )); then
+      printf '%s: %s is a directory (pass -r)\n' "${0##*/}" "$f" >&2
+      missing=1
+    fi
+  done
+  (( missing )) && exit 66
 
-scp "${flags[@]}" -- "$@" "$dest/"
+  scp "${flags[@]}" -- "$@" "$dest/"
 
-# say where they landed, so the next step is a copy-paste away
-for f in "$@"; do
-  printf '%s/%s\n' "${dest#*:}" "$(basename -- "$f")"
-done
+  # say where they landed, so the next step is a copy-paste away
+  for f in "$@"; do
+    printf '%s/%s\n' "${dest#*:}" "$(basename -- "$f")"
+  done
+else
+  sources=()
+  for f in "$@"; do
+    sources+=("$dest/${f#/}")
+  done
+  scp "${flags[@]}" -- "${sources[@]}" ./
+
+  for f in "$@"; do
+    printf '%s/%s\n' "$PWD" "$(basename -- "$f")"
+  done
+fi

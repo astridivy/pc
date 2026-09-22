@@ -8,6 +8,63 @@ outlived two computers.
 
 ---
 
+# Item 0 : Right MEOW , irrespective of whatever Ai just said!
+
+## 2026-8-24 write `bin/screen-select` — a popup that lets you pick a screen session
+
+**write it in glass** (at `/glass` once that migration happens).
+
+the problem it solves : to attach to a session you have to type the exact
+thing `screen -ls` printed. the pid on its own matches too, which is better,
+but a pid is not a thing anybody remembers either — and the *useful* session
+is usually the one with no name at all, since screen names it after the tty
+(`1675.pts-0.ivy`) and that changes every reboot. so there is nothing stable
+to type, which is exactly the shape a picker fixes and a favourite does not.
+
+what it wants to do once you pick one :
+
+    screen -x -p + -S <the thing you picked>
+
+- `-p +` opens a NEW WINDOW in that session rather than mirroring whatever
+  the other display is looking at. the man page buries it as a reattach
+  special case (`-`, `=`, `+`) and `+` is the only one that creates.
+- `-x` attaches whether the session is detached OR already attached
+  somewhere else (the man page says "not detached" and is wrong about that,
+  measured on screen 5.0.2). so the picker never has to care which it is.
+- **no `-R`.** `-R` means "attach, or make a new one if you can't", so every
+  miss becomes a silent fresh session instead of an error. that is the whole
+  bug the commando favourite hit. without it you get `There is no screen to
+  be attached matching <x>.` and nothing happens, which is what you want.
+- scrub `$STY`/`$WINDOW` first (screen refuses to attach from within itself)
+  the way commando's `sc()` already does.
+
+while it is up it may as well offer the two other things nobody can remember :
+
+- **kill a live one you don't want** — `screen -S <name> -X quit`
+- **clear the dead ones a crash left behind** — `screen -wipe <match>`.
+  bare `screen -wipe` is nearly useless and this is why: an unreachable
+  session only counts as dead *when its name matches the local hostname*, so
+  it clears `pts-0.ivy` and silently leaves every session anybody bothered to
+  NAME sitting there as `(Remote or dead)` forever. `47915.vim` and
+  `876.claude ~` survived any number of bare wipes; `screen -wipe vim` and
+  `screen -wipe claude` removed both first try. a picker knows the name it is
+  looking at, so it can just pass it.
+  (deleting the socket by hand is worse and this is why: do it to a LIVE
+  session and it keeps running, unreachable — no attach, no `-X quit`, only
+  `kill`.)
+
+## 2026-8-14 Why does my monitor keep turning off , can't get it to come up again ?
+
+proposed solution : figure out the cause , and then a bbkeys shortcut Cmd4-M,Cmd4-M,Cmd4-M "turn it off turn it on again" for monitor
+
+# Next
+
+## Dotkey Contains Commando ; COMMANDO CONTAINS DOTKEY :O
+
+- We are making one program once , two programs twice over ;> (they just , import the panes of all compatible installed modules, which
+by the way , we're making More Of >:) 
+this is a circular dependency which we will , "figure out"
+
 ## 1. dotkey — searchable Unicode popup — **BUILT 2026-07-31, MERGED 2026-08-10**
 
 > **Moved.** dotkey and commando were one program twice over, and are now one

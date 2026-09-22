@@ -357,7 +357,7 @@ nnoremap - :lprevious<CR>
 
 "ridiculous maps
 command! Date read !date -I
-command! Sign read !echo "Astrid Ivy "
+command! Sign read !echo "♥ ~ AI ☯  💻 ★ "
 command! Heart read !heart
 
 "text decoration

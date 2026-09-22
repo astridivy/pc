@@ -50,7 +50,7 @@ menu.frame:	Sunken Bevel2 Gradient Diagonal
 menu.frame.color:	#0a0a0a
 menu.frame.colorTo:	#515151
 menu.frame.textColor:	#74fffa
-menu.frame.font:	Noto Sans Mono Light:size=11
+menu.frame.font:	Noto Sans Mono:size=11
 menu.frame.justify:	Center
 
 menu.title:	Raised Bevel2 Gradient CrossDiagonal
