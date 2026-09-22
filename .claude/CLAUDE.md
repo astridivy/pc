@@ -253,6 +253,33 @@ answer. Look for one before concluding something is impossible from an agent
 shell. Here the capability sat behind a single environment variable for years
 while the documented workaround was "print the command and give up".
 
+## A pasted command that wraps is two commands, and the tail may be valid
+
+A long command line pasted into a prompt can arrive with a newline in it. The
+shell does not see one command that wrapped; it sees **two**, splits at the
+newline, and runs both. Neither half is necessarily an error:
+
+```sh
+sudo -A install -m755 ~/src/bbkeys/src/bbkeys      # no destination -> errors
+ /usr/bin/bbkeys                                   # ...and this LAUNCHES it
+```
+
+The first half failed and said so on stderr, which scrolled past; the second
+half was an absolute path to an executable, so it started a daemon nobody
+asked for. Net effect: the file was never installed, a process appeared, and
+the visible result was "I ran it and nothing happened" — twice, because the
+same paste wraps the same way every time.
+
+**Suspect this before re-debugging the command itself**, especially when a
+command works when typed and fails when pasted. `ls -l` the file it was
+supposed to write and compare mtimes rather than trusting the absence of a
+complaint. The general shape: **a line-oriented interface splits on newlines
+you did not intend to send, and any tail that happens to parse will be
+executed rather than reported.** Same family as the `screen -X` re-parsing
+trap and the one-write-is-not-one-keypress rule — what you sent and what was
+received are different objects, and only the receiver's behaviour tells you
+which one you are looking at.
+
 ## The interactive shell is heavily aliased, and its aliases are elsewhere
 
 They live in `~/src/bashrc`, a separate repo sourced from `.bashrc` — so
