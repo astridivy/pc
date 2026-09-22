@@ -1678,6 +1678,38 @@ exists locally before importing it.
 `git merge-tree --write-tree --name-only master origin/<branch>` lists the
 conflict set without touching the working tree or creating a worktree.
 
+### A redacted repo is disjoint history: replay it, don't merge it
+
+`bin/redact` rewrites every commit, so the cleaned repository shares **no
+ancestor** with the one it was made from. `git merge-base` prints nothing,
+`git merge` refuses outright, and — the part that misleads — a two-dot diff
+becomes meaningless: it reports every file one side simply never had as a
+deletion the other side wants to make. A `git diff master newrepo/master`
+across a redaction will happily list `bin/palette | 687 ---` and read as
+"the new repo deleted everything", when nothing was deleted at all.
+
+None of that means the work diverged. **The hashes moved; the trees did
+not.** So find the branch point by commit *message* rather than by hash, and
+prove the two bases agree by diffing their trees — a redaction shows up as a
+handful of one-line differences and nothing else. Once that holds,
+`git cherry-pick` replays the modern commits onto the new root perfectly
+well, in order, preserving authorship. Disjoint history blocks `merge`; it
+does not block `cherry-pick`.
+
+The hazard is the reverse direction, and it is silent. **A replayed commit
+carries the unredacted string back in whenever the redacted line is merely
+*context* in its diff.** Git applies hunks by surrounding context, so the
+conflict is the *lucky* case — you get to see it. A hunk that applies
+cleanly next to a redacted line has quietly restored the thing the redaction
+existed to remove. This bites hardest on catch-all commits ("everything
+else", anything made by `git add`-ing the whole tree), because those are
+exactly the ones that sweep up a credential sitting in a tracked file.
+
+So after any replay, grep the *whole range* for every string the redaction
+removed — `git log -p base..replayed | grep -iE 'name|token'` — and pair it
+with a positive control, per the empty-grep rule in `.claude/CLAUDE.md`. A
+clean sweep with no control is the same silent zero as a grep that never ran.
+
 ## Open work
 
 **See `TODO.md`** for the current list — the searchable-Unicode popup, the
