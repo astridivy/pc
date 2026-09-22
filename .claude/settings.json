@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "opus",
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "askUserQuestionTimeout": "never",
+  "theme": "auto",
+  "editorMode": "vim",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
+}

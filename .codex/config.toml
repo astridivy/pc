@@ -1,0 +1,46 @@
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+[tui]
+# The bell spam was NEVER the notification system - it was the spinner being
+# animated into the terminal title. Each ESC]0;<frame> BEL ends in ^G, ~60 per
+# short session. Dropping the "run-state" item makes the title static: it sets
+# once to the project name and never repaints. Measured 60 -> 2.
+terminal_title = ["project-name"]
+
+# Real notifications, now that they're audible above the noise.
+notifications = ["agent-turn-complete"]   # turn done only
+notification_condition = "unfocused"      # silent while you're watching
+notification_method = "bel"               # raw ^G through screen -> Alacritty
+
+status_line = ["current-dir", "model", "reasoning", "hostname", "git-branch", "branch-changes", "five-hour-limit", "thread-title", "run-state", "used-tokens"]
+status_line_use_colors = true
+
+[tui.model_availability_nux]
+gpt-6-astra = 4
+
+[projects."/home/ai/src/bashrc"]
+trust_level = "trusted"
+
+[projects."/anima"]
+trust_level = "trusted"
+
+[projects."/née"]
+trust_level = "trusted"
+
+[projects."/glass"]
+trust_level = "trusted"
+
+[projects."/home/ai"]
+trust_level = "trusted"
+
+[projects."/home/ai/src/anima"]
+trust_level = "trusted"
+
+[projects."/ivy/temp"]
+trust_level = "trusted"
+
+[projects."/home/ai/ivy"]
+trust_level = "trusted"
+
+[notice]
+hide_rate_limit_model_nudge = true

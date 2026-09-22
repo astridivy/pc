@@ -3,9 +3,17 @@ doc/download
 # AUR build checkout: 141M of tarballs, pkg/, src/ and its own .git
 yay/yay/
 
-# Claude Code: agent worktrees and per-box settings stay out
-.claude/worktrees/
-.claude/settings.local.json
+# .claude/ and .codex/ are deny-by-default for the same reason .ssh/ is: this
+# repo is $HOME, and both dirs keep live credentials (.claude/.credentials.json,
+# .codex/auth.json) beside the settings, plus history, sessions and sqlite
+# state. only the settings travel; add new entries deliberately.
+# no .codex/rules: codex runs in yolo mode, so prefix rules never fire.
+.claude/*
+!.claude/CLAUDE.md
+!.claude/settings.json
+.codex/*
+!.codex/config.toml
+!.codex/AGENTS.md
 
 # .ssh/ is deny-by-default: this repo is $HOME, so a key copied in here
 # would be one `git add .` away from being published. config is the only
