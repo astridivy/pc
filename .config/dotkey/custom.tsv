@@ -1,0 +1,46 @@
+# commando glyphs -- char <TAB> keywords
+#
+# These rank above all 148k unicode names, so a keyword here wins the query.
+# That is the point: `heart` should land on the heart Astrid actually uses
+# (U+2661 WHITE HEART SUIT) rather than on SPARKLING HEART.
+#
+# This file is both its own tab-menu and the boost list for the `dotkey` tab.
+# Every *.tsv beside it in this directory gets the same treatment, so a new
+# set of glyphs is a new file, not a patch to this one.
+#
+# This file is what retires bin/{heart,supson,endash,emdash,heart-glyph} --
+# five scripts that each echoed one glyph into an xclip that then had to stay
+# resident forever to own the selection. An xclip still lingers -- X11 has no
+# clipboard storage, so the owner has to stay alive to serve the bytes -- but
+# there is one of them for every glyph rather than five scripts' worth, and the
+# daemon reaps the dead ones.
+#
+# Multi-character entries are fine; kaomoji are the whole reason.
+# Edits are live on the next popup; a brand new .tsv needs commando --restart.
+
+~ ♥ * AI ☯ ★ 💻!	SIGN SIGNATURE AI ASTRID IVY
+¯\_(ツ)_/¯	LOLSUP SHRUG SUP SON KAOMOJI WHATEVER
+♥	HEART BLACK HEART SUIT LOVE SOLID
+♡	HEART WHITE HEART SUIT LOVE
+–	ENDASH EN DASH
+—	EMDASH EM DASH
+☆	STAR HOLLOW OUTLINE
+★	STAR FILLED
+☐	BOX BALLOT EMPTY UNCHECKED
+☑	BOX BALLOT CHECKED CHECK TICK DONE
+☒	BOX BALLOT CROSSED X EX NO
+✉︎	EMAIL LETTER ENVELOPE MAIL POST
+sup son ¯\_(ツ)_/¯	SUPSON SUP SON SELECT STARCRAFT
+…	ELLIPSIS DOTS
+·	MIDDOT INTERPUNCT BULLET
+→	ARROW RIGHT
+←	ARROW LEFT
+⇒	ARROW IMPLIES DOUBLE RIGHT
+∞	INFINITY FOREVER
+°	DEGREES
+±	PLUSMINUS
+≈	APPROX ALMOST
+≠	NOTEQUAL NE
+×	TIMES MULTIPLY
+÷	DIVIDE
+Mímir	MIMIR

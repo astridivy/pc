@@ -1,0 +1,60 @@
+# char <TAB> keywords
+#
+# Transcribed from the Texpand backup of 2026-08-18, which is where
+# these lived on Android. Grouped by theme rather than one file per
+# shortcut; the popup addresses this file by the sigil in its name.
+
+# ---- japanese ----
+# Honorifics and two phrases.
+
+さん	SAN HONORIFIC SUFFIX POLITE
+ちゃん	CHAN HONORIFIC SUFFIX CUTE
+–くん	KUN HONORIFIC SUFFIX
+さま	SAMA HONORIFIC SUFFIX FORMAL
+–たん	TAN HONORIFIC SUFFIX BABY
+愛してる	AISHITERU I LOVE YOU
+お願いします！	ONEGAISHIMASU PLEASE REQUEST
+
+# ---- fancy text ----
+# Styled unicode letterforms. These are single characters wearing a
+# typeface, so they survive being pasted where no font can be set.
+
+［ 𝚛𝚎𝚍𝚊𝚌𝚝𝚎𝚍 ］	REDACTED BRACKETS MONOSPACE CENSORED
+𝚌𝚘𝚗𝚗𝚎𝚌𝚝𝚒𝚘𝚗⠀𝚎𝚜𝚝𝚊𝚋𝚕𝚒𝚜𝚑𝚎𝚍．	CONNECTION ESTABLISHED MONOSPACE
+𝚎𝚜𝚝𝚊𝚋𝚕𝚒𝚜𝚑𝚒𝚗𝚐⠀𝚌𝚘𝚗𝚗𝚎𝚌𝚝𝚒𝚘𝚗．．．	ESTABLISHING CONNECTION MONOSPACE
+“𝒃𝒆𝒉𝒊𝒏𝒅 𝒕𝒉𝒆 𝒄𝒖𝒓𝒕𝒂𝒊𝒏”	BEHIND THE CURTAIN BOLD ITALIC
+𝕟𝕖𝕨 𝕡𝕙𝕠𝕟𝕖 , 𝕨𝕙𝕠 𝕕𝕚𝕤 ?	NEW PHONE WHO DIS DOUBLE STRUCK
+𝑃𝑟𝑎𝑖𝑠𝑒 𝑡ℎ𝑒 𝑆𝑢𝑛 ❂	PRAISE THE SUN ITALIC SOULS
+ᴀstrid*ıvy	SIGNATURE ASTRID IVY SMALLCAPS
+ā̤̓̍͘s̠҉͍͊ͅt̲̂̓ͩ̑r̴̨̦͕̝ỉ͔͖̜͌ḑ̴̞͛̒*ỉ͔͖̜͌v͒̄ͭ̏̇y҉̃̀̋̑	SIGNATURE ASTRID IVY ZALGO CURSED
+ᴊoʜɴ	JOHN SMALLCAPS
+ᴘsᴀʟᴍ	PSALM SMALLCAPS
+IiteraIIy	LITERALLY CAPITAL I HOMOGLYPH JOKE
+🅐str🅘d I🅥y . ..🅘 (??)	ASTRID IVY CIRCLED SHORT FOR
+
+# ---- maidgang ----
+# Tagged #maidgang in the backup -- the one entry that carried a
+# description, which the CSV export drops and the zip keeps.
+
+🤍🔪💜🪡🖤	MAID GANG EMOJI ROW 1
+☽🔪♡🪡☾	MAID GANG EMOJI ROW 2
+☠🤍⛤🖤⚧	MAID GANG EMOJI ROW 3
+🤍🖤💜🤍🖤	MAID GANG EMOJI ROW 4
+🖤☠🤍🔪💜🪡🖤☢🤍⚧💜	MAID GANG EMOJI ROW 5
+⛤🤍🔪☽💜☾🪡🖤⛧	MAID GANG EMOJI ROW 6
+
+# ---- odds and ends ----
+# The one-off emoji and small phrases that belong to no set.
+
+🎱	EIGHT BALL POOL BILLIARDS FATE
+howdy 🤠	HOWDY COWBOY GREETING
+🤷🏼‍♀️	SHRUG WOMAN EMOJI DUNNO
+🛫	PLANE TAKEOFF RUN IT LAUNCH
+— Run it! 🛫	RUN IT PLANE DASH
+§run it .	RUN IT SECTION
+fuck it : §run it ! 🛫	FUCK IT RUN IT PLANE
+no hurries ⧸ no worries ⛱	NO HURRIES NO WORRIES PARASOL
+🔵🔵🔵🔵🔵 🔵🔵🔵🔵🔵	BLUE CIRCLES ROW TEN
+dobry wieczór	DOBRY WIECZOR GOOD EVENING POLISH
+w/r.t.	WITH REGARD TO WRT
+〜♡	HEART WAVE TILDE

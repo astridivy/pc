@@ -1,0 +1,26 @@
+# char <TAB> keywords
+#
+# Transcribed from the Texpand backup of 2026-08-18, which is where
+# these lived on Android. Grouped by theme rather than one file per
+# shortcut; the popup addresses this file by the sigil in its name.
+
+# ---- stable diffusion ----
+# The <> array. Several carry their trigger words with them, which is
+# the whole reason they were one shortcut each rather than typed.
+
+<lora:add-detail-xl:1>,	ADD DETAIL XL GENERAL
+<lora:DetailedEyes_V3:1>,	DETAILED EYES V3
+<lora:dark:1>	DARK
+<lora:2FingersSDXL_v03:1>, (fingering pussy),	TWO FINGERS FINGERING PUSSY TRIGGER
+<lora:Rendered Environments  SDXL v1.0:.4444>,	RENDERED ENVIRONMENTS BACKGROUND SDXL
+<lora:princess_xl_v2:.444444>,	PRINCESS XL V2
+<lora:finger_ass:.8>, (1girl, solo, anal fingering, middle two fingers inside anus:1.0111),	FINGER ASS ANAL FINGERING TRIGGER
+<lora:SpreadAssSDXL_v04:.666> spread ass,	SPREAD ASS SDXL TRIGGER
+<lora:flat_chested_v3.5:.666>, flat chested,	FLAT CHESTED TRIGGER
+<lora:Super_Eye_Detailer_By_Stable_Yogi_SDPD0:.88888888>,	SUPER EYE DETAILER STABLE YOGI
+<lora:AdvancedEnhancerXLv2:.88888888>, movie still, film, cinematic shot, great lighting, macro, 35mm	ADVANCED ENHANCER CINEMATIC FILM MACRO 35MM
+<lora:Cassara The Haunting Elf_epoch_10:.88888888>, elf, pin-up, succubus, femme, fatale, tattoo,	CASSARA HAUNTING ELF SUCCUBUS PINUP TATTOO
+<lora:slave_restraints:.88888888>, (slave_restraints outfit),	SLAVE RESTRAINTS OUTFIT TRIGGER
+<lora:MJ52:.7>, <lora:style_lora_realis:.7>	MJ52 STYLE REALIS PAIR
+Stable-Yogis-Makeup-Enhancer-XL	MAKEUP ENHANCER XL NAME ONLY NO TAG
+<lora:eye_catching:.8888>, eye_catching, (-drab)	EYE CATCHING DRAB NEGATIVE TRIGGER
