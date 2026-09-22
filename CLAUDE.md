@@ -1710,6 +1710,34 @@ removed — `git log -p base..replayed | grep -iE 'name|token'` — and pair it
 with a positive control, per the empty-grep rule in `.claude/CLAUDE.md`. A
 clean sweep with no control is the same silent zero as a grep that never ran.
 
+### Cherry-pick applies deletions to paths the original commit never named
+
+Rename detection runs on a cherry-pick too, and it retargets **deletions**.
+Replay a commit that removed `.config/foo/x.tsv` into a tree where that
+content now lives at `.config/bar/x.tsv`, and git will helpfully delete
+`.config/bar/x.tsv` instead — no conflict, no warning, no mention of the
+path in the output you were reading. The commit message still says what the
+original author meant ("foo moved out to its own repo"), which is *not* what
+just happened to bar.
+
+This is worst exactly where a replay is most useful: across a repo that
+reorganised, which is the reason you were replaying rather than merging.
+The old commit's intent was scoped to a project that no longer owns that
+path, and the new owner inherits the deletion.
+
+So **diff the file *list*, not just the content, after any replay**:
+
+```bash
+comm -23 <(git ls-tree -r --name-only <before> | sort) \
+         <(git ls-tree -r --name-only <after>  | sort)   # what vanished
+```
+
+Anything in that output which the replayed commits do not *mention by name*
+is a rename-detection casualty. `git log --diff-filter=D -- <path>` then
+names the commit that ate it. A `--stat` of the merge is not enough: a
+deletion is one quiet line in a wall of them, and the path it names is the
+one you were not looking for.
+
 ## Open work
 
 **See `TODO.md`** for the current list — the searchable-Unicode popup, the
